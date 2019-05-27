@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>CustomLabel.qml</file>
+        <file>PageBackground.qml</file>
+        <file>Camera.qml</file>
+    </qresource>
+</RCC>
