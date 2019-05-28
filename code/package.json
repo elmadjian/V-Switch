@@ -9,5 +9,10 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "electron-rebuild": "^1.8.5",
+    "zeromq": "^5.1.0",
+    "zerorpc": "git+https://github.com/0rpc/zerorpc-node.git"
+  }
 }
