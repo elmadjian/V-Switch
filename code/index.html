@@ -1,10 +1,24 @@
 <!DOCTYPE html>
-  <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Hello Python from Electron!</title>
-    </head>
-    <body>
-      <h1>Oi do Python!</h1>
-    </body>
-  </html>
+<html>
+
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="ui.css">
+    <title>Hello Python from Electron!</title>
+  </head>
+
+  <body>
+    <nav></nav>
+    <div id="sceneCamContainer">
+      <canvas id="sceneCamRenderer"></canvas>
+    </div>
+    <div id="leftEyeCamContainer">
+      <canvas id="leftEyeCamRenderer"></canvas>
+    </div>
+    <div id="leftEyeCamContainer">
+      <canvas id="rightEyeCamRenderer"></canvas>
+    </div>
+    <script type=text/javascript src="ui.js"></script>
+  </body>
+
+</html>

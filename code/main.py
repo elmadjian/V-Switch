@@ -4,9 +4,6 @@ import cv2
 import zerorpc
 import numpy as np
 
-class Test(object):
-    def printSomething(self):
-        return "Estou dando ola do Python!"
 
 if __name__=='__main__':
 
