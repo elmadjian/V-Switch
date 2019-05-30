@@ -7,7 +7,6 @@ class VideoIO():
         self.cameras = {}
         self.read_inputs()
 
-    
     def read_inputs(self):
         '''
         Only works on Linux.
@@ -22,10 +21,11 @@ class VideoIO():
                 source = group[0][1]
                 self.cameras[source] = name
 
-
     def get_cameras(self):
-        return ["{}: {}".format(i, self.cameras[i]) for i in self.cameras.keys()]
+        return self.cameras
 
+    def get_cameras_list(self):
+        return ["{}: {}".format(i, self.cameras[i]) for i in self.cameras.keys()]
 
     def get_camera_name(self, source):
         return self.cameras[source]

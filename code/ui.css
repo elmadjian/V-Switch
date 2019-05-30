@@ -1,0 +1,45 @@
+nav {
+    min-height: 150px;
+    background-color: darkgray;
+}
+
+/*main container*/
+/*====================*/
+.container {
+    display:flex;
+    width: 100%;
+    background-color: blue;
+}
+
+.item {
+    flex-grow: 1;
+    align-items: flex-start;
+    padding: 5px;
+    margin: 5px;
+}
+
+#sceneCamRenderer {
+    flex-grow: 2;
+    padding: 5px;
+    margin: 5px;
+    width: 900px;
+    height: 600px;
+    background-color: brown;
+}
+
+
+/*eye container*/
+/*====================*/
+.container-eyes {
+    display:flex;
+    flex-direction: column;
+    background-color: aqua;
+}
+
+.canvas-eye {
+    padding: 5px;
+    margin: 5px;
+    width: 420px;
+    height: 270px;
+    background-color: brown;
+}

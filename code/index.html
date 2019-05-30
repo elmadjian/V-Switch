@@ -1,24 +1,56 @@
 <!DOCTYPE html>
 <html>
 
-  <head>
+<head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="material-icons.css">
+    <link rel="stylesheet" href="materialize.min.css">
     <link rel="stylesheet" href="ui.css">
-    <title>Hello Python from Electron!</title>
-  </head>
+    <title>Cadu's Eye Tracker</title>
+    <script type="text/javascript" src="fontawesome.js"></script>
+    <script type="text/javascript" src="materialize.min.js"></script>
 
-  <body>
+</head>
+
+<body>
     <nav></nav>
-    <div id="sceneCamContainer">
-      <canvas id="sceneCamRenderer"></canvas>
+    <div class="container">
+        <div class="item">
+            <div class="dropdown-trigger btn" href="#" data-target="sceneDropdown">Input Camera</div>
+            <ul id="sceneDropdown" class="dropdown-content">
+                <li><a href="#">um</a></li>
+                <li><a href="#">dois</a></li>
+                <li><a href="#">tres</a></li>
+            </ul>
+            <canvas id="sceneCamRenderer"></canvas>
+        </div>
+
+        <div class="item container-eyes">
+            <div class="item-eyes">
+                <div class="dropdown-trigger btn" href="#" data-target="leDropdown">Input Camera</div>
+                <ul id="leDropdown" class="dropdown-content">
+                    <li><a href="#">um</a></li>
+                    <li><a href="#">dois</a></li>
+                    <li><a href="#">tres</a></li>
+                </ul>
+                <canvas class="canvas-eye" id="leftEyeCamRenderer"></canvas>
+            </div>
+            <div class="item-eyes">
+                <div class="dropdown-trigger btn" href="#" data-target="reDropdown">Input Camera</div>
+                <ul id="reDropdown" class="dropdown-content">
+                    <li><a href="#">um</a></li>
+                    <li><a href="#">dois</a></li>
+                    <li><a href="#">tres</a></li>
+                </ul>
+                <canvas class="canvas-eye" id="rightEyeCamRenderer"></canvas>
+            </div>
+
+
+        </div>
     </div>
-    <div id="leftEyeCamContainer">
-      <canvas id="leftEyeCamRenderer"></canvas>
-    </div>
-    <div id="leftEyeCamContainer">
-      <canvas id="rightEyeCamRenderer"></canvas>
-    </div>
+
     <script type=text/javascript src="ui.js"></script>
-  </body>
+</body>
 
 </html>
