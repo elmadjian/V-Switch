@@ -1,5 +1,7 @@
 const { ipcRenderer } = require('electron');
 
+//STREAMS
+//===============
 //to receive and update the scene camera frame
 ipcRenderer.on("sceneCamFrame", (event, payload) => {
     const canvas = document.querySelector("#sceneCamRenderer");
@@ -36,13 +38,28 @@ ipcRenderer.on("rightEyeCamFrame", (event, payload) => {
     rightEyeFrame.src = 'data:image/jpg;base64,' + base64Data;
 });
 
+
+
+//CAMERA INPUT
+//=============
 //fetch list of input cameras
 ipcRenderer.on("inputCamera", (event, arg) => {
-    console.log(arg);
+    let elems = document.querySelectorAll('.dropdown-content');
+    let data = JSON.parse(JSON.parse(arg));
+    let html = "";
+
+    for (let i = 0; i < elems.length; i++) {
+        while (elems[i].firstChild)
+            elems[i].removeChild(elems[i].firstChild);
+        for (let j = 0; j < data.length; j++) {
+            let li = document.createElement("li");
+            li.appendChild(document.createTextNode(data[j]));
+            elems[i].appendChild(li);
+        }
+    }
 });
 
-//LISTENERS
-//=============
+//Dropdown menu for camera input
 document.addEventListener('DOMContentLoaded', () => {
     let elems = document.querySelectorAll('.dropdown-trigger');
     let instances = M.Dropdown.init(elems, 

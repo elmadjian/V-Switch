@@ -6,17 +6,18 @@ const leCamSubscriber = zmq.socket('pull');
 const reCamSubscriber = zmq.socket('pull');
 const uiSocket = zmq.socket('pair');
 let window;
+let backend;
 
 function createWindow() {
     const {spawn} = require('child_process');
-    const backend = spawn('python', ['main.py']);
+    backend = spawn('python', ['main.py'], {detached: true});
 
     window = new BrowserWindow({
         width: 1200, 
         height: 700,
         webPreferences: {
             nodeIntegration: true
-        }
+        },
     });
     window.loadFile('index.html');
 
@@ -54,8 +55,7 @@ function createWindow() {
 ipcMain.on("inputCamera", (event, msg) => {
     uiSocket.send("INPUT_CAMERA");
     uiSocket.on('message', (reply) => {
-        let data = JSON.parse(reply);
-        event.reply("inputCamera", data);
+        event.reply("inputCamera", reply);
     })
 });
 
@@ -65,5 +65,6 @@ app.on('window-all-closed', () => {
     sceneCamSubscriber.close();
     leCamSubscriber.close();
     reCamSubscriber.close();
+    process.kill(-backend.pid);
     app.quit();
 });

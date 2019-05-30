@@ -1,5 +1,5 @@
 nav {
-    min-height: 150px;
+    min-height: 110px;
     background-color: darkgray;
 }
 
@@ -22,8 +22,8 @@ nav {
     flex-grow: 2;
     padding: 5px;
     margin: 5px;
-    width: 900px;
-    height: 600px;
+    width: 680px;
+    height: 480px;
     background-color: brown;
 }
 
@@ -39,7 +39,7 @@ nav {
 .canvas-eye {
     padding: 5px;
     margin: 5px;
-    width: 420px;
-    height: 270px;
+    width: 320px;
+    height: 240px;
     background-color: brown;
 }

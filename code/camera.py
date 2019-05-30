@@ -5,7 +5,53 @@ import zmq
 from threading import Thread
 from multiprocessing import Process, Pipe, Value
 
-class Camera(Thread):
+#class Camera(Thread):
+class CameraProc(Process):
+
+    def __init__(self, source, port):
+        #Thread.__init__(self)
+        Process.__init__(self)
+        self.__image = None
+        self.source = source
+        self.port = port
+        self.parent, self.child = Pipe()
+
+
+    #TEMPORARY (needs a proper class)
+    def run(self):
+        socket = self.create_socket(self.port)
+        cap = cv2.VideoCapture(self.source)
+        count = 0
+        while not cap.isOpened():
+            self.source = (self.source + 1) % 10
+            time.sleep(0.5)
+            cap = cv2.VideoCapture(self.source)
+        while True:
+            ret, frame = cap.read()
+            count += 1
+            if ret and count % 2 == 0:
+                #PROCESSING STUFF
+                img = cv2.imencode('.jpg', frame)[1]
+                socket.send(img)
+        cap.release()
+
+    def create_socket(self, port):
+        context = zmq.Context()
+        socket = context.socket(zmq.PUSH)
+        socket.bind("tcp://127.0.0.1:{}".format(port))
+        print("publishing on localhost:{}".format(port))
+        return socket
+
+    def get_image(self):
+        return self.__image
+
+    def set_image(self, image):
+        self.__image = image
+
+
+
+#------------------------------------------
+class CameraThread(Thread):
 
     def __init__(self, source, port):
         Thread.__init__(self)
@@ -18,16 +64,19 @@ class Camera(Thread):
     #TEMPORARY (needs a proper class)
     def capture(self, source, pipe):
         cap = cv2.VideoCapture(source)
+        count = 0
         while not cap.isOpened():
             source = (source + 1) % 10
             time.sleep(0.5)
             cap = cv2.VideoCapture(source)
         while True:
             ret, frame = cap.read()
-            if ret:
+            count += 1
+            if ret and count % 2 == 0:
                 #PROCESSING STUFF
                 img = cv2.imencode('.jpg', frame)[1]
                 pipe.send(img)
+                
             if pipe.poll():
                 break
         cap.release()
@@ -43,7 +92,6 @@ class Camera(Thread):
         while True:
             img = self.parent.recv()
             self.socket.send(img)
-            #time.sleep(1)
         
     def get_image(self):
         return self.__image
@@ -52,13 +100,8 @@ class Camera(Thread):
         self.__image = image
 
 
-    # @Slot(int)
-    # def set_camera_source(self, source):
-    #     self.parent.send("stop_capture")
-    #     self.cam_process.join()
-    #     self.cam_process = Process(target=self.capture, args=(source, self.child,))
-    #     self.cam_process.start()
         
 if __name__=="__main__":
-    cam = Camera(0, 7791)
-    cam.start()
+    pass
+    # cam = Camera(0, 7791)
+    # cam.start()

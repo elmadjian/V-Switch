@@ -20,7 +20,7 @@ def ui_listen(socket):
     while True:
         msg = socket.recv()
         if msg.decode().startswith("INPUT_CAMERA"):
-            cameras = video_source.get_cameras()
+            cameras = video_source.get_cameras_list()
             cam_list = json.dumps(cameras)
             socket.send_json(cam_list)
 
@@ -31,13 +31,18 @@ if __name__=='__main__':
     ui_listener = Thread(target=ui_listen, args=(ui_socket,))
     ui_listener.start()    
 
-    sceneCam = camera.Camera(0, 7791)
-    leftEyeCam = camera.Camera(1, 7792)
-    rightEyeCam = camera.Camera(2, 7793)
+    sceneCam = camera.CameraThread(0, 7791)
+    leftEyeCam = camera.CameraThread(1, 7792)
+    rightEyeCam = camera.CameraThread(2, 7793)
 
     sceneCam.start()
     leftEyeCam.start()
     rightEyeCam.start()
+
+    sceneCam.join()
+    leftEyeCam.join()
+    rightEyeCam.join()
+    ui_listener.join()
 
     # addr = 'tcp://127.0.0.1:4242'
     # s = zerorpc.Server(Test())
