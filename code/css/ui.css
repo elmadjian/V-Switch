@@ -43,3 +43,9 @@ nav {
     height: 240px;
     background-color: brown;
 }
+
+/*dropdown*/
+/*=====================*/
+.dropdown-trigger {
+    min-width: 200px;
+}

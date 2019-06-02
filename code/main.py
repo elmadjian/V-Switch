@@ -15,14 +15,26 @@ def create_socket(port):
     print("listening on localhost:{}".format(port))
     return socket
 
+def change_cameras(scene, le, re, choice, value):
+    scene.stop()
+    le.stop()
+    re.stop()
+    if choice.startswith("scene"):
+        pass
+        
+
 def ui_listen(socket):
     video_source = videoio.VideoIO()
     while True:
-        msg = socket.recv()
-        if msg.decode().startswith("INPUT_CAMERA"):
+        msg = socket.recv().decode()
+        if msg.startswith("INPUT_CAMERA"):
             cameras = video_source.get_cameras_list()
             cam_list = json.dumps(cameras)
             socket.send_json(cam_list)
+        if msg.startswith("CHANGE_CAMERA"):
+            command = msg.split(':')
+
+
 
 
 

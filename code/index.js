@@ -1,20 +1,20 @@
 const {app, BrowserWindow, ipcMain} = require('electron');
 const zmq = require('zeromq');
 
-const sceneCamSubscriber = zmq.socket('pull');
-const leCamSubscriber = zmq.socket('pull');
-const reCamSubscriber = zmq.socket('pull');
-const uiSocket = zmq.socket('pair');
+let sceneCamSubscriber = zmq.socket('pull');
+let leCamSubscriber = zmq.socket('pull');
+let reCamSubscriber = zmq.socket('pull');
+let uiSocket = zmq.socket('pair');
 let window;
 let backend;
 
 function createWindow() {
     const {spawn} = require('child_process');
-    backend = spawn('python', ['main.py'], {detached: true});
+    backend = spawn('python3', ['main.py'], {detached: true});
 
     window = new BrowserWindow({
-        width: 1200, 
-        height: 700,
+        width: 1300, 
+        height: 780,
         webPreferences: {
             nodeIntegration: true
         },
@@ -52,11 +52,22 @@ function createWindow() {
     });
 }
 
+//load list of cameras
 ipcMain.on("inputCamera", (event, msg) => {
-    uiSocket.send("INPUT_CAMERA");
     uiSocket.on('message', (reply) => {
         event.reply("inputCamera", reply);
-    })
+    });
+    uiSocket.send("INPUT_CAMERA");
+});
+
+
+//change camera input
+ipcMain.on("changeCamera", (event, msg) => {
+    uiSocket.on('message', (reply) => {
+        console.log('');
+    });
+    console.log(msg);
+    uiSocket.send("CHANGE_CAMERA:" + msg);
 });
 
 
