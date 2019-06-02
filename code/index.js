@@ -10,7 +10,7 @@ let backend;
 
 function createWindow() {
     const {spawn} = require('child_process');
-    backend = spawn('python3', ['main.py'], {detached: true});
+    //backend = spawn('python3', ['main.py'], {detached: true});
 
     window = new BrowserWindow({
         width: 1300, 
@@ -76,6 +76,6 @@ app.on('window-all-closed', () => {
     sceneCamSubscriber.close();
     leCamSubscriber.close();
     reCamSubscriber.close();
-    process.kill(-backend.pid);
+    //process.kill(-backend.pid);
     app.quit();
 });

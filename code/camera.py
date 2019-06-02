@@ -42,43 +42,37 @@ class CameraProc(Process):
         print("publishing on localhost:{}".format(port))
         return socket
 
-    def get_image(self):
-        return self.__image
-
-    def set_image(self, image):
-        self.__image = image
-
 
 
 #------------------------------------------
-class CameraThread(Thread):
+class CameraThread():
 
     def __init__(self, source, port):
-        Thread.__init__(self)
         self.__image = None
         self.socket = self.create_socket(port)
         self.parent, self.child = Pipe()
-        self.cam_process = Process(target=self.capture, args=(source, self.child,))
-        self.cam_process.start()
-
+        self.source = source
+        self.cam_process = None
+        self.send_img = True
+        self.cam_thread = Thread(target=self.run, args=())
+        self.cam_thread.start()
+        
     #TEMPORARY (needs a proper class)
     def capture(self, source, pipe):
         cap = cv2.VideoCapture(source)
-        count = 0
         while not cap.isOpened():
             source = (source + 1) % 10
-            time.sleep(0.5)
             cap = cv2.VideoCapture(source)
+            time.sleep(0.25)
         while True:
             ret, frame = cap.read()
-            count += 1
-            if ret and count % 2 == 0:
+            if ret:
                 #PROCESSING STUFF
                 img = cv2.imencode('.jpg', frame)[1]
-                pipe.send(img)
-                
+                pipe.send(img) 
             if pipe.poll():
-                break
+                if pipe.recv() == "stop":
+                    break
         cap.release()
 
     def create_socket(self, port):
@@ -89,15 +83,28 @@ class CameraThread(Thread):
         return socket
 
     def run(self):
-        while True:
+        self.cam_process = Process(target=self.capture, args=(self.source, self.child,))
+        time.sleep(np.random.random()*0.15)
+        self.cam_process.start()
+        while self.send_img:
             img = self.parent.recv()
             self.socket.send(img)
-        
-    def get_image(self):
-        return self.__image
+        self.parent.send("stop")
+        self.cam_process.join()
 
-    def set_image(self, image):
-        self.__image = image
+    def stop(self):
+        self.send_img = False
+        self.cam_thread.join()
+
+    def change_source(self, new_source):
+        self.source = new_source
+        self.send_img = True
+        self.cam_thread = Thread(target=self.run, args=())
+        self.cam_thread.start()
+
+    def get_source(self):
+        return self.source
+
 
 
         
