@@ -60,11 +60,11 @@ class CameraThread():
     #TEMPORARY (needs a proper class)
     def capture(self, source, pipe):
         cap = cv2.VideoCapture(source)
-        while not cap.isOpened():
-            source = (source + 1) % 10
-            cap = cv2.VideoCapture(source)
-            time.sleep(0.25)
-        while True:
+        if not cap.isOpened():
+            cap.release()
+            pipe.send(None)
+            return
+        while cap.isOpened():
             ret, frame = cap.read()
             if ret:
                 #PROCESSING STUFF
@@ -88,6 +88,9 @@ class CameraThread():
         self.cam_process.start()
         while self.send_img:
             img = self.parent.recv()
+            if img is None:
+                self.cam_process.join()
+                return
             self.socket.send(img)
         self.parent.send("stop")
         self.cam_process.join()

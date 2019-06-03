@@ -8,6 +8,8 @@ from threading import Thread
 import videoio
 import camera
 
+
+#TODO: encapsulate this file into a CLASS!
 sceneCam = None
 leftEyeCam = None
 rightEyeCam = None
@@ -67,18 +69,7 @@ if __name__=='__main__':
     leftEyeCam = camera.CameraThread(1, 7792)
     rightEyeCam = camera.CameraThread(2, 7793)
 
-    # sceneCam.start()
-    # leftEyeCam.start()
-    # rightEyeCam.start()
-
-    # sceneCam.join()
-    # leftEyeCam.join()
-    # rightEyeCam.join()
     ui_listener.join()
 
-    # addr = 'tcp://127.0.0.1:4242'
-    # s = zerorpc.Server(Test())
-    # s.bind(addr)
-    # s.run()
 
 

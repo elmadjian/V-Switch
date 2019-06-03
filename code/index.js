@@ -38,9 +38,6 @@ function createWindow() {
             window.webContents.send("rightEyeCamFrame", msg);
         });
 
-        //user input handler
-        //IPC-RENDERER -> IPC MAIN -> (zmq) PYTHON THREAD
-
         //7791: scene camera
         //7792: left eye camera
         //7793: right eye camera
@@ -60,13 +57,8 @@ ipcMain.on("inputCamera", (event, msg) => {
     uiSocket.send("INPUT_CAMERA");
 });
 
-
 //change camera input
 ipcMain.on("changeCamera", (event, msg) => {
-    uiSocket.on('message', (reply) => {
-        console.log('');
-    });
-    console.log(msg);
     uiSocket.send("CHANGE_CAMERA:" + msg);
 });
 
