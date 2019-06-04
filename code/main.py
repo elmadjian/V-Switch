@@ -7,6 +7,7 @@ from threading import Thread
 
 import videoio
 import camera
+import eye_camera
 
 
 #TODO: encapsulate this file into a CLASS!
@@ -73,9 +74,9 @@ if __name__=='__main__':
     ui_listener = Thread(target=ui_listen, args=(ui_socket,))
     ui_listener.start()    
 
-    sceneCam = camera.CameraThread(0, 7791)
-    leftEyeCam = camera.CameraThread(1, 7792)
-    rightEyeCam = camera.CameraThread(2, 7793)
+    sceneCam = camera.Camera(0, 7791)
+    leftEyeCam = eye_camera.EyeCamera(1, 7792)
+    rightEyeCam = eye_camera.EyeCamera(2, 7793)
 
     ui_listener.join()
 

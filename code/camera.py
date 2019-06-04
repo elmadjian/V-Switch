@@ -5,47 +5,9 @@ import zmq
 from threading import Thread
 from multiprocessing import Process, Pipe, Value
 
-#class Camera(Thread):
-class CameraProc(Process):
-
-    def __init__(self, source, port):
-        #Thread.__init__(self)
-        Process.__init__(self)
-        self.__image = None
-        self.source = source
-        self.port = port
-        self.parent, self.child = Pipe()
 
 
-    #TEMPORARY (needs a proper class)
-    def run(self):
-        socket = self.create_socket(self.port)
-        cap = cv2.VideoCapture(self.source)
-        count = 0
-        while not cap.isOpened():
-            self.source = (self.source + 1) % 10
-            time.sleep(0.5)
-            cap = cv2.VideoCapture(self.source)
-        while True:
-            ret, frame = cap.read()
-            count += 1
-            if ret and count % 2 == 0:
-                #PROCESSING STUFF
-                img = cv2.imencode('.jpg', frame)[1]
-                socket.send(img)
-        cap.release()
-
-    def create_socket(self, port):
-        context = zmq.Context()
-        socket = context.socket(zmq.PUSH)
-        socket.bind("tcp://127.0.0.1:{}".format(port))
-        print("publishing on localhost:{}".format(port))
-        return socket
-
-
-
-#------------------------------------------
-class CameraThread():
+class Camera():
 
     def __init__(self, source, port):
         self.__image = None
@@ -64,11 +26,14 @@ class CameraThread():
             cap.release()
             pipe.send(None)
             return
+        width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
         while cap.isOpened():
             ret, frame = cap.read()
             if ret:
                 #PROCESSING STUFF
-                img = cv2.imencode('.jpg', frame)[1]
+                processed = self.process(frame, width, height)
+                img = cv2.imencode('.jpg', processed)[1]
                 pipe.send(img) 
             if pipe.poll():
                 if pipe.recv() == "stop":
@@ -108,6 +73,8 @@ class CameraThread():
     def get_source(self):
         return self.source
 
+    def process(self, img, width, height):
+        return img
 
 
         
