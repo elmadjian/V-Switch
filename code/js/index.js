@@ -1,4 +1,5 @@
-const {app, BrowserWindow, ipcMain} = require('electron');
+const electron = require('electron');
+const {app, BrowserWindow, ipcMain} = electron;
 const zmq = require('zeromq');
 
 let sceneCamSubscriber = zmq.socket('pull');
@@ -6,11 +7,13 @@ let leCamSubscriber = zmq.socket('pull');
 let reCamSubscriber = zmq.socket('pull');
 let uiSocket = zmq.socket('pair');
 let window;
+let calibscreen;
 let backend;
+
 
 function createWindow() {
     const {spawn} = require('child_process');
-    //backend = spawn('python3', ['main.py'], {detached: true});
+    backend = spawn('python3', ['main.py'], {detached: true});
 
     window = new BrowserWindow({
         width: 1300, 
@@ -62,12 +65,27 @@ ipcMain.on("changeCamera", (event, msg) => {
     uiSocket.send("CHANGE_CAMERA:" + msg);
 });
 
+//perform calibration
+ipcMain.on("calibrate", (event, msg) => {
+    calibscreen = new BrowserWindow({
+        width: 800,
+        height: 600,
+        webPreferences: {
+            nodeIntegration: true
+        }
+    });
+    calibscreen.setFullScreen(true);
+    calibscreen.loadFile('calibscreen.html');
+    uiSocket.send("START_CALIBRATION:" + msg);
+})
+
 
 app.on('ready', createWindow);
 app.on('window-all-closed', () => {
     sceneCamSubscriber.close();
     leCamSubscriber.close();
     reCamSubscriber.close();
-    //process.kill(-backend.pid);
+    //kill the whole group, not only the spawned process
+    process.kill(-backend.pid); 
     app.quit();
 });

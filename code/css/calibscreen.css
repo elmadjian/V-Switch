@@ -1,0 +1,12 @@
+#start {
+    display: grid;
+    place-items: center center;
+
+}
+
+img {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+}

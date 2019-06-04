@@ -1,6 +1,6 @@
 nav {
-    min-height: 110px;
-    background-color: darkgray;
+    min-height: 120px;
+    background-color: lightgray;
 }
 
 /*main container*/
@@ -8,7 +8,7 @@ nav {
 .container {
     display:flex;
     width: 100%;
-    background-color: blue;
+    /* background-color: blue; */
 }
 
 .item {
@@ -24,7 +24,7 @@ nav {
     margin: 5px;
     width: 720px;
     height: 530px;
-    background-color: brown;
+    /* background-color: brown; */
 }
 
 
@@ -33,7 +33,7 @@ nav {
 .container-eyes {
     display:flex;
     flex-direction: column;
-    background-color: aqua;
+    /* background-color: aqua; */
 }
 
 .canvas-eye {
@@ -41,11 +41,25 @@ nav {
     margin: 5px;
     width: 320px;
     height: 240px;
-    background-color: brown;
+    /* background-color: brown; */
 }
 
-/*dropdown*/
+/*dropdown cameras*/
 /*=====================*/
 .dropdown-trigger {
     min-width: 200px;
+}
+
+
+/* calibration */
+/* ======================= */
+.icon {
+    margin: 10px;
+    font-size: 50px !important;
+    color: black;
+}
+
+.form-options {
+    margin: 0px 10px 15px 10px;
+    max-width: 50px;
 }

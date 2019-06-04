@@ -39,6 +39,7 @@ def change_cameras(cam1, cam2, cam3, value):
     cam1.change_source(value)
         
 
+#TODO: create proper dispatchers
 def ui_listen(socket):
     video_source = videoio.VideoIO()
     while True:
@@ -56,6 +57,12 @@ def ui_listen(socket):
                 change_cameras(leftEyeCam, sceneCam, rightEyeCam, val)
             elif command[1].startswith("re"):
                 change_cameras(rightEyeCam, sceneCam, leftEyeCam, val)
+        if msg.startswith("START_CALIBRATION"):
+            command = msg.split(':')
+            if command[1].startswith("remote"):
+                pass
+            elif command[1].startswith("screen"):
+                pass
 
 
 

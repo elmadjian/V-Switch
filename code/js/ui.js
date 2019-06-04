@@ -29,7 +29,7 @@ ipcRenderer.on("rightEyeCamFrame", (event, payload) => {
 //=============
 //fetch list of input cameras
 ipcRenderer.on("inputCamera", (event, arg) => {
-    let elems = document.querySelectorAll('.dropdown-content');
+    let elems = document.querySelectorAll('.camera');
     let data = JSON.parse(JSON.parse(arg));
     for (let i = 0; i < elems.length; i++) {
         while (elems[i].firstChild)
@@ -39,7 +39,7 @@ ipcRenderer.on("inputCamera", (event, arg) => {
             '<li value="'+data[j][0]+'"><a href="#">'+data[j]+'</a></li>');
         }
     }
-    let dropdowns = document.querySelectorAll('.dropdown-content>li');
+    let dropdowns = document.querySelectorAll('.camera>li');
     for (let i = 0; i < dropdowns.length; i++) {
         dropdowns[i].addEventListener('click', () => {
             const cameraType = dropdowns[i].parentNode.getAttribute("id");
@@ -49,10 +49,17 @@ ipcRenderer.on("inputCamera", (event, arg) => {
     }
 });
 
-//Dropdown menu for camera input
+
+//ON UI LOAD
+//====================
+//Materialize JS scripts on document load
 document.addEventListener('DOMContentLoaded', () => {
-    let elems = document.querySelectorAll('.dropdown-trigger');
-    let instances = M.Dropdown.init(elems, 
+    let dropdown_elems = document.querySelectorAll('.dropdown-trigger');
+    let tooltip_elems = document.querySelectorAll('.tooltipped');
+    let select_elems = document.querySelectorAll('select');
+    M.FormSelect.init(select_elems, {});
+    M.Tooltip.init(tooltip_elems, {position: 'right'});
+    M.Dropdown.init(dropdown_elems, 
         {coverTrigger: false,
          onOpenStart: () => {
             ipcRenderer.send("inputCamera");
@@ -61,13 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-
-// for (let i = 0; i < dropdowns.length; i++) {
-//     console.log("THESE dropdowns: " + dropdowns[i]);
-//     for (let j = 0; j < dropdowns[i].children.length; j++) {
-//         console.log("ADDING children listeners");
-//         dropdowns[i].children[j].addEventListener('click', () => {
-//             console.log("criquei em");
-//         });
-//     }
-// }
+//CALIBRATION
+//==================
+let calibTrigger = document.querySelector("#calibration");
+calibTrigger.addEventListener('click', () => {
+    let sel = document.querySelector("#calib-option");
+    let value = sel.options[sel.selectedIndex].value;
+    ipcRenderer.send("calibrate", value);
+});

@@ -10,15 +10,28 @@
     <title>Cadu's Eye Tracker</title>
     <script type="text/javascript" src="js/fontawesome.js"></script>
     <script type="text/javascript" src="js/materialize.min.js"></script>
-
 </head>
 
 <body>
-    <nav></nav>
+    <nav>
+        <div class="container">
+            <div class="input-field">
+                <a id="calibration" href="#" class="tooltipped" data-tooltip="Calibrate">
+                    <i class=" icon material-icons">gps_fixed</i>
+                </a>
+                <select id="calib-option" class="form-options">
+                    <!-- <option value="" disabled selected>Calibration</option> -->
+                    <option value="screen">Screen</option>
+                    <option value="remote">Remote</option>
+                </select>
+            </div>
+        </div>
+
+    </nav>
     <div class="container">
         <div class="item">
             <div class="dropdown-trigger btn" href="#" data-target="sceneDropdown">Input Camera</div>
-            <ul id="sceneDropdown" class="dropdown-content">
+            <ul id="sceneDropdown" class="dropdown-content camera">
                 <li><a href="#">um</a></li>
                 <li><a href="#">dois</a></li>
                 <li><a href="#">tres</a></li>
@@ -29,7 +42,7 @@
         <div class="item container-eyes">
             <div class="item-eyes">
                 <div class="dropdown-trigger btn" href="#" data-target="leDropdown">Input Camera</div>
-                <ul id="leDropdown" class="dropdown-content">
+                <ul id="leDropdown" class="dropdown-content camera">
                     <li><a href="#">um</a></li>
                     <li><a href="#">dois</a></li>
                     <li><a href="#">tres</a></li>
@@ -38,7 +51,7 @@
             </div>
             <div class="item-eyes">
                 <div class="dropdown-trigger btn" href="#" data-target="reDropdown">Input Camera</div>
-                <ul id="reDropdown" class="dropdown-content">
+                <ul id="reDropdown" class="dropdown-content camera">
                     <li><a href="#">um</a></li>
                     <li><a href="#">dois</a></li>
                     <li><a href="#">tres</a></li>
