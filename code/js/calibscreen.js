@@ -30,11 +30,11 @@ window.onload = () => {
         img.style.left = left;
     });
 
-    let startButton = document.querySelector('#start');
-    startButton.addEventListener("click", () => {
-        startButton.style.display = "none";
-        img.style.display = "block";
-    });
+    // let startButton = document.querySelector('#start');
+    // startButton.addEventListener("click", () => {
+    //     startButton.style.display = "none";
+    //     img.style.display = "block";
+    // });
 
 };
 

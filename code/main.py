@@ -45,6 +45,7 @@ def ui_listen(socket):
     while True:
         msg = socket.recv().decode()
         if msg.startswith("INPUT_CAMERA"):
+            video_source.read_inputs()
             cameras = video_source.get_cameras_list()
             cam_list = json.dumps(cameras)
             socket.send_json(cam_list)

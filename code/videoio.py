@@ -14,6 +14,7 @@ class VideoIO():
         '''
         binout = subprocess.check_output(["v4l2-ctl", "--list-devices"])
         out = binout.decode().split('\n\n')
+        self.cameras = {}
         for cam in out:
             group = re.findall('(.*)\\(usb.*\n.*video(\\d+)', cam)
             if group:
