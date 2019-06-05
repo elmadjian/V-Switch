@@ -1,4 +1,5 @@
 import cv2
+import time
 import numpy as np
 from skimage import exposure
 
@@ -23,8 +24,9 @@ class EyeCamera(camera.Camera):
             self.excentricity = ellipse[1][1]/ellipse[1][0]
             x = ellipse[0][0]/width
             y = ellipse[0][1]/height
-            self.centroid = np.array([x,y], float)
-            return ellipse
+            self.centroid = [time.monotonic_ns(), np.array([x,y], float)]
+        else:
+            self.centroid = None
         return img
 
 
@@ -133,3 +135,7 @@ class EyeCamera(camera.Camera):
         if len(self.centroids) > self.cutout:
             percentile = self.cutout//10
             self.centroids = self.centroids[percentile:, :]
+
+
+    def get_data(self):
+        return self.centroid

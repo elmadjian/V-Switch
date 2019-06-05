@@ -6,8 +6,9 @@ import json
 from threading import Thread
 
 import videoio
-import camera
 import eye_camera
+import scene_camera
+import calibration
 
 
 #TODO: encapsulate this file into a CLASS!
@@ -22,6 +23,7 @@ def create_socket(port):
     socket.bind("tcp://127.0.0.1:{}".format(port))
     print("listening on localhost:{}".format(port))
     return socket
+
 
 def change_cameras(cam1, cam2, cam3, value):
     '''
@@ -38,11 +40,26 @@ def change_cameras(cam1, cam2, cam3, value):
         cam3.stop()
         cam3.change_source(source)
     cam1.change_source(value)
+
+
+def calibrate(calibrator, socket, sc, le, re):
+    '''
+    calibrator: calibrator object
+    sc: scene camera
+    le: left eye camera
+    re: right eye camera
+    '''
+    keys = calibrator.get_keys()
+    for idx in keys:
+        calibrator.collect_target_data(idx, sc, le, re, 30)
+        socket.send_string("next")
+        print("move to next target")
         
 
 #TODO: create proper dispatchers
 def ui_listen(socket):
     video_source = videoio.VideoIO()
+    calibrator = calibration.Calibrator(12, 30)
     while True:
         msg = socket.recv().decode()
         if msg.startswith("INPUT_CAMERA"):
@@ -64,7 +81,9 @@ def ui_listen(socket):
             if command[1].startswith("remote"):
                 pass
             elif command[1].startswith("screen"):
-                pass
+                print("starting calibration")
+                calibrate(calibrator, socket, sceneCam, leftEyeCam, rightEyeCam)
+                print("finished calibration")
 
 
 
@@ -74,7 +93,7 @@ if __name__=='__main__':
     ui_listener = Thread(target=ui_listen, args=(ui_socket,))
     ui_listener.start()    
 
-    sceneCam = camera.Camera(0, 7791)
+    sceneCam = scene_camera.SceneCamera(0, 7791)
     leftEyeCam = eye_camera.EyeCamera(1, 7792)
     rightEyeCam = eye_camera.EyeCamera(2, 7793)
 
