@@ -1,6 +1,7 @@
 import sys
 import cv2
 import zmq
+import pynng
 import numpy as np
 import json
 from threading import Thread
@@ -19,9 +20,11 @@ rightEyeCam = None
 
 
 def create_socket(port):
-    context = zmq.Context()
-    socket = context.socket(zmq.PAIR)
-    socket.bind("tcp://127.0.0.1:{}".format(port))
+    #context = zmq.Context()
+    #socket = context.socket(zmq.PAIR)
+    #socket.bind("tcp://127.0.0.1:{}".format(port))
+    address = "ipc:///tmp/ui" + str(port) + ".ipc"
+    socket = pynng.Pair0(listen=address)
     print("listening on localhost:{}".format(port))
     return socket
 
@@ -53,7 +56,7 @@ def calibrate(calibrator, socket, sc, le, re):
     keys = calibrator.get_keys()
     for idx in keys:
         calibrator.collect_target_data(idx, sc, le, re, 30)
-        socket.send_string("next")
+        socket.send("next".encode())
         print("move to next target")
         
 
@@ -66,7 +69,7 @@ def ui_listen(socket, video_source):
             video_source.read_inputs()
             cameras = video_source.get_cameras_list()
             cam_list = json.dumps(cameras)
-            socket.send_json(cam_list)
+            socket.send(cam_list.encode())
         if msg.startswith("CHANGE_CAMERA"):
             command = msg.split(':')
             val = int(command[2])

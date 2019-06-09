@@ -28,6 +28,7 @@ class Camera():
             print("could not open camera", source)
             return
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+        cap.set(cv2.CAP_PROP_FPS, 30)
         print("starting camera", source)
         while cap.isOpened():
             ret, frame = cap.read()
@@ -41,12 +42,7 @@ class Camera():
         cap.release()
 
     def create_socket(self, port):
-        # context = zmq.Context()
-        # socket = context.socket(zmq.PUSH)
-        # socket.bind("tcp://127.0.0.1:{}".format(port))
-        # print("publishing on localhost:{}".format(port))
-        # return socket
-        address = "tcp://127.0.0.1:{}".format(port)#ipc:///tmp/camera" + str(port) + ".ipc"
+        address = "ipc:///tmp/camera" + str(port) + ".ipc"#"tcp://127.0.0.1:{}".format(port)
         socket = pynng.Push0(listen=address)
         return socket
 

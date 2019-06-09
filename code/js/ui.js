@@ -35,7 +35,8 @@ ipcRenderer.on("rightEyeCamFrame", (event, payload) => {
 //fetch list of input cameras
 ipcRenderer.on("inputCamera", (event, arg) => {
     let elems = document.querySelectorAll('.camera');
-    let data = JSON.parse(JSON.parse(arg));
+    let data = JSON.parse(arg);
+    console.log("HERE:" + data);
     for (let i = 0; i < elems.length; i++) {
         while (elems[i].firstChild)
             elems[i].removeChild(elems[i].firstChild);

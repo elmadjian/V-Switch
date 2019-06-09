@@ -1,12 +1,12 @@
 const electron = require('electron');
 const {app, BrowserWindow, ipcMain} = electron;
-const zmq = require('zeromq');
+// const zmq = require('zeromq');
 const nng = require('nanomsg');
 
 let sceneCamSubscriber = nng.socket('pull');//zmq.socket('pull');
 let leCamSubscriber = nng.socket('pull');
 let reCamSubscriber = nng.socket('pull');
-let uiSocket = zmq.socket('pair');
+let uiSocket = nng.socket('pair');
 let window;
 let calibscreen;
 let backend;
@@ -45,17 +45,19 @@ function createWindow() {
         //7791: scene camera
         //7792: left eye camera
         //7793: right eye camera
-        sceneCamSubscriber.connect('tcp://127.0.0.1:7791');
-        leCamSubscriber.connect('tcp://127.0.0.1:7792');
-        reCamSubscriber.connect('tcp://127.0.0.1:7793');
-        uiSocket.connect('tcp://127.0.0.1:7798');
-        //console.log("connected to port 7791");
+        // sceneCamSubscriber.connect('tcp://127.0.0.1:7791');
+        // leCamSubscriber.connect('tcp://127.0.0.1:7792');
+        // reCamSubscriber.connect('tcp://127.0.0.1:7793');
+        sceneCamSubscriber.connect('ipc:///tmp/camera7791.ipc');
+        leCamSubscriber.connect('ipc:///tmp/camera7792.ipc');
+        reCamSubscriber.connect('ipc:///tmp/camera7793.ipc');
+        uiSocket.connect('ipc:///tmp/ui7798.ipc');
     });
 }
 
 //load list of cameras
 ipcMain.on("inputCamera", (event, msg) => {
-    uiSocket.on('message', (reply) => {
+    uiSocket.on('data', (reply) => {
         event.reply("inputCamera", reply);
     });
     uiSocket.send("INPUT_CAMERA");
@@ -80,7 +82,7 @@ ipcMain.on("calibrate", (event, msg) => {
     uiSocket.send("START_CALIBRATION:" + msg);
 });
 
-uiSocket.on('message', (msg) => {
+uiSocket.on('data', (msg) => {
     console.log(msg.toString());
 });
 
