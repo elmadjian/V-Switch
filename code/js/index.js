@@ -1,10 +1,11 @@
 const electron = require('electron');
 const {app, BrowserWindow, ipcMain} = electron;
 const zmq = require('zeromq');
+const nng = require('nanomsg');
 
-let sceneCamSubscriber = zmq.socket('pull');
-let leCamSubscriber = zmq.socket('pull');
-let reCamSubscriber = zmq.socket('pull');
+let sceneCamSubscriber = nng.socket('pull');//zmq.socket('pull');
+let leCamSubscriber = nng.socket('pull');
+let reCamSubscriber = nng.socket('pull');
 let uiSocket = zmq.socket('pair');
 let window;
 let calibscreen;
@@ -27,17 +28,17 @@ function createWindow() {
     window.webContents.on('dom-ready', () => {
 
         //scene camera handler
-        sceneCamSubscriber.on('message', (msg) => {
+        sceneCamSubscriber.on('data', (msg) => {
             window.webContents.send("sceneCamFrame", msg);
         });
 
         //left eye camera handler
-        leCamSubscriber.on('message', (msg) => {
+        leCamSubscriber.on('data', (msg) => {
             window.webContents.send("leftEyeCamFrame", msg);
         });
 
         //right eye camera handler
-        reCamSubscriber.on('message', (msg) => {
+        reCamSubscriber.on('data', (msg) => {
             window.webContents.send("rightEyeCamFrame", msg);
         });
 

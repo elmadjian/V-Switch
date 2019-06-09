@@ -9,6 +9,7 @@ import videoio
 import eye_camera
 import scene_camera
 import calibration
+import camera
 
 
 #TODO: encapsulate this file into a CLASS!
@@ -96,9 +97,10 @@ if __name__=='__main__':
     ui_listener = Thread(target=ui_listen, args=(ui_socket, video_source))
     ui_listener.start()    
 
-    sceneCam = scene_camera.SceneCamera(ids[0], 7791)
-    leftEyeCam = eye_camera.EyeCamera(ids[1], 7792)
-    rightEyeCam = eye_camera.EyeCamera(ids[2], 7793)
+    #cam = camera.Camera(8,7791)
+    sceneCam = scene_camera.SceneCamera(99, 7791)
+    leftEyeCam = eye_camera.EyeCamera(99, 7792)
+    rightEyeCam = eye_camera.EyeCamera(99, 7793)
 
     ui_listener.join()
 

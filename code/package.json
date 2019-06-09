@@ -13,6 +13,7 @@
   "dependencies": {
     "electron": "^5.0.2",
     "electron-rebuild": "^1.8.5",
+    "nanomsg": "^4.0.2",
     "zeromq": "^5.1.0",
     "zerorpc": "git+https://github.com/0rpc/zerorpc-node.git"
   }

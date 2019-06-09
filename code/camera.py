@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import time
-import zmq
+import pynng
 from threading import Thread
 from multiprocessing import Process, Pipe, Value
 
@@ -28,11 +28,12 @@ class Camera():
             print("could not open camera", source)
             return
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+        print("starting camera", source)
         while cap.isOpened():
             ret, frame = cap.read()
             if ret:
                 processed, data = self.process(frame)
-                img = cv2.imencode('.jpg', processed)[1]
+                _,img = cv2.imencode('.jpg', processed, [cv2.IMWRITE_JPEG_QUALITY, 15])
                 pipe.send([img, data]) 
             if pipe.poll():
                 if pipe.recv() == "stop":
@@ -40,10 +41,13 @@ class Camera():
         cap.release()
 
     def create_socket(self, port):
-        context = zmq.Context()
-        socket = context.socket(zmq.PUSH)
-        socket.bind("tcp://127.0.0.1:{}".format(port))
-        print("publishing on localhost:{}".format(port))
+        # context = zmq.Context()
+        # socket = context.socket(zmq.PUSH)
+        # socket.bind("tcp://127.0.0.1:{}".format(port))
+        # print("publishing on localhost:{}".format(port))
+        # return socket
+        address = "tcp://127.0.0.1:{}".format(port)#ipc:///tmp/camera" + str(port) + ".ipc"
+        socket = pynng.Push0(listen=address)
         return socket
 
     def run(self):
@@ -55,7 +59,7 @@ class Camera():
             if img is None:
                 self.cam_process.join()
                 return
-            self.socket.send(img)
+            self.socket.send(img.tobytes())
             self.data = data
         self.parent.send("stop")
         self.cam_process.join()
@@ -74,7 +78,7 @@ class Camera():
         return self.source
 
     def process(self, img):
-        return img
+        return img, None
 
     def get_data(self):
         return self.data

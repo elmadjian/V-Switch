@@ -1,11 +1,16 @@
 const { ipcRenderer } = require('electron');
 
+
 //STREAMS
 //===============
 //to receive and update the scene camera frame
 ipcRenderer.on("sceneCamFrame", (event, payload) => {
+    // let data = String(payload);
     let sceneFrame = document.querySelector("#sceneCamRenderer");
     let base64Data = btoa(String.fromCharCode.apply(null, payload));
+    // let base64Data = btoa(new Uint8Array(payload).reduce((data, byte) => {
+    //     return data + String.fromCharCode(byte);
+    // }, ''));
     sceneFrame.src = 'data:image/jpg;base64,' + base64Data;
 });
 
@@ -35,8 +40,9 @@ ipcRenderer.on("inputCamera", (event, arg) => {
         while (elems[i].firstChild)
             elems[i].removeChild(elems[i].firstChild);
         for (let j = 0; j < data.length; j++) {
+            let value = /(\d+)/g.exec(data[j]);
             elems[i].insertAdjacentHTML('beforeend', 
-            '<li value="'+data[j][0]+'"><a href="#">'+data[j]+'</a></li>');
+            '<li value="'+value[0]+'"><a href="#">'+data[j]+'</a></li>');
         }
     }
     let dropdowns = document.querySelectorAll('.camera>li');
