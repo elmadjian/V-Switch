@@ -77,7 +77,11 @@ ipcMain.on("calibrate", (event, msg) => {
     calibscreen.setFullScreen(true);
     calibscreen.loadFile('calibscreen.html');
     uiSocket.send("START_CALIBRATION:" + msg);
-})
+});
+
+uiSocket.on('message', (msg) => {
+    console.log(msg.toString());
+});
 
 
 app.on('ready', createWindow);

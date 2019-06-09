@@ -57,8 +57,7 @@ def calibrate(calibrator, socket, sc, le, re):
         
 
 #TODO: create proper dispatchers
-def ui_listen(socket):
-    video_source = videoio.VideoIO()
+def ui_listen(socket, video_source):
     calibrator = calibration.Calibrator(12, 30)
     while True:
         msg = socket.recv().decode()
@@ -89,13 +88,17 @@ def ui_listen(socket):
 
 
 if __name__=='__main__':
+    video_source = videoio.VideoIO()
+    ids = video_source.get_camera_ids()
+    [ids.append(9) for i in range(3-len(ids))]
+
     ui_socket = create_socket(7798)
-    ui_listener = Thread(target=ui_listen, args=(ui_socket,))
+    ui_listener = Thread(target=ui_listen, args=(ui_socket, video_source))
     ui_listener.start()    
 
-    sceneCam = scene_camera.SceneCamera(0, 7791)
-    leftEyeCam = eye_camera.EyeCamera(1, 7792)
-    rightEyeCam = eye_camera.EyeCamera(2, 7793)
+    sceneCam = scene_camera.SceneCamera(ids[0], 7791)
+    leftEyeCam = eye_camera.EyeCamera(ids[1], 7792)
+    rightEyeCam = eye_camera.EyeCamera(ids[2], 7793)
 
     ui_listener.join()
 

@@ -15,26 +15,25 @@ class Camera():
         self.parent, self.child = Pipe()
         self.source = source
         self.cam_process = None
+        self.data = None
         self.send_img = True
         self.cam_thread = Thread(target=self.run, args=())
         self.cam_thread.start()
         
-    #TEMPORARY (needs a proper class)
     def capture(self, source, pipe):
         cap = cv2.VideoCapture(source)
         if not cap.isOpened():
             cap.release()
-            pipe.send(None)
+            pipe.send([None, None])
+            print("could not open camera", source)
             return
-        width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-        height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
         while cap.isOpened():
             ret, frame = cap.read()
             if ret:
-                #PROCESSING STUFF
-                processed = self.process(frame, width, height)
+                processed, data = self.process(frame)
                 img = cv2.imencode('.jpg', processed)[1]
-                pipe.send(img) 
+                pipe.send([img, data]) 
             if pipe.poll():
                 if pipe.recv() == "stop":
                     break
@@ -52,11 +51,12 @@ class Camera():
         time.sleep(np.random.random()*0.15)
         self.cam_process.start()
         while self.send_img:
-            img = self.parent.recv()
+            img, data = self.parent.recv()
             if img is None:
                 self.cam_process.join()
                 return
             self.socket.send(img)
+            self.data = data
         self.parent.send("stop")
         self.cam_process.join()
 
@@ -73,8 +73,11 @@ class Camera():
     def get_source(self):
         return self.source
 
-    def process(self, img, width, height):
+    def process(self, img):
         return img
+
+    def get_data(self):
+        return self.data
 
 
         

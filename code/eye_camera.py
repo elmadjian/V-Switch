@@ -17,17 +17,17 @@ class EyeCamera(camera.Camera):
         self.excentricity = 1.0
 
 
-    def process(self, img, width, height):
+    def process(self, img):
+        height, width, _ = img.shape
         ellipse = self.__find_pupil(img)
+        centroid = None
         if ellipse is not None:
             cv2.ellipse(img, ellipse, (0,255,0), 2)
             self.excentricity = ellipse[1][1]/ellipse[1][0]
             x = ellipse[0][0]/width
             y = ellipse[0][1]/height
-            self.centroid = [time.monotonic_ns(), np.array([x,y], float)]
-        else:
-            self.centroid = None
-        return img
+            centroid = [time.monotonic(), np.array([x,y], float)]
+        return img, centroid
 
 
     def __find_pupil(self, frame):
@@ -37,10 +37,10 @@ class EyeCamera(camera.Camera):
         OUT: ellipse 
         '''
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        pp = exposure.rescale_intensity(img, in_range=(0,150))
+        _ = exposure.rescale_intensity(img, in_range=(0,150))
         blur = cv2.GaussianBlur(img, (7,7), 5)
-        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(blur)
-        ret, thresh = cv2.threshold(img, minVal+25, 255, cv2.THRESH_BINARY_INV)
+        minVal, _, _, _ = cv2.minMaxLoc(blur)
+        _, thresh = cv2.threshold(img, minVal+25, 255, cv2.THRESH_BINARY_INV)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
         morph = cv2.erode(thresh, kernel, iterations=2)
         blob = self.__get_blob(morph)
@@ -60,7 +60,7 @@ class EyeCamera(camera.Camera):
         OUT: blob area containing only de pupil (hopefully)
         '''
         #TODO: return more than one blob
-        ret, labels, stats, centroids = cv2.connectedComponentsWithStats(bin_img)
+        _, labels, stats, _ = cv2.connectedComponentsWithStats(bin_img)
         blob = np.zeros(bin_img.shape, np.uint8)
         stats = stats[1:]
         max_area, idx = 0, 0
@@ -81,7 +81,7 @@ class EyeCamera(camera.Camera):
         #TODO: return more than one external contours if there is more than 1 blob
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7))
         closing = cv2.morphologyEx(blob, cv2.MORPH_CLOSE, kernel)
-        cnt, hiq = cv2.findContours(closing, cv2.RETR_EXTERNAL,
+        cnt, _ = cv2.findContours(closing, cv2.RETR_EXTERNAL,
                                         cv2.CHAIN_APPROX_NONE)
         if len(cnt) > 0:
             return cv2.convexHull(cnt[0])
@@ -101,7 +101,7 @@ class EyeCamera(camera.Camera):
                 break
         if ellipse is not None:
             mask = cv2.ellipse(mask, ellipse, 255, 2)
-            cnt, hiq = cv2.findContours(mask, cv2.RETR_EXTERNAL, 
+            cnt, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, 
                                             cv2.CHAIN_APPROX_NONE)
             return cnt, ellipse
         return None, None
@@ -136,6 +136,3 @@ class EyeCamera(camera.Camera):
             percentile = self.cutout//10
             self.centroids = self.centroids[percentile:, :]
 
-
-    def get_data(self):
-        return self.centroid
