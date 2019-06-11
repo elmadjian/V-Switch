@@ -19,9 +19,6 @@ class VideoIO():
         out = binout.decode().split('\n\n')
         self.cameras = {}
         for cam in out:
-            # namesource = cam.split('):')
-            # print(namesource)
-            #group = re.findall('(.*):.*\\(usb.*\n.*video(\\d+)', cam)
             name_group = re.findall('(.*) \\(', cam)
             source_group = re.findall('video(\\d+)', cam)
             if name_group and source_group:

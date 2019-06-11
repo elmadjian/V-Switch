@@ -1,6 +1,5 @@
 import sys
 import cv2
-import zmq
 import pynng
 import numpy as np
 import json
@@ -20,9 +19,6 @@ rightEyeCam = None
 
 
 def create_socket(port):
-    #context = zmq.Context()
-    #socket = context.socket(zmq.PAIR)
-    #socket.bind("tcp://127.0.0.1:{}".format(port))
     address = "ipc:///tmp/ui" + str(port) + ".ipc"
     socket = pynng.Pair0(listen=address)
     print("listening on localhost:{}".format(port))
@@ -56,7 +52,7 @@ def calibrate(calibrator, socket, sc, le, re):
     keys = calibrator.get_keys()
     for idx in keys:
         calibrator.collect_target_data(idx, sc, le, re, 30)
-        socket.send("next".encode())
+        socket.send("calib:next".encode())
         print("move to next target")
         
 
@@ -100,7 +96,6 @@ if __name__=='__main__':
     ui_listener = Thread(target=ui_listen, args=(ui_socket, video_source))
     ui_listener.start()    
 
-    #cam = camera.Camera(8,7791)
     sceneCam = scene_camera.SceneCamera(99, 7791)
     leftEyeCam = eye_camera.EyeCamera(99, 7792)
     rightEyeCam = eye_camera.EyeCamera(99, 7793)

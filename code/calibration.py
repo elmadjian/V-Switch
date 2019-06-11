@@ -24,24 +24,18 @@ class Calibrator():
         re: right eyeCamera object
         thresh: amount of data to be collected per target
         '''
-        while len(self.targets[idx]) < thresh:
+        count = 0
+        while count < thresh:#len(self.targets[idx]) < thresh:
             sc_data = scene.get_data()
             le_data = le.get_data()
             re_data = re.get_data()
-            #print(sc_data, le_data, re_data)
             if sc_data is not None and le_data is not None and re_data is not None:
-                print("found all data")
                 if self.__test_timestamp(sc_data[0], le_data[0], re_data[0]):
-                    print("all data synced")
-                    # print(sc_data[1], self.targets[idx])
-                    # print(le_data[1], self.l_centers[idx])
-                    # print(re_data[1], self.r_centers[idx])
-                    # print('-----------------')
                     self.targets[idx] = np.vstack((self.targets[idx], sc_data[1]))
                     self.l_centers[idx] = np.vstack((self.l_centers[idx], le_data[1]))
                     self.r_centers[idx] = np.vstack((self.r_centers[idx], re_data[1]))
-            print(len(self.targets[idx]))
             time.sleep(self.sleep)
+            count += 1
 
 
     def __test_timestamp(self, sc, le, re):

@@ -81,5 +81,7 @@ let calibTrigger = document.querySelector("#calibration");
 calibTrigger.addEventListener('click', () => {
     let sel = document.querySelector("#calib-option");
     let value = sel.options[sel.selectedIndex].value;
-    ipcRenderer.send("calibrate", value);
+    ipcRenderer.send("start_calibration", value);
 });
+
+

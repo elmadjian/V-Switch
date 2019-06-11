@@ -1,6 +1,5 @@
 const electron = require('electron');
-const {app, BrowserWindow, ipcMain} = electron;
-// const zmq = require('zeromq');
+const { app, BrowserWindow, ipcMain } = electron;
 const nng = require('nanomsg');
 
 let sceneCamSubscriber = nng.socket('pull');//zmq.socket('pull');
@@ -13,11 +12,11 @@ let backend;
 
 
 function createWindow() {
-    const {spawn} = require('child_process');
+    const { spawn } = require('child_process');
     // backend = spawn('python3', ['main.py'], {detached: true});
 
     window = new BrowserWindow({
-        width: 1300, 
+        width: 1300,
         height: 780,
         webPreferences: {
             nodeIntegration: true
@@ -45,9 +44,6 @@ function createWindow() {
         //7791: scene camera
         //7792: left eye camera
         //7793: right eye camera
-        // sceneCamSubscriber.connect('tcp://127.0.0.1:7791');
-        // leCamSubscriber.connect('tcp://127.0.0.1:7792');
-        // reCamSubscriber.connect('tcp://127.0.0.1:7793');
         sceneCamSubscriber.connect('ipc:///tmp/camera7791.ipc');
         leCamSubscriber.connect('ipc:///tmp/camera7792.ipc');
         reCamSubscriber.connect('ipc:///tmp/camera7793.ipc');
@@ -68,8 +64,8 @@ ipcMain.on("changeCamera", (event, msg) => {
     uiSocket.send("CHANGE_CAMERA:" + msg);
 });
 
-//perform calibration
-ipcMain.on("calibrate", (event, msg) => {
+//start calibration
+ipcMain.on("start_calibration", (event, msg) => {
     calibscreen = new BrowserWindow({
         width: 800,
         height: 600,
@@ -82,8 +78,26 @@ ipcMain.on("calibrate", (event, msg) => {
     uiSocket.send("START_CALIBRATION:" + msg);
 });
 
+//python message parser
 uiSocket.on('data', (msg) => {
-    console.log(msg.toString());
+    let data = msg.toString().split(':');
+    switch (data[0]) {
+        case 'calib':
+            console.log('it is the case: calib:' + data[1]);
+            calibscreen.webContents.send("calibrate", 'next');
+            break;
+        default:
+            break;
+    }
+});
+
+//finish calibration
+ipcMain.on("finished_calibration", (event, msg) => {
+    if (msg == 'finished') {
+        calibscreen.close();
+        uiSocket.send("FINISHED_CALIBRATION");
+    }
+
 });
 
 
