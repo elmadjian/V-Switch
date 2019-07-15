@@ -8,11 +8,11 @@ from multiprocessing import Process, Pipe, Value
 
 
 
-class Camera():
+class UVCCamera():
 
     def __init__(self, source, port, fps):
         self.__image = None
-        self.socket = self.create_socket(port)
+        #self.socket = self.create_socket(port)
         self.parent, self.child = Pipe()
         self.source = source
         self.cam_process = None
@@ -36,6 +36,8 @@ class Camera():
             ret, frame = cap.read()
             if ret:
                 processed, data = self.process(frame)
+                cv2.imshow('tst', processed)
+                cv2.waitKey(1)
                 _,img = cv2.imencode('.jpg', processed, [cv2.IMWRITE_JPEG_QUALITY, 15])
                 pipe.send([img, data]) 
             if pipe.poll():
@@ -55,11 +57,11 @@ class Camera():
         self.cam_process.start()
         while self.send_img:
             img, data = self.parent.recv()
-            if img is None:
-               self.cam_process.join()
-               return
-            self.socket.send(img.tobytes())
-            self.data = data
+            # if img is None:
+            #    self.cam_process.join()
+            #    return
+            # self.socket.send(img.tobytes())
+            # self.data = data
         self.parent.send("stop")
         self.cam_process.join()
 
@@ -85,12 +87,11 @@ class Camera():
 
         
 if __name__=="__main__":
-    pass
-    # dev_list = uvc.device_list()
-    # for d in dev_list:
-    #     print(d)
-    # try:
-    #     cap = uvc.Capture(dev_list[0]['uid'])
+    dev_list = uvc.device_list()
+    for d in dev_list:
+         print(d)
+    try:
+        cap = uvc.Capture(dev_list[0]['uid'])
     #     controls_dict = dict([(c.display_name, c) for c in cap.controls])
     #     controls_dict['Auto Exposure Mode'].value = 1
     #     controls_dict['Gamma'].value = 200

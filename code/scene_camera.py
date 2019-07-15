@@ -7,8 +7,8 @@ import camera
 
 class SceneCamera(camera.Camera):
 
-    def __init__(self, source, port, calibration=None):
-        super().__init__(source, port)
+    def __init__(self, source, port, fps, calibration=None):
+        super().__init__(source, port, fps)
         self.cam_calibration = calibration
         self.gray = None
         self.code = [

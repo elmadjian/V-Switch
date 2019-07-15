@@ -3,6 +3,7 @@ import cv2
 import pynng
 import numpy as np
 import json
+import socket as skt
 from threading import Thread
 
 import videoio
@@ -54,6 +55,17 @@ def calibrate(calibrator, socket, sc, le, re):
         calibrator.collect_target_data(idx, sc, le, re, 30)
         socket.send("calib:next".encode())
         print("move to next target")
+
+
+def calibrate_remote(address, port):
+    '''
+    address: remote ip address
+    port: remote por to connect
+    '''
+    socket = skt.socket(skt.AF_INET, skt.SOCK_DGRAM)
+    msg = "testando conexao\r\n"
+    socket.send(msg.encode())
+
         
 
 #TODO: create proper dispatchers
@@ -78,7 +90,8 @@ def ui_listen(socket, video_source):
         if msg.startswith("START_CALIBRATION"):
             command = msg.split(':')
             if command[1].startswith("remote"):
-                pass
+                print("starting remote calibration")
+
             elif command[1].startswith("screen"):
                 print("starting calibration")
                 calibrate(calibrator, socket, sceneCam, leftEyeCam, rightEyeCam)
@@ -96,9 +109,9 @@ if __name__=='__main__':
     ui_listener = Thread(target=ui_listen, args=(ui_socket, video_source))
     ui_listener.start()    
 
-    sceneCam = scene_camera.SceneCamera(99, 7791)
-    leftEyeCam = eye_camera.EyeCamera(99, 7792)
-    rightEyeCam = eye_camera.EyeCamera(99, 7793)
+    sceneCam = scene_camera.SceneCamera(99, 7791, 30)
+    leftEyeCam = eye_camera.EyeCamera(99, 7792, 120)
+    rightEyeCam = eye_camera.EyeCamera(99, 7793, 120)
 
     ui_listener.join()
 

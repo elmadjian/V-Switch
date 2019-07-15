@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "/home/cadu/Nextcloud/Unity/V-Gaze"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "V-Switch"
+	}
+}

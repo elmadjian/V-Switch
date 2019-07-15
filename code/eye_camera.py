@@ -7,8 +7,8 @@ import camera
 
 class EyeCamera(camera.Camera):
 
-    def __init__(self, source, port, conf=0.8, cutout=600):
-        super().__init__(source, port)
+    def __init__(self, source, port, fps, conf=0.8, cutout=600):
+        super().__init__(source, port, fps)
         self.centroids = np.empty((0,2), float)
         self.conf      = conf
         self.cutout    = cutout
