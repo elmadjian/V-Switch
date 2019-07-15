@@ -2,7 +2,7 @@ import QtQuick 2.12
 import QtQuick.Window 2.12
 import QtQuick.Controls 2.5
 import QtQuick.Controls.Universal 2.3
-import CVStuff 1.0
+//import CVStuff 1.0
 //import CVStuff2 1.0
 
 Window {
@@ -14,16 +14,17 @@ Window {
     Universal.theme: Universal.Dark
     Universal.accent: Universal.Lime
 
-//    Timer {
-//        id: updater
-//        interval: 50
-//        running: true
-//        repeat: true
-//        onTriggered: {
-//            sceneCam.updateFrame();
-//            leftEyeCam.updateFrame();
-//        }
-//    }
+    Timer {
+        id: updater
+        interval: 60
+        running: true
+        repeat: true
+        onTriggered: {
+            sceneImage.updateFrame();
+            leyeImage.updateFrame();
+            reyeImage.updateFrame();
+        }
+    }
 
     GroupBox {
         id: sceneGroup
@@ -43,11 +44,11 @@ Window {
             height: 28
             model: cameraSources
             onActivated:  {
-               sceneCam.set_camera_source(index);
+               camManager.set_camera_source(sceneGroup.title, index);
             }
 
         }
-        SceneCamera {
+        Canvas {
             id: sceneCam
             z: 0
             x: -12
@@ -55,9 +56,19 @@ Window {
             width: 645
             height: 430
             anchors.fill: parent
-//            function updateFrame() {
-//                sceneCam.set_image(sceneCamCV.scene_image);
-//            }
+            renderStrategy: Canvas.Threaded
+            Image {
+                id: sceneImage
+                property bool counter: false
+                source: "image://sceneimg/scene"
+                anchors.fill: parent
+                fillMode: Image.PreserveAspectFit
+                cache: false
+                function updateFrame() {
+                    sceneImage.counter = !sceneImage.counter; //hack to force update
+                    sceneImage.source = "image://sceneimg/scene" + sceneImage.counter;
+                }
+            }
         }
     }
 
@@ -78,20 +89,31 @@ Window {
             height: 28
             model: cameraSources
             onActivated:  {
-               leftEyeCam.set_camera_source(index);
+                camManager.set_camera_source(leftEyeGroup.title, index);
             }
         }
 
-        LeftEyeCamera {
+        Canvas {
             id: leftEyeCam
             z: 0
             x: -12
             y: 22
             width: 293
             height: 191
-//            function updateFrame() {
-//                leftEyeCam.set_image(leftEyeCamCV.eye_image);
-//            }
+            anchors.fill: parent
+            renderStrategy: Canvas.Threaded
+            Image {
+                id: leyeImage
+                property bool counter: false
+                source: "image://leyeimg/eye"
+                anchors.fill: parent
+                fillMode: Image.PreserveAspectFit
+                cache: false
+                function updateFrame() {
+                    leyeImage.counter = !leyeImage.counter; //hack to force update
+                    leyeImage.source = "image://leyeimg/eye" + leyeImage.counter;
+                }
+            }
         }
     }
 
@@ -112,7 +134,7 @@ Window {
             height: 28
             model: cameraSources
             onActivated:  {
-               rightEyeCam.set_camera_source(index);
+                camManager.set_camera_source(rightEyeGroup.title, index);
             }
         }
 
@@ -123,6 +145,20 @@ Window {
             y: 22
             width: 293
             height: 191
+            anchors.fill: parent
+            renderStrategy: Canvas.Threaded
+            Image {
+                id: reyeImage
+                property bool counter: false
+                source: "image://reyeimg/eye"
+                anchors.fill: parent
+                fillMode: Image.PreserveAspectFit
+                cache: false
+                function updateFrame() {
+                    reyeImage.counter = !reyeImage.counter; //hack to force update
+                    reyeImage.source = "image://reyeimg/eye" + reyeImage.counter;
+                }
+            }
         }
     }
 

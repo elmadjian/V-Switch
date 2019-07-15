@@ -1,27 +1,26 @@
 from PySide2.QtGui import QImage, QPixmap
 from PySide2.QtCore import QObject, Signal, Slot, Property, QBasicTimer, QPoint
-from PySide2.QtQuick import QQuickPaintedItem
+from PySide2.QtQuick import QQuickPaintedItem, QQuickImageProvider
 import cv2
 import numpy as np
 import time
 from threading import Thread
 from multiprocessing import Process, Pipe, Value
 
-class Camera(QObject):
+class Camera(QQuickImageProvider, QObject):
 
     def __init__(self, source):
         QObject.__init__(self)
+        QQuickImageProvider.__init__(self, QQuickImageProvider.Image)
         self.source = source
-        self.__image = None
+        self.__image = self.to_QImage(cv2.imread("../UI/test.jpg"))
         self.stop_capture = False
-        # self.cam_thread = Thread(target=self.start, args=())
-        # self.cam_thread.start()
-
-    #TEMPORARY (needs a proper class)
+        self.cam_thread = Thread(target=self.start, args=())
+        self.cam_thread.start()
+        
     def start(self):
         cap = cv2.VideoCapture(self.source)
-        img = cv2.imread("../UI/test.jpg")
-        while not cap.isOpened() and self.source < 10:
+        while not cap.isOpened() and self.source < 30:
             self.source += 1
             time.sleep(0.2)
             cap = cv2.VideoCapture(self.source)
@@ -30,32 +29,35 @@ class Camera(QObject):
         while not self.stop_capture:
             ret, frame = cap.read()
             if ret:
-                #PROCESSING STUFF
-                self.__image = img
+                #PROCESSING STUFF              
+                qimage = self.to_QImage(frame)
+                if qimage is not None:
+                    #pass
+                    self.__image = qimage
         cap.release()
         print("sai do loop")
 
-    def get_image(self):
+    def requestImage(self, id, size, requestedSize):
         return self.__image
-
-    def set_image(self, image):
-        self.__image = image
-
-    @Signal
-    def image_changed(self):
-        scene_image.emit()
 
     @Slot(int)
     def set_camera_source(self, source):
-        pass
-        # self.stop_capture = True
-        # self.cam_thread.join()
-        # self.stop_capture = False
-        # self.source = source
-        # self.cam_thread = Thread(target=self.start, args=())
-        # self.cam_thread.start()
+        print('setting camera source')
+        self.stop_capture = True
+        self.cam_thread.join()
+        self.stop_capture = False
+        self.source = source
+        self.cam_thread = Thread(target=self.start, args=())
+        self.cam_thread.start()
 
-    scene_image = Property(np.ndarray, get_image, set_image, notify=image_changed)
+    def to_QImage(self, img):
+        if len(img.shape) == 3:
+            w,h,_ = img.shape
+            rgbimg = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            flipimg = cv2.flip(rgbimg,1)
+            qimg = QImage(flipimg.data, h, w, QImage.Format_RGB888)
+            return qimg
+
 
 #---------------------------------------------------------
 class Camera2(QObject):
@@ -82,6 +84,8 @@ class Camera2(QObject):
             ret, frame = cap.read()
             if ret:
                 #PROCESSING STUFF
+                cv2.imshow('test', frame)
+                cv2.waitKey(1)
                 self.__image2 = img
         cap.release()
         print("sai do loop 2")
@@ -324,3 +328,25 @@ class QMLCamera2(QQuickPaintedItem):
 
     image = Property(np.ndarray, get_image, set_image)
 
+
+#------------------------------
+class ImageProvider(QQuickImageProvider):
+
+    def __init__(self):
+        QQuickImageProvider.__init__(self, QQuickImageProvider.Image)
+        img = cv2.imread("../UI/test.jpg")
+        #cv2.imshow('test', img)
+        #cv2.waitKey(0)
+        self.img = self.to_QImage(img)
+
+    def requestImage(self, id, size, requestedSize):
+        #return super().requestImage(id, size, requestedSize)
+        return self.img
+
+    def to_QImage(self, img):
+        if len(img.shape) == 3:
+            w,h,_ = img.shape
+            rgbimg = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            flipimg = cv2.flip(rgbimg,1)
+            qimg = QImage(flipimg.data, h, w, QImage.Format_RGB888)
+            return qimg

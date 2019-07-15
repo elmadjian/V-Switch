@@ -2,8 +2,8 @@ import sys
 from PySide2.QtGui import QGuiApplication
 from PySide2.QtQml import QQmlApplicationEngine, qmlRegisterType
 from PySide2.QtCore import QUrl, Property, Signal
-import camera_old as camera
-import videoio
+import camera_uvc as camera
+import videoio_uvc
 import cv2
 import time
 from threading import Condition, Thread
@@ -29,42 +29,19 @@ def start(source, cam):
 if __name__=='__main__':
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
-
-    videoio = videoio.VideoIO()
+    
+    videoio = videoio_uvc.VideoIO_UVC()
     cameras = videoio.get_cameras()
 
-    # scene_cam = camera.Camera(0)
-    # le_cam    = camera.Camera2(1)
+    scene_cam = camera.Camera(2)
+    le_cam    = camera.Camera(0)
+    re_cam    = camera.Camera(1)
+    videoio.set_active_cameras(scene_cam, le_cam, re_cam)
 
-    # scthread = Thread(target=start, args=(0, scene_cam,))
-    # lethread = Thread(target=start, args=(1, le_cam,))
-
-    # scthread.start()
-    # lethread.start()
-
-    # img = cv2.imread("../UI/test.jpg")
-    # img2 = cv2.imread("../UI/test2.jpg")
-
-    # scene_cam.set_image(img)
-    # le_cam.set_image(img2)
-    #imageChanged = Signal(np.ndarray)
-    #scene_image = Property(np.ndarray, scene_cam.get_image, scene_cam.set_image, notify=imageChanged)
-    #left_eye_cam = camera.QMLLeftEyeCamera(1)
-
-
-    
-
-
-    
-    # img = cv2.imread("../UI/test.jpg")
-
-
-    qmlRegisterType(camera.QMLCamera, "CVStuff", 1, 0, "SceneCamera")
-    qmlRegisterType(camera.QMLCamera2, "CVStuff", 1, 0, "LeftEyeCamera")
-    #qmlRegisterType(camera.QMLCamera, "CVStuff", 1, 0, "RightEyeCamera")
-
-    # engine.rootContext().setContextProperty("sceneCamCV", scene_cam)
-    # engine.rootContext().setContextProperty("leftEyeCamCV", le_cam)
+    engine.addImageProvider('sceneimg', scene_cam)
+    engine.addImageProvider('leyeimg', le_cam)
+    engine.addImageProvider('reyeimg', re_cam)
+    engine.rootContext().setContextProperty("camManager", videoio)
     engine.rootContext().setContextProperty("cameraSources", cameras)
     engine.load(QUrl("../UI/v_switch/main.qml"))
 
