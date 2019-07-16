@@ -34,7 +34,6 @@ class Camera(QQuickImageProvider, QObject):
             except Exception as e:
                 attempts -= 1
                 cap = None
-        print("sai do loop")
 
     def requestImage(self, id, size, requestedSize):
         return self.__image

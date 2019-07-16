@@ -34,6 +34,15 @@ class VideoIO_UVC(QObject):
         self.leye  = leye
         self.reye  = reye
 
+    @Slot()
+    def stop_cameras(self):
+        print(">>> Closing cameras...")
+        self.scene.stop()
+        self.leye.stop()
+        self.reye.stop()
+        print(">>> Finished!")
+
+
     @Slot(str, int)
     def set_camera_source(self, cam_id, source):
         if cam_id.startswith("Scene"):

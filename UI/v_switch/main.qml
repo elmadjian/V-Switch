@@ -1,5 +1,5 @@
-import QtQuick 2.12
-import QtQuick.Window 2.12
+import QtQuick 2.11
+import QtQuick.Window 2.11
 import QtQuick.Controls 2.5
 import QtQuick.Controls.Universal 2.3
 //import CVStuff 1.0
@@ -13,6 +13,10 @@ Window {
     title: qsTr("Cadu's Eye Tracker")
     Universal.theme: Universal.Dark
     Universal.accent: Universal.Lime
+    onClosing: {
+        console.log("closing window");
+        camManager.stop_cameras();
+    }
 
     Timer {
         id: updater
@@ -32,8 +36,15 @@ Window {
         y: 116
         width: 645
         height: 464
-        font.weight: Font.Light
-        title: qsTr("Scene Camera")
+        topPadding: 32
+        rightPadding: 12
+        leftPadding: 12
+        label: Text {
+            id: sceneTitle
+            color: "white"
+            text: "Scene Camera"
+            font.weight: Font.Light
+        }
 
         ComboBox {
             id: sceneBox
@@ -44,32 +55,29 @@ Window {
             height: 28
             model: cameraSources
             onActivated:  {
-               camManager.set_camera_source(sceneGroup.title, index);
+               camManager.set_camera_source(sceneTitle.text, index);
             }
 
         }
-        Canvas {
-            id: sceneCam
-            z: 0
-            x: -12
-            y: 22
-            width: 645
-            height: 430
+
+        Image {
+            id: sceneImage
+            property bool counter: false
+            height: 433
+            anchors.rightMargin: -10
+            anchors.leftMargin: -10
+            anchors.bottomMargin: -10
+            anchors.topMargin: -10
             anchors.fill: parent
-            renderStrategy: Canvas.Threaded
-            Image {
-                id: sceneImage
-                property bool counter: false
-                source: "image://sceneimg/scene"
-                anchors.fill: parent
-                fillMode: Image.PreserveAspectFit
-                cache: false
-                function updateFrame() {
-                    sceneImage.counter = !sceneImage.counter; //hack to force update
-                    sceneImage.source = "image://sceneimg/scene" + sceneImage.counter;
-                }
+            source: "image://sceneimg/scene"
+            fillMode: Image.PreserveAspectFit
+            cache: false
+            function updateFrame() {
+                sceneImage.counter = !sceneImage.counter; //hack to force update
+                sceneImage.source = "image://sceneimg/scene" + sceneImage.counter;
             }
         }
+
     }
 
     GroupBox {
@@ -78,7 +86,12 @@ Window {
         y: 116
         width: 293
         height: 225
-        title: qsTr("Left Eye")
+        label: Text {
+            id: leftEyeTitle
+            color: "white"
+            text: "Left Eye Camera"
+            font.weight: Font.Light
+        }
 
         ComboBox {
             id: leftEyeBox
@@ -89,7 +102,7 @@ Window {
             height: 28
             model: cameraSources
             onActivated:  {
-                camManager.set_camera_source(leftEyeGroup.title, index);
+                camManager.set_camera_source(leftEyeTitle.text, index);
             }
         }
 
@@ -105,6 +118,10 @@ Window {
             Image {
                 id: leyeImage
                 property bool counter: false
+                anchors.rightMargin: -10
+                anchors.leftMargin: -10
+                anchors.bottomMargin: -10
+                anchors.topMargin: -10
                 source: "image://leyeimg/eye"
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectFit
@@ -124,7 +141,12 @@ Window {
         width: 293
         height: 225
         visible: true
-        title: qsTr("Right Eye")
+        label: Text {
+            id:rightEyeTitle
+            color: "white"
+            text: "Right Eye Camera"
+            font.weight: Font.Light
+        }
 
         ComboBox {
             id: rightEyeBox
@@ -134,7 +156,7 @@ Window {
             height: 28
             model: cameraSources
             onActivated:  {
-                camManager.set_camera_source(rightEyeGroup.title, index);
+                camManager.set_camera_source(rightEyeTitle.text, index);
             }
         }
 
@@ -150,6 +172,10 @@ Window {
             Image {
                 id: reyeImage
                 property bool counter: false
+                anchors.rightMargin: -10
+                anchors.leftMargin: -10
+                anchors.bottomMargin: -10
+                anchors.topMargin: -10
                 source: "image://reyeimg/eye"
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectFit
