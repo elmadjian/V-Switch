@@ -1,8 +1,8 @@
-import QtQuick 2.9
-import QtQuick.Window 2.3
-import QtQuick.Controls 2.2
-import QtQuick.Controls.Universal 2.2
-import QtGraphicalEffects 1.13
+import QtQuick 2.12
+import QtQuick.Window 2.12
+import QtQuick.Controls 2.12
+import QtQuick.Controls.Universal 2.12
+import QtGraphicalEffects 1.0
 //import CVStuff 1.0
 //import CVStuff2 1.0
 import QtQuick.Layouts 1.0
@@ -34,6 +34,11 @@ Window {
         }
     }
 
+
+    /*
+    Right Eye Camera
+    ----------------
+    */
     GroupBox {
         id: sceneGroup
         x: 30
@@ -83,6 +88,10 @@ Window {
 
     }
 
+    /*
+    Left Eye Camera
+    ---------------
+    */
     GroupBox {
         id: leftEyeGroup
         x: 710
@@ -109,34 +118,28 @@ Window {
             }
         }
 
-        Canvas {
-            id: leftEyeCam
-            z: 0
-            x: -12
-            y: 22
-            width: 293
-            height: 191
+        Image {
+            id: leyeImage
+            property bool counter: false
+            anchors.rightMargin: -10
+            anchors.leftMargin: -10
+            anchors.bottomMargin: -10
+            anchors.topMargin: -10
+            source: "image://leyeimg/eye"
             anchors.fill: parent
-            renderStrategy: Canvas.Threaded
-            Image {
-                id: leyeImage
-                property bool counter: false
-                anchors.rightMargin: -10
-                anchors.leftMargin: -10
-                anchors.bottomMargin: -10
-                anchors.topMargin: -10
-                source: "image://leyeimg/eye"
-                anchors.fill: parent
-                fillMode: Image.PreserveAspectFit
-                cache: false
-                function updateFrame() {
-                    leyeImage.counter = !leyeImage.counter; //hack to force update
-                    leyeImage.source = "image://leyeimg/eye" + leyeImage.counter;
-                }
+            fillMode: Image.PreserveAspectFit
+            cache: false
+            function updateFrame() {
+                leyeImage.counter = !leyeImage.counter; //hack to force update
+                leyeImage.source = "image://leyeimg/eye" + leyeImage.counter;
             }
         }
     }
 
+    /*
+    Right Eye Camera
+    ----------------
+    */
     GroupBox {
         id: rightEyeGroup
         x: 710
@@ -162,35 +165,30 @@ Window {
                 camManager.set_camera_source(rightEyeTitle.text, index);
             }
         }
-
-        Canvas {
-            id: rightEyeCam
-            z: 0
-            x: -12
-            y: 22
-            width: 293
-            height: 191
+        Image {
+            id: reyeImage
+            property bool counter: false
+            anchors.rightMargin: -10
+            anchors.leftMargin: -10
+            anchors.bottomMargin: -10
+            anchors.topMargin: -10
+            source: "image://reyeimg/eye"
             anchors.fill: parent
-            renderStrategy: Canvas.Threaded
-            Image {
-                id: reyeImage
-                property bool counter: false
-                anchors.rightMargin: -10
-                anchors.leftMargin: -10
-                anchors.bottomMargin: -10
-                anchors.topMargin: -10
-                source: "image://reyeimg/eye"
-                anchors.fill: parent
-                fillMode: Image.PreserveAspectFit
-                cache: false
-                function updateFrame() {
-                    reyeImage.counter = !reyeImage.counter; //hack to force update
-                    reyeImage.source = "image://reyeimg/eye" + reyeImage.counter;
-                }
+            fillMode: Image.PreserveAspectFit
+            cache: false
+            function updateFrame() {
+                reyeImage.counter = !reyeImage.counter; //hack to force update
+                reyeImage.source = "image://reyeimg/eye" + reyeImage.counter;
             }
         }
+
     }
 
+
+    /*
+    CAM SETTINGS
+    ------------
+    */
     GroupBox {
         id: cameraSettings
         x: 710
@@ -202,103 +200,130 @@ Window {
             text:"Camera Settings"
         }
 
-        RowLayout {
-            anchors.rightMargin: 0
-            anchors.bottomMargin: 3
-            anchors.leftMargin: 0
-            anchors.topMargin: -8
-            anchors.fill: parent
-            spacing: 5
+        ColumnLayout {
+            y: 0
+            width: 65
+            height: 60
+            Layout.fillHeight: false
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 
-            ColumnLayout {
-                y: 0
-                width: 65
-                height: 60
-                Layout.fillHeight: false
-                Layout.fillWidth: false
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            Text {
+                id: prefSceneLabel
+                text: qsTr("Scene")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Image {
+                id: prefSceneImg
+                sourceSize.height: 45
+                sourceSize.width: 45
+                fillMode: Image.PreserveAspectFit
+                Layout.preferredHeight: 60
+                Layout.preferredWidth: 75
+                source: "../imgs/scene.png"
 
-                Text {
-                    id: prefSceneLabel
-                    text: qsTr("Scene")
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                }
-                Image {
-                    id: prefSceneImg
-                    sourceSize.height: 50
-                    sourceSize.width: 50
-                    fillMode: Image.PreserveAspectFit
-                    Layout.preferredHeight: 60
-                    Layout.preferredWidth: 75
-                    source: "../imgs/scene.png"
+//                MouseArea {
+//                    id: prefSceneBtn
+//                    hoverEnabled: true
+//                    //cursorShape: "PointingHandCursor"
+//                    anchors.fill: parent
+//                    onEntered: {
+//                        console.log("entrei sc");
+////                        sceneOverlayImg.opacity = 1
+//                    }
+//                    onExited: {
+//                        console.log("sai")
+////                        sceneOverlayImg.opacity = 0
+//                    }
+//                }
+            }
+//            ColorOverlay {
+//                //id: sceneOverlayImg
+//                anchors.fill: prefSceneImg
+//                source: prefSceneImg
+//                color: "#ffffff"
+//            }
+        }
 
-                    MouseArea {
-                        id: prefSceneBtn
-                        hoverEnabled: true
-                        cursorShape: "PointingHandCursor"
-                        anchors.fill: parent
+        ColumnLayout{
+            x: 104
+            y: 0
+            width: 65
+            height: 60
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 
-                        onEntered: {
+            Text {
+                id: prefLeftLabel
+                text: qsTr("Left Eye")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Image {
+                id: prefLeftEyeImg
+                sourceSize.height: 45
+                sourceSize.width: 45
+                fillMode: Image.PreserveAspectFit
+                Layout.preferredHeight: 60
+                Layout.preferredWidth: 75
+                source: "../imgs/eye-left.png"
 
-                        }
-                    }
-                }
-                ColorOverlay {
-                    anchors.fill: prefSceneImg
-                    source: prefSceneImg
-                    color: "#ffffff"
-                }
+//                MouseArea {
+//                    id: prefLeftEyeBtn
+//                    hoverEnabled: true
+//                    //cursorShape: "PointingHandCursor"
+//                    anchors.fill: parent
+//                    onEntered: {
+//                        console.log("entrei le");
+//                    }
+//                }
+            }
+//            ColorOverlay {
+//                anchors.fill: prefLeftEyeImg
+//                source: prefLeftEyeImg
+//                color: "#ffffff"
+//            }
+        }
+
+
+        ColumnLayout {
+            x: 210
+            y: 0
+            width: 65
+            height: 60
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+            Text {
+                id: prefRightLabel
+                text: qsTr("Right Eye")
+                color:"white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Image {
+                id: prefRightEyeImg
+                sourceSize.width: 45
+                sourceSize.height: 45
+                fillMode: Image.PreserveAspectFit
+                Layout.preferredHeight: 60
+                Layout.preferredWidth: 75
+                source: "../imgs/eye-right.png"
+
+//                MouseArea {
+//                    id: prefRighttEyeBtn
+//                    hoverEnabled: true
+//                    //cursorShape: "PointingHandCursor"
+//                    anchors.fill: parent
+//                    onEntered: {
+//                        console.log("entrei re");
+//                    }
+//                }
             }
 
-            ColumnLayout{
-                x: 104
-                y: 0
-                width: 65
-                height: 60
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-
-                Text {
-                    id: prefLeftLabel
-                    text: qsTr("Left Eye")
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                }
-                Image {
-                    id: prefLeftCam
-                    sourceSize.height: 50
-                    sourceSize.width: 50
-                    fillMode: Image.PreserveAspectFit
-                    Layout.preferredHeight: 60
-                    Layout.preferredWidth: 75
-                    source: "../imgs/eye-left.png"
-                }
-            }
-
-
-            ColumnLayout {
-                x: 210
-                y: 0
-                width: 65
-                height: 60
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-
-                Text {
-                    id: prefRightLabel
-                    text: qsTr("Right Eye")
-                    color:"white"
-                    horizontalAlignment: Text.AlignHCenter
-                }
-                Image {
-                    id: prefRightCam
-                    sourceSize.width: 50
-                    sourceSize.height: 50
-                    fillMode: Image.PreserveAspectFit
-                    Layout.preferredHeight: 60
-                    Layout.preferredWidth: 75
-                    source: "../imgs/eye-right.png"
-                }
-            }
+//            ColorOverlay {
+//                anchors.fill: prefRightEyeImg
+//                source: prefRightEyeImg
+//                color: "#ffffff"
+//            }
         }
     }
 }
