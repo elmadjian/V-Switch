@@ -10,30 +10,30 @@ from multiprocessing import Process, Pipe, Value
 
 class Camera(QQuickImageProvider, QObject):
 
-    def __init__(self, source):
+    def __init__(self):
         QObject.__init__(self)
         QQuickImageProvider.__init__(self, QQuickImageProvider.Image)
-        self.source = source
         self.__image = self.to_QImage(cv2.imread("../UI/test.jpg"))
         self.stop_capture = False
-        self.cam_thread = Thread(target=self.start, args=())
-        self.cam_thread.start()
+        self.dev_list = uvc.device_list()
+        self.fps = {}
+        self.modes = []
+        self.source = None
+        self.cap = None
         
     def start(self):
-        dev_list = uvc.device_list()
-        cap = uvc.Capture(dev_list[self.source]['uid'])
-        attempts = len(cap.avaible_modes)-1
+        attempts = len(self.cap.avaible_modes)-1
         while attempts > 0 and not self.stop_capture:
             try:
-                cap.frame_mode = cap.avaible_modes[attempts]
+                self.cap.frame_mode = self.cap.avaible_modes[attempts]
                 while not self.stop_capture:
-                    frame = cap.get_frame_robust()
+                    frame = self.cap.get_frame_robust()
                     qimage = self.to_QImage(frame.bgr)
                     if qimage is not None:
                         self.__image = qimage
             except Exception as e:
                 attempts -= 1
-                cap = None
+                self.cap = None
 
     def requestImage(self, id, size, requestedSize):
         return self.__image
@@ -47,10 +47,15 @@ class Camera(QQuickImageProvider, QObject):
 
     def set_source(self, source):
         print('setting camera source to', source)
+        self.cap = uvc.Capture(self.dev_list[source]['uid'])
+
         self.stop_capture = False
         self.source = source
         self.cam_thread = Thread(target=self.start, args=())
         self.cam_thread.start()
+
+    # def __fps_modes(self):
+        
 
     def to_QImage(self, img):
         if len(img.shape) == 3:
@@ -62,6 +67,9 @@ class Camera(QQuickImageProvider, QObject):
 
 
 if __name__=="__main__":
-    cam = Camera(2)
+    #cam = Camera(2)
+    dev_list = uvc.device_list()
+    cap = uvc.Capture(dev_list[0]['uid'])
+    print(cap.avaible_modes)
 
 

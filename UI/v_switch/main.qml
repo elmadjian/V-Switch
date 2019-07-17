@@ -1,7 +1,7 @@
-import QtQuick 2.12
-import QtQuick.Window 2.12
-import QtQuick.Controls 2.12
-import QtQuick.Controls.Universal 2.12
+import QtQuick 2.9
+import QtQuick.Window 2.3
+import QtQuick.Controls 2.2
+import QtQuick.Controls.Universal 2.2
 import QtGraphicalEffects 1.0
 //import CVStuff 1.0
 //import CVStuff2 1.0
@@ -78,7 +78,7 @@ Window {
             anchors.topMargin: -10
             anchors.fill: parent
             source: "image://sceneimg/scene"
-            fillMode: Image.PreserveAspectFit
+            fillMode: Image.Stretch
             cache: false
             function updateFrame() {
                 sceneImage.counter = !sceneImage.counter; //hack to force update
@@ -127,7 +127,7 @@ Window {
             anchors.topMargin: -10
             source: "image://leyeimg/eye"
             anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
+            fillMode: Image.Stretch
             cache: false
             function updateFrame() {
                 leyeImage.counter = !leyeImage.counter; //hack to force update
@@ -174,7 +174,7 @@ Window {
             anchors.topMargin: -10
             source: "image://reyeimg/eye"
             anchors.fill: parent
-            fillMode: Image.PreserveAspectFit
+            fillMode: Image.Stretch
             cache: false
             function updateFrame() {
                 reyeImage.counter = !reyeImage.counter; //hack to force update
@@ -219,31 +219,48 @@ Window {
                 sourceSize.height: 45
                 sourceSize.width: 45
                 fillMode: Image.PreserveAspectFit
-                Layout.preferredHeight: 60
-                Layout.preferredWidth: 75
+                Layout.preferredHeight: 50
+                Layout.preferredWidth: 50
                 source: "../imgs/scene.png"
+                z:1
 
-//                MouseArea {
-//                    id: prefSceneBtn
-//                    hoverEnabled: true
-//                    //cursorShape: "PointingHandCursor"
-//                    anchors.fill: parent
-//                    onEntered: {
-//                        console.log("entrei sc");
-////                        sceneOverlayImg.opacity = 1
-//                    }
-//                    onExited: {
-//                        console.log("sai")
-////                        sceneOverlayImg.opacity = 0
-//                    }
-//                }
+                ColorOverlay {
+                    id: sceneOverlayImg
+                    anchors.fill: prefSceneImg
+                    source: prefSceneImg
+                    color: "white"
+                    opacity: 0
+                }
+
+                MouseArea {
+                    id: prefSceneBtn
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    anchors.fill: parent
+                    onEntered: {
+                        sceneOverlayImg.opacity = 1
+                    }
+                    onExited: {
+                        sceneOverlayImg.opacity = 0
+                    }
+                    onClicked: {
+                        scenePrefDropdown.enabled = !scenePrefDropdown.enabled;
+                        scenePrefDropdown.opacity = !scenePrefDropdown.opacity;
+                        leftEyePrefDropdown.enabled = false;
+                        leftEyePrefDropdown.opacity = 0;
+                        rightEyePrefDropdown.enabled = false;
+                        rightEyePrefDropdown.opacity = 0;
+                    }
+                }
+                Dropdown {
+                    id:scenePrefDropdown
+                    x: -143
+                    y: 49
+                    enabled: false;
+                    opacity: 0;
+                }
             }
-//            ColorOverlay {
-//                //id: sceneOverlayImg
-//                anchors.fill: prefSceneImg
-//                source: prefSceneImg
-//                color: "#ffffff"
-//            }
+
         }
 
         ColumnLayout{
@@ -264,25 +281,47 @@ Window {
                 sourceSize.height: 45
                 sourceSize.width: 45
                 fillMode: Image.PreserveAspectFit
-                Layout.preferredHeight: 60
-                Layout.preferredWidth: 75
+                Layout.preferredHeight: 50
+                Layout.preferredWidth: 50
                 source: "../imgs/eye-left.png"
+                z:1
 
-//                MouseArea {
-//                    id: prefLeftEyeBtn
-//                    hoverEnabled: true
-//                    //cursorShape: "PointingHandCursor"
-//                    anchors.fill: parent
-//                    onEntered: {
-//                        console.log("entrei le");
-//                    }
-//                }
+                ColorOverlay {
+                    id: leftEyeOverlayImg
+                    anchors.fill: prefLeftEyeImg
+                    source: prefLeftEyeImg
+                    color: "white"
+                    opacity: 0
+                }
+
+                MouseArea {
+                    id: prefLeftEyeBtn
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    anchors.fill: parent
+                    onEntered: {
+                        leftEyeOverlayImg.opacity = 1
+                    }
+                    onExited: {
+                        leftEyeOverlayImg.opacity = 0
+                    }
+                    onClicked: {
+                        leftEyePrefDropdown.enabled = !leftEyePrefDropdown.enabled;
+                        leftEyePrefDropdown.opacity = !leftEyePrefDropdown.opacity;
+                        scenePrefDropdown.enabled = false;
+                        scenePrefDropdown.opacity = 0;
+                        rightEyePrefDropdown.enabled = false;
+                        rightEyePrefDropdown.opacity = 0;
+                    }
+                }
+                Dropdown {
+                    id:leftEyePrefDropdown
+                    x: -143
+                    y: 49
+                    enabled: false;
+                    opacity: 0;
+                }
             }
-//            ColorOverlay {
-//                anchors.fill: prefLeftEyeImg
-//                source: prefLeftEyeImg
-//                color: "#ffffff"
-//            }
         }
 
 
@@ -304,26 +343,47 @@ Window {
                 sourceSize.width: 45
                 sourceSize.height: 45
                 fillMode: Image.PreserveAspectFit
-                Layout.preferredHeight: 60
-                Layout.preferredWidth: 75
+                Layout.preferredHeight: 50
+                Layout.preferredWidth: 50
                 source: "../imgs/eye-right.png"
+                z:1
 
-//                MouseArea {
-//                    id: prefRighttEyeBtn
-//                    hoverEnabled: true
-//                    //cursorShape: "PointingHandCursor"
-//                    anchors.fill: parent
-//                    onEntered: {
-//                        console.log("entrei re");
-//                    }
-//                }
+                ColorOverlay {
+                    id: rightEyeOverlayImg
+                    anchors.fill: prefRightEyeImg
+                    source: prefRightEyeImg
+                    color: "white"
+                    opacity: 0
+                }
+
+                MouseArea {
+                    id: prefRighttEyeBtn
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    anchors.fill: parent
+                    onEntered: {
+                        rightEyeOverlayImg.opacity = 1
+                    }
+                    onExited: {
+                        rightEyeOverlayImg.opacity = 0
+                    }
+                    onClicked: {
+                        rightEyePrefDropdown.enabled = !rightEyePrefDropdown.enabled;
+                        rightEyePrefDropdown.opacity = !rightEyePrefDropdown.opacity;
+                        scenePrefDropdown.enabled = false;
+                        scenePrefDropdown.opacity = 0;
+                        leftEyePrefDropdown.enabled = false;
+                        leftEyePrefDropdown.opacity = 0;
+                    }
+                }
+                Dropdown {
+                    id:rightEyePrefDropdown
+                    x: -143
+                    y: 49
+                    enabled: false;
+                    opacity: 0;
+                }
             }
-
-//            ColorOverlay {
-//                anchors.fill: prefRightEyeImg
-//                source: prefRightEyeImg
-//                color: "#ffffff"
-//            }
         }
     }
 }

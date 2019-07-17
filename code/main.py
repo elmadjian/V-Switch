@@ -16,9 +16,9 @@ if __name__=='__main__':
     videoio = videoio_uvc.VideoIO_UVC()
     cameras = videoio.get_cameras()
 
-    scene_cam = camera.Camera(0)
-    le_cam    = camera.Camera(1)
-    re_cam    = camera.Camera(2)
+    scene_cam = camera.Camera()
+    le_cam    = camera.Camera()
+    re_cam    = camera.Camera()
     videoio.set_active_cameras(scene_cam, le_cam, re_cam)
 
     engine.addImageProvider('sceneimg', scene_cam)
