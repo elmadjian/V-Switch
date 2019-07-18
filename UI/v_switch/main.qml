@@ -22,17 +22,17 @@ Window {
     }
 
 
-    Timer {
-        id: updater
-        interval: 30
-        running: true
-        repeat: true
-        onTriggered: {
-            sceneImage.updateFrame();
-            leyeImage.updateFrame();
-            reyeImage.updateFrame();
-        }
-    }
+//    Timer {
+//        id: updater
+//        interval: 30
+//        running: true
+//        repeat: true
+//        onTriggered: {
+//            sceneImage.updateFrame();
+//            leyeImage.updateFrame();
+//            reyeImage.updateFrame();
+//        }
+//    }
 
 
     /*
@@ -78,12 +78,19 @@ Window {
             anchors.bottomMargin: -10
             anchors.topMargin: -10
             anchors.fill: parent
-            source: "image://sceneimg/scene"
+            source: "../imgs/novideo.png"
             fillMode: Image.Stretch
             cache: false
-            function updateFrame() {
-                sceneImage.counter = !sceneImage.counter; //hack to force update
-                sceneImage.source = "image://sceneimg/scene" + sceneImage.counter;
+
+            signal updateImage()
+            Component.onCompleted: sceneCam.update_image.connect(updateImage);
+
+            Connections {
+                target: sceneImage
+                onUpdateImage: {
+                    sceneImage.counter = !sceneImage.counter; //hack to force update
+                    sceneImage.source = "image://sceneimg/scene" + sceneImage.counter;
+                }
             }
         }
 
@@ -127,13 +134,20 @@ Window {
             anchors.leftMargin: -10
             anchors.bottomMargin: -10
             anchors.topMargin: -10
-            source: "image://leyeimg/eye"
+            source: "../imgs/novideo.png"
             anchors.fill: parent
             fillMode: Image.Stretch
             cache: false
-            function updateFrame() {
-                leyeImage.counter = !leyeImage.counter; //hack to force update
-                leyeImage.source = "image://leyeimg/eye" + leyeImage.counter;
+
+            signal updateImage()
+            Component.onCompleted: leftEyeCam.update_image.connect(updateImage);
+
+            Connections {
+                target: leyeImage
+                onUpdateImage: {
+                    leyeImage.counter = !leyeImage.counter; //hack to force update
+                    leyeImage.source = "image://leyeimg/eye" + leyeImage.counter;
+                }
             }
         }
     }
@@ -175,13 +189,20 @@ Window {
             anchors.leftMargin: -10
             anchors.bottomMargin: -10
             anchors.topMargin: -10
-            source: "image://reyeimg/eye"
+            source: "../imgs/novideo.png"
             anchors.fill: parent
             fillMode: Image.Stretch
             cache: false
-            function updateFrame() {
-                reyeImage.counter = !reyeImage.counter; //hack to force update
-                reyeImage.source = "image://reyeimg/eye" + reyeImage.counter;
+
+            signal updateImage()
+            Component.onCompleted: rightEyeCam.update_image.connect(updateImage);
+
+            Connections {
+                target: reyeImage
+                onUpdateImage: {
+                    reyeImage.counter = !reyeImage.counter; //hack to force update
+                    reyeImage.source = "image://reyeimg/eye" + reyeImage.counter;
+                }
             }
         }
 

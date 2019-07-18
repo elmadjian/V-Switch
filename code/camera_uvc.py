@@ -10,6 +10,8 @@ from multiprocessing import Process, Pipe, Value
 
 class Camera(QQuickImageProvider, QObject):
 
+    update_image = Signal()
+
     def __init__(self):
         QObject.__init__(self)
         QQuickImageProvider.__init__(self, QQuickImageProvider.Image)
@@ -31,9 +33,10 @@ class Camera(QQuickImageProvider, QObject):
                 qimage = self.to_QImage(frame.bgr)
                 if qimage is not None:
                     self.__image = qimage
+                    self.update_image.emit()
             except Exception as e:
-                attempt += 1
                 self.__set_to_next_mode(attempt)
+                attempt += 1                
         self.cap.close()
 
 
@@ -42,10 +45,13 @@ class Camera(QQuickImageProvider, QObject):
 
     def __set_to_next_mode(self, mode):
         print("resetting...")
+        curr_fps = self.cap.frame_mode[2]
+        if curr_fps is None:
+            curr_fps = 30 #TEMPORARY FIX
         self.cap.close()
         time.sleep(0.4)
         self.cap = uvc.Capture(self.dev_list[self.source]['uid'])
-        self.cap.frame_mode = self.cap.avaible_modes[mode]
+        self.cap.frame_mode = self.modes[curr_fps][mode]
 
 
     def stop(self):
@@ -78,7 +84,6 @@ class Camera(QQuickImageProvider, QObject):
             resolution = str(mode[0]) + " x " + str(mode[1])
             self.modes[fps].append(mode)
             self.fps_res[fps].append(resolution)
-
 
     @Property('QVariantList')
     def fps_list(self):
@@ -125,11 +130,6 @@ class Camera(QQuickImageProvider, QObject):
             flipimg = cv2.flip(rgbimg,1)
             qimg = QImage(flipimg.data, h, w, QImage.Format_RGB888)
             return qimg
-
-    # fps_list = Property(QVariantList, get_fps)
-    # modes_list = Property(QVariantList, get_modes)
-    
-
     
 
 
