@@ -4,5 +4,6 @@
         <file>CustomLabel.qml</file>
         <file>PageBackground.qml</file>
         <file>Camera.qml</file>
+        <file>Dropdown.qml</file>
     </qresource>
 </RCC>

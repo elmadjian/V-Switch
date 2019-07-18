@@ -26,6 +26,9 @@ if __name__=='__main__':
     engine.addImageProvider('reyeimg', re_cam)
     engine.rootContext().setContextProperty("camManager", videoio)
     engine.rootContext().setContextProperty("cameraSources", cameras)
+    engine.rootContext().setContextProperty("sceneCam", scene_cam)
+    engine.rootContext().setContextProperty("leftEyeCam", le_cam)
+    engine.rootContext().setContextProperty("rightEyeCam", re_cam)
     engine.load(QUrl("../UI/v_switch/main.qml"))
 
 

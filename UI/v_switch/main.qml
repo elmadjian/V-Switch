@@ -21,7 +21,7 @@ Window {
         camManager.stop_cameras();
     }
 
-    // @disable-check M204
+
     Timer {
         id: updater
         interval: 30
@@ -244,6 +244,10 @@ Window {
                         sceneOverlayImg.opacity = 0
                     }
                     onClicked: {
+                        scenePrefDropdown.comboFrameRate.model = sceneCam.fps_list;
+                        scenePrefDropdown.comboResolution.model = sceneCam.modes_list;
+                        scenePrefDropdown.comboFrameRate.currentIndex = sceneCam.current_fps_index;
+                        scenePrefDropdown.comboResolution.currentIndex = sceneCam.current_res_index;
                         scenePrefDropdown.enabled = !scenePrefDropdown.enabled;
                         scenePrefDropdown.opacity = !scenePrefDropdown.opacity;
                         leftEyePrefDropdown.enabled = false;
@@ -258,6 +262,20 @@ Window {
                     y: 49
                     enabled: false;
                     opacity: 0;
+                    comboFrameRate.onActivated: {
+                        sceneCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
+                        scenePrefDropdown.comboFrameRate.model = sceneCam.fps_list;
+                        scenePrefDropdown.comboResolution.model = sceneCam.modes_list;
+                        scenePrefDropdown.comboFrameRate.currentIndex = sceneCam.current_fps_index;
+                        scenePrefDropdown.comboResolution.currentIndex = sceneCam.current_res_index;
+                    }
+                    comboResolution.onActivated: {
+                        sceneCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
+                        scenePrefDropdown.comboFrameRate.model = sceneCam.fps_list;
+                        scenePrefDropdown.comboResolution.model = sceneCam.modes_list;
+                        scenePrefDropdown.comboFrameRate.currentIndex = sceneCam.current_fps_index;
+                        scenePrefDropdown.comboResolution.currentIndex = sceneCam.current_res_index;
+                    }
                 }
             }
 
@@ -306,6 +324,8 @@ Window {
                         leftEyeOverlayImg.opacity = 0
                     }
                     onClicked: {
+                        leftEyePrefDropdown.comboFrameRate.model = leftEyeCam.fps_list;
+                        leftEyePrefDropdown.comboResolution.model = leftEyeCam.modes_list;
                         leftEyePrefDropdown.enabled = !leftEyePrefDropdown.enabled;
                         leftEyePrefDropdown.opacity = !leftEyePrefDropdown.opacity;
                         scenePrefDropdown.enabled = false;
@@ -320,6 +340,9 @@ Window {
                     y: 49
                     enabled: false;
                     opacity: 0;
+                    comboFrameRate.onActivated: {
+                        console.log("ativei olho esquerdo:" + index);
+                    }
                 }
             }
         }
@@ -368,6 +391,8 @@ Window {
                         rightEyeOverlayImg.opacity = 0
                     }
                     onClicked: {
+                        rightEyePrefDropdown.comboFrameRate.model = rightEyeCam.fps_list;
+                        rightEyePrefDropdown.comboResolution.model = rightEyeCam.modes_list;
                         rightEyePrefDropdown.enabled = !rightEyePrefDropdown.enabled;
                         rightEyePrefDropdown.opacity = !rightEyePrefDropdown.opacity;
                         scenePrefDropdown.enabled = false;
@@ -382,6 +407,7 @@ Window {
                     y: 49
                     enabled: false;
                     opacity: 0;
+
                 }
             }
         }

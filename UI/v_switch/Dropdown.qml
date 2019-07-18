@@ -14,6 +14,9 @@ Rectangle {
     Universal.accent: Universal.Lime
     z: 2
 
+    property alias comboFrameRate: comboFrameRate
+    property alias comboResolution: comboResolution
+
     Text {
         id: textFrameRate
         x: 25
@@ -29,6 +32,8 @@ Rectangle {
         y: 44
         width: 125
         height: 25
+        z:3
+        model:""
     }
 
     Text {
@@ -46,6 +51,8 @@ Rectangle {
         y: 108
         width: 125
         height: 25
+        z:3
+        model:""
     }
 
     Text {
