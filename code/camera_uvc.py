@@ -29,8 +29,9 @@ class Camera(QQuickImageProvider, QObject):
         attempts = len(self.cap.avaible_modes) 
         while not self.stop_capture and attempt < attempts:
             try:
-                frame = self.cap.get_frame_robust()
-                qimage = self.to_QImage(frame.bgr)
+                frame = self.cap.get_frame()
+                img,_ = self.process(frame.bgr)
+                qimage = self.to_QImage(img)
                 if qimage is not None:
                     self.__image = qimage
                     self.update_image.emit()
@@ -38,6 +39,10 @@ class Camera(QQuickImageProvider, QObject):
                 self.__set_to_next_mode(attempt)
                 attempt += 1                
         self.cap.close()
+
+    
+    def process(self, frame):
+        return frame, None
 
 
     def requestImage(self, id, size, requestedSize):

@@ -22,19 +22,6 @@ Window {
     }
 
 
-//    Timer {
-//        id: updater
-//        interval: 30
-//        running: true
-//        repeat: true
-//        onTriggered: {
-//            sceneImage.updateFrame();
-//            leyeImage.updateFrame();
-//            reyeImage.updateFrame();
-//        }
-//    }
-
-
     /*
     Scene Camera
     ----------------

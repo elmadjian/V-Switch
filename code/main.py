@@ -2,7 +2,8 @@ import sys
 from PySide2.QtGui import QGuiApplication
 from PySide2.QtQml import QQmlApplicationEngine, qmlRegisterType
 from PySide2.QtCore import QUrl, Property, Signal, QObject, Slot
-import camera_uvc as camera
+import eye
+import scene
 import videoio_uvc
 import cv2
 import time
@@ -16,9 +17,9 @@ if __name__=='__main__':
     videoio = videoio_uvc.VideoIO_UVC()
     cameras = videoio.get_cameras()
 
-    scene_cam = camera.Camera()
-    le_cam    = camera.Camera()
-    re_cam    = camera.Camera()
+    scene_cam = scene.SceneCamera()
+    le_cam    = eye.EyeCamera()
+    re_cam    = eye.EyeCamera()
     videoio.set_active_cameras(scene_cam, le_cam, re_cam)
 
     engine.addImageProvider('sceneimg', scene_cam)
