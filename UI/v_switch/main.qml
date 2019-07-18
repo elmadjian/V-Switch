@@ -36,7 +36,7 @@ Window {
 
 
     /*
-    Right Eye Camera
+    Scene Camera
     ----------------
     */
     GroupBox {
@@ -65,6 +65,7 @@ Window {
             model: cameraSources
             onActivated:  {
                 camManager.set_camera_source(sceneTitle.text, index);
+                activate_config(sceneDisabledOverlay, prefSceneImg);
             }
         }
 
@@ -115,6 +116,7 @@ Window {
             model: cameraSources
             onActivated:  {
                 camManager.set_camera_source(leftEyeTitle.text, index);
+                activate_config(leftEyeDisabledOverlay, prefLeftEyeImg);
             }
         }
 
@@ -163,6 +165,7 @@ Window {
             model: cameraSources
             onActivated:  {
                 camManager.set_camera_source(rightEyeTitle.text, index);
+                activate_config(rightEyeDisabledOverlay, prefRightEyeImg);
             }
         }
         Image {
@@ -185,6 +188,31 @@ Window {
     }
 
 
+    //Helper functions
+    //----------------
+    function update_comboboxes(uid, camType) {
+        uid.comboFrameRate.model = camType.fps_list;
+        uid.comboResolution.model = camType.modes_list;
+        uid.comboFrameRate.currentIndex = camType.current_fps_index;
+        uid.comboResolution.currentIndex = camType.current_res_index;
+    }
+
+    function activate_dropdown(uid_active, uid2, uid3) {
+        uid_active.enabled = !uid_active.enabled;
+        uid_active.opacity = !uid_active.opacity;
+        uid2.enabled = false;
+        uid2.opacity = 0;
+        uid3.enabled = false;
+        uid3.opacity = 0;
+    }
+
+    function activate_config(overlay, prefImg) {
+        overlay.enabled = false;
+        overlay.opacity = 0;
+        prefImg.enabled = true;
+    }
+
+
     /*
     CAM SETTINGS
     ------------
@@ -199,7 +227,6 @@ Window {
             color:"gray"
             text:"Camera Settings"
         }
-
         ColumnLayout {
             y: 0
             width: 65
@@ -222,7 +249,16 @@ Window {
                 Layout.preferredHeight: 50
                 Layout.preferredWidth: 50
                 source: "../imgs/scene.png"
+                enabled: false;
                 z:1
+
+                ColorOverlay {
+                    id: sceneDisabledOverlay
+                    anchors.fill: prefSceneImg
+                    source: prefSceneImg
+                    color: "#555555"
+                    opacity: 1
+                }
 
                 ColorOverlay {
                     id: sceneOverlayImg
@@ -244,16 +280,8 @@ Window {
                         sceneOverlayImg.opacity = 0
                     }
                     onClicked: {
-                        scenePrefDropdown.comboFrameRate.model = sceneCam.fps_list;
-                        scenePrefDropdown.comboResolution.model = sceneCam.modes_list;
-                        scenePrefDropdown.comboFrameRate.currentIndex = sceneCam.current_fps_index;
-                        scenePrefDropdown.comboResolution.currentIndex = sceneCam.current_res_index;
-                        scenePrefDropdown.enabled = !scenePrefDropdown.enabled;
-                        scenePrefDropdown.opacity = !scenePrefDropdown.opacity;
-                        leftEyePrefDropdown.enabled = false;
-                        leftEyePrefDropdown.opacity = 0;
-                        rightEyePrefDropdown.enabled = false;
-                        rightEyePrefDropdown.opacity = 0;
+                        update_comboboxes(scenePrefDropdown, sceneCam);
+                        activate_dropdown(scenePrefDropdown, leftEyePrefDropdown, rightEyePrefDropdown);
                     }
                 }
                 Dropdown {
@@ -264,17 +292,11 @@ Window {
                     opacity: 0;
                     comboFrameRate.onActivated: {
                         sceneCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
-                        scenePrefDropdown.comboFrameRate.model = sceneCam.fps_list;
-                        scenePrefDropdown.comboResolution.model = sceneCam.modes_list;
-                        scenePrefDropdown.comboFrameRate.currentIndex = sceneCam.current_fps_index;
-                        scenePrefDropdown.comboResolution.currentIndex = sceneCam.current_res_index;
+                        update_comboboxes(scenePrefDropdown, sceneCam);
                     }
                     comboResolution.onActivated: {
                         sceneCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
-                        scenePrefDropdown.comboFrameRate.model = sceneCam.fps_list;
-                        scenePrefDropdown.comboResolution.model = sceneCam.modes_list;
-                        scenePrefDropdown.comboFrameRate.currentIndex = sceneCam.current_fps_index;
-                        scenePrefDropdown.comboResolution.currentIndex = sceneCam.current_res_index;
+                        update_comboboxes(scenePrefDropdown, sceneCam);
                     }
                 }
             }
@@ -302,7 +324,16 @@ Window {
                 Layout.preferredHeight: 50
                 Layout.preferredWidth: 50
                 source: "../imgs/eye-left.png"
+                enabled: false;
                 z:1
+
+                ColorOverlay {
+                    id: leftEyeDisabledOverlay
+                    anchors.fill: prefLeftEyeImg
+                    source: prefLeftEyeImg
+                    color: "#555555"
+                    opacity: 1
+                }
 
                 ColorOverlay {
                     id: leftEyeOverlayImg
@@ -324,14 +355,8 @@ Window {
                         leftEyeOverlayImg.opacity = 0
                     }
                     onClicked: {
-                        leftEyePrefDropdown.comboFrameRate.model = leftEyeCam.fps_list;
-                        leftEyePrefDropdown.comboResolution.model = leftEyeCam.modes_list;
-                        leftEyePrefDropdown.enabled = !leftEyePrefDropdown.enabled;
-                        leftEyePrefDropdown.opacity = !leftEyePrefDropdown.opacity;
-                        scenePrefDropdown.enabled = false;
-                        scenePrefDropdown.opacity = 0;
-                        rightEyePrefDropdown.enabled = false;
-                        rightEyePrefDropdown.opacity = 0;
+                        update_comboboxes(leftEyePrefDropdown, leftEyeCam);
+                        activate_dropdown(leftEyePrefDropdown, scenePrefDropdown, rightEyePrefDropdown);
                     }
                 }
                 Dropdown {
@@ -341,7 +366,12 @@ Window {
                     enabled: false;
                     opacity: 0;
                     comboFrameRate.onActivated: {
-                        console.log("ativei olho esquerdo:" + index);
+                        leftEyeCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
+                        update_comboboxes(leftEyePrefDropdown, leftEyeCam);
+                    }
+                    comboResolution.onActivated: {
+                        leftEyeCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
+                        update_comboboxes(leftEyePrefDropdown, leftEyeCam);
                     }
                 }
             }
@@ -369,7 +399,16 @@ Window {
                 Layout.preferredHeight: 50
                 Layout.preferredWidth: 50
                 source: "../imgs/eye-right.png"
+                enabled: false
                 z:1
+
+                ColorOverlay {
+                    id: rightEyeDisabledOverlay
+                    anchors.fill: prefRightEyeImg
+                    source: prefRightEyeImg
+                    color: "#555555"
+                    opacity: 1
+                }
 
                 ColorOverlay {
                     id: rightEyeOverlayImg
@@ -391,14 +430,8 @@ Window {
                         rightEyeOverlayImg.opacity = 0
                     }
                     onClicked: {
-                        rightEyePrefDropdown.comboFrameRate.model = rightEyeCam.fps_list;
-                        rightEyePrefDropdown.comboResolution.model = rightEyeCam.modes_list;
-                        rightEyePrefDropdown.enabled = !rightEyePrefDropdown.enabled;
-                        rightEyePrefDropdown.opacity = !rightEyePrefDropdown.opacity;
-                        scenePrefDropdown.enabled = false;
-                        scenePrefDropdown.opacity = 0;
-                        leftEyePrefDropdown.enabled = false;
-                        leftEyePrefDropdown.opacity = 0;
+                        update_comboboxes(rightEyePrefDropdown, rightEyeCam);
+                        activate_dropdown(rightEyePrefDropdown, scenePrefDropdown, leftEyePrefDropdown);
                     }
                 }
                 Dropdown {
@@ -407,7 +440,14 @@ Window {
                     y: 49
                     enabled: false;
                     opacity: 0;
-
+                    comboFrameRate.onActivated: {
+                        rightEyeCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
+                        update_comboboxes(rightEyePrefDropdown, rightEyeCam);
+                    }
+                    comboResolution.onActivated: {
+                        rightEyeCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
+                        update_comboboxes(rightEyePrefDropdown, rightEyeCam);
+                    }
                 }
             }
         }
