@@ -3,7 +3,7 @@ import time
 import numpy as np
 from skimage import exposure
 import camera_uvc as camera
-
+import tracker
 
 class EyeCamera(camera.Camera):
 
@@ -15,6 +15,7 @@ class EyeCamera(camera.Camera):
         self.centroid  = None
         self.timestamp = None
         self.excentricity = 1.0
+        self.tracker = tracker.PupilTracker("KCF", 30)
 
 
     def process(self, img):
@@ -22,6 +23,8 @@ class EyeCamera(camera.Camera):
         ellipse = self.__find_pupil(img)
         centroid = None
         if ellipse is not None:
+            rect = ellipse.boundingRect()
+            self.tracker.track(img, rect)
             cv2.ellipse(img, ellipse, (0,255,0), 2)
             self.excentricity = ellipse[1][1]/ellipse[1][0]
             x = ellipse[0][0]/width
