@@ -7,7 +7,7 @@ import camera_uvc as camera
 
 class SceneCamera(camera.Camera):
 
-    def __init__(self, calibration=None):
+    def __init__(self, calibration=None, mode=(1280,720,30)):
         super().__init__()
         self.cam_calibration = calibration
         self.gray = None
@@ -16,6 +16,7 @@ class SceneCamera(camera.Camera):
             [1,0,0],
             [1,0,0]
         ] 
+        self.mode = mode
 
     
     def process(self, img, normalized=True):

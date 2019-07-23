@@ -20,13 +20,13 @@ class Camera(QQuickImageProvider, QObject):
         self.dev_list = uvc.device_list()
         self.fps_res = {}
         self.modes = {}
+        self.mode = None
         self.source = None
         self.cap = None
         
 
     def start(self):
-        attempt  = 0
-        attempts = len(self.cap.avaible_modes) 
+        attempt, attempts = 0, 10
         while not self.stop_capture and attempt < attempts:
             try:
                 frame = self.cap.get_frame()
@@ -36,7 +36,7 @@ class Camera(QQuickImageProvider, QObject):
                     self.__image = qimage
                     self.update_image.emit()
             except Exception as e:
-                self.__set_to_next_mode(attempt)
+                self.__reset_mode()
                 attempt += 1                
         self.cap.close()
 
@@ -48,15 +48,14 @@ class Camera(QQuickImageProvider, QObject):
     def requestImage(self, id, size, requestedSize):
         return self.__image
 
-    def __set_to_next_mode(self, mode):
+    def __reset_mode(self):
         print("resetting...")
-        curr_fps = self.cap.frame_mode[2]
-        if curr_fps is None:
-            curr_fps = 30 #TEMPORARY FIX
+        mode = self.cap.frame_mode
         self.cap.close()
         time.sleep(0.4)
         self.cap = uvc.Capture(self.dev_list[self.source]['uid'])
-        self.cap.frame_mode = self.modes[curr_fps][mode]
+        print("MODE:", mode)
+        self.cap.frame_mode = mode
 
 
     def stop(self):
@@ -73,6 +72,7 @@ class Camera(QQuickImageProvider, QObject):
         print('setting camera source to', source)
         self.cap = uvc.Capture(self.dev_list[source]['uid'])
         self.__set_fps_modes()
+        self.cap.frame_mode = self.mode
         self.stop_capture = False
         self.source = source
         self.cam_thread = Thread(target=self.start, args=())

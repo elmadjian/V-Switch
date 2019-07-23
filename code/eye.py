@@ -7,7 +7,7 @@ import tracker
 
 class EyeCamera(camera.Camera):
 
-    def __init__(self, conf=0.8, cutout=600):
+    def __init__(self, conf=0.8, cutout=600, mode=(400,400,120)):
         super().__init__()
         self.centroids = np.empty((0,2), float)
         self.conf      = conf
@@ -16,6 +16,7 @@ class EyeCamera(camera.Camera):
         self.timestamp = None
         self.excentricity = 1.0
         self.tracker = tracker.PupilTracker("KCF", 30)
+        self.mode = mode
 
 
     def process(self, img):
