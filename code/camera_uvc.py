@@ -73,6 +73,7 @@ class Camera(QQuickImageProvider, QObject):
         self.cap = uvc.Capture(self.dev_list[source]['uid'])
         self.__set_fps_modes()
         self.cap.frame_mode = self.mode
+        self.cap.bandwidth_factor = 1.3
         self.stop_capture = False
         self.source = source
         self.cam_thread = Thread(target=self.start, args=())

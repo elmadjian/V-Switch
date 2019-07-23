@@ -3,7 +3,7 @@ import numpy as np
 import time
 import sys
 
-import camera_uvc as camera
+import camera_proc as camera
 
 class SceneCamera(camera.Camera):
 
