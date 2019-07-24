@@ -21,22 +21,44 @@ class PupilTracker():
        
 
     def __init_track(self, frame, bbox):
+        print("inicializando tracker")
         ret = self.tracker.init(frame, bbox)
-        if not ret:
+        if ret:
+            print('iniciado')
+            self.tracking_status = 0
+        else:
             print("could not initiate tracking!")
 
 
     def track(self, frame, bbox):
-        if self.tracking_status >= self.fail_limit:
-            self.__init_track(frame, bbox)
-            return
         ret, bbox = self.tracker.update(frame)
         if ret:
             x1,y1 = int(bbox[0]), int(bbox[1])
             x2,y2 = int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3])
             cv2.rectangle(frame, (x1,y1), (x2,y2), (255,0,0), 2, 1)
             self.tracking_status = 0
-            return [x1,y1,x2,y2]
+            return bbox
         else:
             print("tracking failure...")
-            self.tracking_status += 1
+            self.__init_track(frame, bbox)
+
+if __name__=="__main__":
+    tracker = PupilTracker('KCF', 20)
+    cap = cv2.VideoCapture(3)
+    bbox = None
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret:
+            if bbox is not None:
+                bbox = tracker.track(frame,bbox)
+            cv2.imshow('test', frame)
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("s"):
+                bbox = cv2.selectROI('test', frame, fromCenter=False, showCrosshair=True)
+                tracker.track(frame, bbox)
+                print(bbox)
+            if key == ord("q"):
+                break
+
+        
+            

@@ -24,14 +24,38 @@ class EyeCamera(camera.Camera):
         ellipse = self.__find_pupil(img)
         centroid = None
         if ellipse is not None:
-            #rect = ellipse.boundingRect()
-            #self.tracker.track(img, rect)
-            cv2.ellipse(img, ellipse, (0,255,0), 2)
+            x1,y1,w,h = self.__get_bbox(ellipse, img)
+            rect = self.tracker.track(img, [(x1,y1),(w,h)])
+            if rect is not None:
+                print(rect)
+                #cv2.rectangle(img, rect[0],rect[1], (0,0,255))
+            #cv2.ellipse(img, ellipse, (0,255,0), 2)
             self.excentricity = ellipse[1][1]/ellipse[1][0]
             x = ellipse[0][0]/width
             y = ellipse[0][1]/height
             centroid = [time.monotonic(), np.array([x,y], float)]
         return img, centroid
+
+    def __get_bbox(self, ellipse, img):
+        x1 = ellipse[0][0]-ellipse[1][0]*0.75
+        y1 = ellipse[0][1]-ellipse[1][1]*0.75
+        x2 = ellipse[0][0]+ellipse[1][0]*0.75
+        y2 = ellipse[0][1]+ellipse[1][1]*0.75
+        x1 = self.__test_boundaries(x1, img.shape[1])
+        y1 = self.__test_boundaries(y1, img.shape[0])
+        x2 = self.__test_boundaries(x2, img.shape[1])
+        y2 = self.__test_boundaries(y2, img.shape[0])
+        w = x2-x1
+        h = y2-y1
+        # print(x1,y1,x2,y2)
+        return int(x1),int(y1),int(w),int(h)
+
+    def __test_boundaries(self, x, lim):
+        if x < 0:
+            return 0
+        if x >= lim:
+            return lim-1
+        return x
 
 
     def __find_pupil(self, frame):
