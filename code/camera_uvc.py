@@ -7,6 +7,8 @@ import time
 import uvc
 from threading import Thread, Lock
 from multiprocessing import Process, Pipe, Value
+from PIL.ImageQt import ImageQt
+import PIL
 
 class Camera(QQuickImageProvider, QObject):
 
@@ -27,15 +29,18 @@ class Camera(QQuickImageProvider, QObject):
 
     def start(self):
         attempt, attempts = 0, 10
+        timer = time.time()
         while not self.stop_capture and attempt < attempts:
             try:
-                frame = self.cap.get_frame()
+                frame = self.cap.get_frame(timeout=1)
                 img,_ = self.process(frame.bgr)
-                qimage = self.to_QImage(img)
-                if qimage is not None:
+                if time.time() - timer > 0.03:
+                    qimage = self.to_QImage(img)
                     self.__image = qimage
                     self.update_image.emit()
+                    timer = time.time()
             except Exception as e:
+                print("exception:", e)
                 self.__reset_mode()
                 attempt += 1                
         self.cap.close()
@@ -56,6 +61,7 @@ class Camera(QQuickImageProvider, QObject):
         self.cap = uvc.Capture(self.dev_list[self.source]['uid'])
         print("MODE:", mode)
         self.cap.frame_mode = mode
+        self.cap.bandwidth_factor = 1.3
 
 
     def stop(self):
@@ -81,6 +87,7 @@ class Camera(QQuickImageProvider, QObject):
 
 
     def __set_fps_modes(self):
+        self.fps_res, self.modes = {},{}
         for i in range(len(self.cap.avaible_modes)):
             mode = self.cap.avaible_modes[i]
             fps  = mode[2]
@@ -126,6 +133,7 @@ class Camera(QQuickImageProvider, QObject):
         else:
             print("setting mode:", self.modes[int(fps)][0])
             self.cap.frame_mode = self.modes[int(fps)][0]
+        self.cap.bandwidth_factor = 1.3
         self.cam_thread = Thread(target=self.start, args=())
         self.cam_thread.start()
 

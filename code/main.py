@@ -22,14 +22,14 @@ if __name__=='__main__':
     re_cam    = eye.EyeCamera()
     videoio.set_active_cameras(scene_cam, le_cam, re_cam)
 
-    engine.addImageProvider('sceneimg', scene_cam)
-    engine.addImageProvider('leyeimg', le_cam)
-    engine.addImageProvider('reyeimg', re_cam)
     engine.rootContext().setContextProperty("camManager", videoio)
     engine.rootContext().setContextProperty("cameraSources", cameras)
     engine.rootContext().setContextProperty("sceneCam", scene_cam)
     engine.rootContext().setContextProperty("leftEyeCam", le_cam)
     engine.rootContext().setContextProperty("rightEyeCam", re_cam)
+    engine.addImageProvider('sceneimg', scene_cam)
+    engine.addImageProvider('leyeimg', le_cam)
+    engine.addImageProvider('reyeimg', re_cam)
     engine.load(QUrl("../UI/v_switch/main.qml"))
 
 

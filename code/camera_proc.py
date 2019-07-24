@@ -6,7 +6,7 @@ import numpy as np
 import time
 import uvc
 from threading import Thread, Lock
-from multiprocessing import Process, Pipe, Value
+from multiprocessing import Process, Pipe, Value, Condition
 
 class Camera(QQuickImageProvider, QObject):
 
@@ -24,14 +24,17 @@ class Camera(QQuickImageProvider, QObject):
         self.source = None
         self.cap = None
         self.pipe, self.child = Pipe()
+        self.cv = Condition()
+        self.cam_process = None
+        self.cam_thread = None
         
 
     def start(self, source, pipe, mode):
-        attempt, attempts = 0, 10
+        attempt, attempts = 0, 8
         dev_list = uvc.device_list()
         cap = uvc.Capture(dev_list[source]['uid'])
         cap.frame_mode = mode
-        cap.bandwidth_factor = 1.25
+        cap.bandwidth_factor = 1.3
         while attempt < attempts:
             try:
                 frame  = cap.get_frame()
@@ -45,8 +48,10 @@ class Camera(QQuickImageProvider, QObject):
                 attempt += 1                
             if pipe.poll():
                 if pipe.recv() == "stop":
+                    cap.stop_stream()
                     break
         cap.close()
+        print("camera", source, "closed")
 
 
     def run(self):
@@ -77,14 +82,17 @@ class Camera(QQuickImageProvider, QObject):
         cap = uvc.Capture(dev_list[source]['uid'])
         print("MODE:", mode)
         cap.frame_mode = mode
+        cap.bandwidth_factor = 1.3
 
 
     def stop(self):
         if self.capturing:
             self.pipe.send("stop")
+            self.cam_process.join(1)
+            if self.cam_process.is_alive():
+                self.cam_process.terminate()
             self.capturing = False
-            self.cam_process.join()
-            self.cam_thread.join()
+            self.cam_thread.join(1)
 
 
     def get_source(self):
@@ -96,7 +104,8 @@ class Camera(QQuickImageProvider, QObject):
         self.source = source
         self.__set_fps_modes()
         self.capturing = True
-        self.cam_process = Process(target=self.start, args=(source,self.child,self.mode))
+        self.cam_process = Process(target=self.start, 
+                                   args=(source,self.child,self.mode))
         self.cam_process.start()
         self.cam_thread = Thread(target=self.run, args=())
         self.cam_thread.start()
@@ -149,7 +158,8 @@ class Camera(QQuickImageProvider, QObject):
             print("setting mode:", self.modes[int(fps)][0])
             self.mode = self.modes[int(fps)][0]
         self.capturing = True
-        self.cam_process = Thread(target=self.start, args=(self.source,self.child,self.mode))
+        self.cam_process = Process(target=self.start, 
+                                  args=(self.source,self.child,self.mode))
         self.cam_process.start()
         self.cam_thread = Thread(target=self.run, args=())
         self.cam_thread.start()

@@ -2,12 +2,11 @@ import cv2
 import numpy as np
 import time
 import sys
-
 import camera_proc as camera
 
 class SceneCamera(camera.Camera):
 
-    def __init__(self, calibration=None, mode=(1280,720,30)):
+    def __init__(self, calibration=None, mode=(1024,768,30)):
         super().__init__()
         self.cam_calibration = calibration
         self.gray = None
