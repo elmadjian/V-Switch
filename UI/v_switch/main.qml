@@ -53,6 +53,7 @@ Window {
             onActivated:  {
                 camManager.set_camera_source(sceneTitle.text, index);
                 activate_config(sceneDisabledOverlay, prefSceneImg);
+                enable_calibration();
             }
         }
 
@@ -111,6 +112,7 @@ Window {
             onActivated:  {
                 camManager.set_camera_source(leftEyeTitle.text, index);
                 activate_config(leftEyeDisabledOverlay, prefLeftEyeImg);
+                enable_calibration();
             }
         }
 
@@ -167,6 +169,7 @@ Window {
             onActivated:  {
                 camManager.set_camera_source(rightEyeTitle.text, index);
                 activate_config(rightEyeDisabledOverlay, prefRightEyeImg);
+                enable_calibration();
             }
         }
         Image {
@@ -220,6 +223,73 @@ Window {
         prefImg.enabled = true;
     }
 
+    function enable_calibration() {
+        if (prefSceneImg.enabled && prefLeftEyeImg.enabled && prefRightEyeImg.enabled) {
+            calibration.enabled = true;
+            calibrationDisabledOverlay.opacity = 0;
+        }
+    }
+
+    /*
+      CALIBRATION CONTOL
+      ------------------
+    */
+    ColumnLayout {
+        x: 30
+        y: 30
+
+        Text {
+            id: calibrationLabel
+            text: qsTr("Calibrate")
+            color: "white"
+            horizontalAlignment: Text.AlignHCenter
+        }
+        Image {
+            id: calibration
+            sourceSize.width: 60
+            sourceSize.height: 60
+            fillMode: Image.PreserveAspectFit
+            Layout.preferredHeight: 60
+            Layout.preferredWidth: 60
+            source: "../imgs/calibration.png"
+            enabled: false
+            z:1
+
+            ColorOverlay {
+                id: calibrationDisabledOverlay
+                anchors.fill: calibration
+                source: calibration
+                color: "#555555"
+                opacity: 1
+            }
+
+            ColorOverlay {
+                id: calibrationOverlay
+                anchors.fill: calibration
+                source: calibration
+                color: "white"
+                opacity: 0
+            }
+
+            MouseArea {
+                id: calibrationBtn
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                anchors.fill: parent
+                onEntered: {
+                    calibrationOverlay.opacity = 1
+                }
+                onExited: {
+                    calibrationOverlay.opacity = 0
+                }
+                onClicked: {
+                    console.log("clicked");
+                }
+            }
+        }
+    }
+
+
 
     /*
     CAM SETTINGS
@@ -257,7 +327,7 @@ Window {
                 Layout.preferredHeight: 50
                 Layout.preferredWidth: 50
                 source: "../imgs/scene.png"
-                enabled: false;
+                enabled: false
                 z:1
 
                 ColorOverlay {
@@ -338,7 +408,7 @@ Window {
                 Layout.preferredHeight: 50
                 Layout.preferredWidth: 50
                 source: "../imgs/eye-left.png"
-                enabled: false;
+                enabled: false
                 z:1
 
                 ColorOverlay {
