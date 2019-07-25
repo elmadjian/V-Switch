@@ -309,6 +309,9 @@ Window {
                     dialGamma.onMoved: {
                         sceneCam.set_gamma(dialGamma.value);
                     }
+                    switchColor.onToggled: {
+                        sceneCam.set_color(switchColor.position);
+                    }
                 }
             }
 
@@ -387,6 +390,9 @@ Window {
                     dialGamma.onMoved: {
                         leftEyeCam.set_gamma(dialGamma.value);
                     }
+                    switchColor.onToggled: {
+                        leftEyeCam.set_color(switchColor.position);
+                    }
                 }
             }
         }
@@ -464,6 +470,9 @@ Window {
                     }
                     dialGamma.onMoved: {
                         rightEyeCam.set_gamma(dialGamma.value);
+                    }
+                    switchColor.onToggled: {
+                        rightEyeCam.set_color(switchColor.position);
                     }
                 }
             }

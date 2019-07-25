@@ -19,7 +19,7 @@ class SceneCamera(camera.Camera):
 
     
     def process(self, img, normalized=True):
-        height, width, _ = img.shape
+        height, width = img.shape[0], img.shape[1]
         code = np.array(self.code).reshape((3,3)).astype("bool")
         preprocessed_img = self._preprocess(img)
         contour_list     = self._find_contours(preprocessed_img)
@@ -39,7 +39,8 @@ class SceneCamera(camera.Camera):
 
     def _preprocess(self, img):
         filtered_img = cv2.medianBlur(img, 5)
-        self.gray    = cv2.cvtColor(filtered_img, cv2.COLOR_BGR2GRAY)
+        if len(filtered_img.shape) == 3:
+            self.gray = cv2.cvtColor(filtered_img, cv2.COLOR_BGR2GRAY)
         # return cv2.adaptiveThreshold(self.gray, 255,
         #                               cv2.ADAPTIVE_THRESH_MEAN_C,
         #                               cv2.THRESH_BINARY, 9, 9)
@@ -105,7 +106,8 @@ class SceneCamera(camera.Camera):
             ], dtype="float32")
             M = cv2.getPerspectiveTransform(new_m, dst)
             warped = cv2.warpPerspective(img, M, (side, side))
-            warped = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+            if len(warped.shape) == 3:
+                warped = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
             thresh = cv2.threshold(warped, 0, 255, cv2.THRESH_OTSU)[1]
             transformed.append([thresh, m])
         return transformed

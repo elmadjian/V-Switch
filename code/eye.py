@@ -21,7 +21,7 @@ class EyeCamera(camera.Camera):
 
 
     def process(self, img):
-        height, width, _ = img.shape
+        height, width = img.shape[0], img.shape[1]
         centroid = None
         # if not self.tracker.tracking:
         #     ellipse = self.__find_pupil(img)

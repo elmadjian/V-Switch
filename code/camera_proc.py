@@ -7,6 +7,8 @@ import time
 import uvc
 from threading import Thread, Lock
 from multiprocessing import Process, Pipe, Value, Condition
+import sys
+import traceback
 
 class Camera(QQuickImageProvider, QObject):
 
@@ -36,16 +38,18 @@ class Camera(QQuickImageProvider, QObject):
         cap.frame_mode = mode
         cap.bandwidth_factor = 1.3
         gamma = 1
+        color = True
         while attempt < attempts:
             try:
                 frame  = cap.get_frame()
                 img    = self.__adjust_gamma(frame.bgr, gamma)
+                img    = self.__cvtBlackWhite(img, color)
                 img,_  = self.process(img)                
                 if img is not None:
                     data = cv2.imencode('.jpg', img)[1]
                     pipe.send(data)
             except Exception as e:
-                print("exception:", e)
+                traceback.print_exc(file=sys.stdout)
                 self.__reset_mode(cap, source)
                 attempt += 1                
             if pipe.poll():
@@ -55,6 +59,8 @@ class Camera(QQuickImageProvider, QObject):
                     break
                 elif msg == "gamma":
                     gamma = pipe.recv()
+                elif msg == "color":
+                    color = pipe.recv()
         cap.close()
         print("camera", source, "closed")
 
@@ -94,6 +100,11 @@ class Camera(QQuickImageProvider, QObject):
         for i in range(256):
             lut[0,i] = np.clip(pow(i/255.0, gamma) * 255.0, 0, 255)
         return cv2.LUT(img, lut)
+
+    def __cvtBlackWhite(self, img, color):
+        if color:
+            return img
+        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 
     def stop(self):
@@ -179,6 +190,11 @@ class Camera(QQuickImageProvider, QObject):
     def set_gamma(self, value):
         self.pipe.send("gamma")
         self.pipe.send(value)
+
+    @Slot(float)
+    def set_color(self, value):
+        self.pipe.send("color")
+        self.pipe.send(bool(value))
 
 
     def to_QImage(self, img):
