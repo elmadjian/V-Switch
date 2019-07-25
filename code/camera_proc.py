@@ -27,7 +27,7 @@ class Camera(QQuickImageProvider, QObject):
         self.cv = Condition()
         self.cam_process = None
         self.cam_thread = None
-        
+
 
     def start(self, source, pipe, mode):
         attempt, attempts = 0, 8
@@ -35,10 +35,12 @@ class Camera(QQuickImageProvider, QObject):
         cap = uvc.Capture(dev_list[source]['uid'])
         cap.frame_mode = mode
         cap.bandwidth_factor = 1.3
+        gamma = 1
         while attempt < attempts:
             try:
                 frame  = cap.get_frame()
-                img,_  = self.process(frame.bgr)
+                img    = self.__adjust_gamma(frame.bgr, gamma)
+                img,_  = self.process(img)                
                 if img is not None:
                     data = cv2.imencode('.jpg', img)[1]
                     pipe.send(data)
@@ -47,9 +49,12 @@ class Camera(QQuickImageProvider, QObject):
                 self.__reset_mode(cap, source)
                 attempt += 1                
             if pipe.poll():
-                if pipe.recv() == "stop":
+                msg = pipe.recv()
+                if msg == "stop":
                     cap.stop_stream()
                     break
+                elif msg == "gamma":
+                    gamma = pipe.recv()
         cap.close()
         print("camera", source, "closed")
 
@@ -83,6 +88,12 @@ class Camera(QQuickImageProvider, QObject):
         print("MODE:", mode)
         cap.frame_mode = mode
         cap.bandwidth_factor = 1.3
+
+    def __adjust_gamma(self, img, gamma):
+        lut = np.empty((1,256), np.uint8)
+        for i in range(256):
+            lut[0,i] = np.clip(pow(i/255.0, gamma) * 255.0, 0, 255)
+        return cv2.LUT(img, lut)
 
 
     def stop(self):
@@ -163,6 +174,12 @@ class Camera(QQuickImageProvider, QObject):
         self.cam_process.start()
         self.cam_thread = Thread(target=self.run, args=())
         self.cam_thread.start()
+
+    @Slot(float)
+    def set_gamma(self, value):
+        self.pipe.send("gamma")
+        self.pipe.send(value)
+
 
     def to_QImage(self, img):
         if len(img.shape) == 3:

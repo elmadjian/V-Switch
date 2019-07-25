@@ -306,6 +306,9 @@ Window {
                         sceneCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
                         update_comboboxes(scenePrefDropdown, sceneCam);
                     }
+                    dialGamma.onMoved: {
+                        sceneCam.set_gamma(dialGamma.value);
+                    }
                 }
             }
 
@@ -381,6 +384,9 @@ Window {
                         leftEyeCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
                         update_comboboxes(leftEyePrefDropdown, leftEyeCam);
                     }
+                    dialGamma.onMoved: {
+                        leftEyeCam.set_gamma(dialGamma.value);
+                    }
                 }
             }
         }
@@ -455,6 +461,9 @@ Window {
                     comboResolution.onActivated: {
                         rightEyeCam.set_mode(comboFrameRate.currentText, comboResolution.currentText);
                         update_comboboxes(rightEyePrefDropdown, rightEyeCam);
+                    }
+                    dialGamma.onMoved: {
+                        rightEyeCam.set_gamma(dialGamma.value);
                     }
                 }
             }

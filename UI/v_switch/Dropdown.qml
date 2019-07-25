@@ -16,6 +16,8 @@ Rectangle {
 
     property alias comboFrameRate: comboFrameRate
     property alias comboResolution: comboResolution
+    property alias dialGamma: dialGamma
+    property alias switchColor: switchColor
 
     Text {
         id: textFrameRate
@@ -56,48 +58,49 @@ Rectangle {
     }
 
     Text {
-        id: textContrast
+        id: textGamma
         x: 25
         y: 157
         color: "#ffffff"
-        text: qsTr("Contrast")
+        text: qsTr("Gamma")
         font.pixelSize: 12
     }
 
     Dial {
-        id: dialContrast
+        id: dialGamma
         x: 23
         y: 167
         width: 56
         height: 88
         wheelEnabled: false
+        value: 1.0
         background: Rectangle {
-            x: dialContrast.width / 2 - width / 2
-            y: dialContrast.height / 2 - height / 2
-            width: Math.max(64, Math.min(dialContrast.width, dialContrast.height))
+            x: dialGamma.width / 2 - width / 2
+            y: dialGamma.height / 2 - height / 2
+            width: Math.max(64, Math.min(dialGamma.width, dialGamma.height))
             height: width
             color: "transparent"
             radius: width / 2
-            border.color: dialContrast.pressed ? "white" : "gray"
-            opacity: dialContrast.enabled ? 1 : 0.3
+            border.color: dialGamma.pressed ? "white" : "gray"
+            opacity: dialGamma.enabled ? 1 : 0.3
         }
         handle: Rectangle {
             id: handleItem
-            x: dialContrast.background.x + dialContrast.background.width / 2 - width / 2
-            y: dialContrast.background.y + dialContrast.background.height / 2 - height / 2
+            x: dialGamma.background.x + dialGamma.background.width / 2 - width / 2
+            y: dialGamma.background.y + dialGamma.background.height / 2 - height / 2
             width: 15
             height: 15
-            color: dialContrast.pressed ? "#white" : "gray"
+            color: dialGamma.pressed ? "#white" : "gray"
             radius: 8
             border.width: 0
             antialiasing: true
-            opacity: dialContrast.enabled ? 1 : 0.3
+            opacity: dialGamma.enabled ? 1 : 0.3
             transform: [
                 Translate {
-                    y: -Math.min(dialContrast.background.width, dialContrast.background.height) * 0.4 + handleItem.height / 2
+                    y: -Math.min(dialGamma.background.width, dialGamma.background.height) * 0.4 + handleItem.height / 2
                 },
                 Rotation {
-                    angle: dialContrast.angle
+                    angle: dialGamma.angle
                     origin.x: handleItem.width / 2
                     origin.y: handleItem.height / 2
                 }

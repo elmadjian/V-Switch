@@ -15,25 +15,31 @@ class EyeCamera(camera.Camera):
         self.centroid  = None
         self.timestamp = None
         self.excentricity = 1.0
-        self.tracker = tracker.PupilTracker("KCF", 30)
+        self.tracker = tracker.PupilTracker("KCF")
+        self.bbox = None
         self.mode = mode
 
 
     def process(self, img):
         height, width, _ = img.shape
-        ellipse = self.__find_pupil(img)
         centroid = None
-        if ellipse is not None:
-            x1,y1,w,h = self.__get_bbox(ellipse, img)
-            rect = self.tracker.track(img, [(x1,y1),(w,h)])
-            if rect is not None:
-                print(rect)
-                #cv2.rectangle(img, rect[0],rect[1], (0,0,255))
-            #cv2.ellipse(img, ellipse, (0,255,0), 2)
-            self.excentricity = ellipse[1][1]/ellipse[1][0]
-            x = ellipse[0][0]/width
-            y = ellipse[0][1]/height
-            centroid = [time.monotonic(), np.array([x,y], float)]
+        # if not self.tracker.tracking:
+        #     ellipse = self.__find_pupil(img)
+        #     if ellipse is not None:
+        #         self.bbox = self.__get_bbox(ellipse, img)
+        #         self.tracker.track(img, self.bbox)
+        # else:
+        #     self.bbox = self.tracker.track(img, self.bbox)
+        #     if self.bbox:
+        #         x,y,w,h = self.bbox
+        #         crop = img[int(y):int(y+h), int(x):int(x+w)]
+        #         ellipse = self.__find_pupil(img)
+        #         #cv2.rectangle(img, rect[0],rect[1], (0,0,255))
+        #         cv2.ellipse(img, ellipse, (0,255,0), 2)
+        #     self.excentricity = ellipse[1][1]/ellipse[1][0]
+        #     x = ellipse[0][0]/width
+        #     y = ellipse[0][1]/height
+        #     centroid = [time.monotonic(), np.array([x,y], float)]
         return img, centroid
 
     def __get_bbox(self, ellipse, img):
