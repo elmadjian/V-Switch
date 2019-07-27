@@ -237,6 +237,7 @@ Window {
       CALIBRATION CONTOL
       ------------------
     */
+<<<<<<< HEAD
     CalibControl {
         id: calibrationControl
         calibrationBtn.onClicked: {
@@ -256,6 +257,141 @@ Window {
         width: 1280
         height: 720
         title: qsTr("Calibration Screen")
+=======
+    GroupBox {
+        id: calibrationSettings
+        x: 30
+        y: 16
+        width: 315
+        height: 110
+        label: Text {
+            color:"gray"
+            text:"Calibration Settings"
+        }
+        ColumnLayout {
+            y:0
+            Layout.fillHeight: false
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+            Text {
+                id: calibrationLabel
+                text: qsTr("Calibrate")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Image {
+                id: calibration
+                sourceSize.width: 50
+                sourceSize.height: 50
+                fillMode: Image.PreserveAspectFit
+                Layout.preferredHeight: 50
+                Layout.preferredWidth: 50
+                source: "../imgs/calibration.png"
+                //enabled: false <--DEBUG!
+                z:1
+
+                ColorOverlay {
+                    id: calibrationDisabledOverlay
+                    anchors.fill: calibration
+                    source: calibration
+                    color: "#555555"
+                    opacity: 1
+                }
+
+                ColorOverlay {
+                    id: calibrationOverlay
+                    anchors.fill: calibration
+                    source: calibration
+                    color: "white"
+                    opacity: 0
+                }
+
+                MouseArea {
+                    id: calibrationBtn
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    anchors.fill: parent
+                    onEntered: {
+                        calibrationOverlay.opacity = 1
+                    }
+                    onExited: {
+                        calibrationOverlay.opacity = 0
+                    }
+                    onClicked: {
+                        calibScreen.showFullScreen();
+                    }
+                }
+            }
+        }
+
+        ColumnLayout {
+            x: 75
+            y:0
+            Layout.fillHeight: false
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+            Text {
+                id: calibrationModeLabel
+                text: qsTr("Mode")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            ComboBox {
+                id: calibrationModeBox
+                width: 110
+                height: 28
+                currentIndex: 0
+                z: 1
+                font.pointSize: 10
+                model: ["Screen", "HMD"]
+                onActivated:  {
+                    console.log("selected:", index);
+                }
+            }
+        }
+        ColumnLayout {
+            x: 220
+            y:0
+            Layout.fillHeight: false
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+            Text {
+                id: calibrationStoreLabel
+                text: qsTr("Store Data")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Switch {
+                id: switchStore
+                width: 60
+                height: 40
+                checked: false
+                font.pointSize: 8
+                onToggled: {
+                    console.log(position);
+                }
+            }
+        }
+    }
+
+    /*CALIB SCREEN
+      ------------*/
+    Window {
+        id: calibScreen
+        visible: false
+        height: 720
+        width: 1280
+
+        Image {
+            id: calibTarget
+            source:"../imgs/marker2.png"
+            sourceSize.width: 180
+            sourceSize.height: 180
+        }
+>>>>>>> 03d15638095d19edf64b4495785b979aa6ac4f4d
     }
 
 
