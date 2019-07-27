@@ -21,6 +21,9 @@ Window {
         camManager.stop_cameras();
     }
 
+    property alias calibration: calibrationControl.calibration
+    property alias calibrationDisabledOverlay: calibrationControl.calibrationDisabledOverlay
+
 
     /*
     Scene Camera
@@ -234,59 +237,25 @@ Window {
       CALIBRATION CONTOL
       ------------------
     */
-    ColumnLayout {
-        x: 30
-        y: 30
-
-        Text {
-            id: calibrationLabel
-            text: qsTr("Calibrate")
-            color: "white"
-            horizontalAlignment: Text.AlignHCenter
+    CalibControl {
+        id: calibrationControl
+        calibrationBtn.onClicked: {
+            console.log("criquei!");
+            calibrationScreen.showFullScreen();
         }
-        Image {
-            id: calibration
-            sourceSize.width: 60
-            sourceSize.height: 60
-            fillMode: Image.PreserveAspectFit
-            Layout.preferredHeight: 60
-            Layout.preferredWidth: 60
-            source: "../imgs/calibration.png"
-            enabled: false
-            z:1
+    }
 
-            ColorOverlay {
-                id: calibrationDisabledOverlay
-                anchors.fill: calibration
-                source: calibration
-                color: "#555555"
-                opacity: 1
-            }
 
-            ColorOverlay {
-                id: calibrationOverlay
-                anchors.fill: calibration
-                source: calibration
-                color: "white"
-                opacity: 0
-            }
-
-            MouseArea {
-                id: calibrationBtn
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                anchors.fill: parent
-                onEntered: {
-                    calibrationOverlay.opacity = 1
-                }
-                onExited: {
-                    calibrationOverlay.opacity = 0
-                }
-                onClicked: {
-                    console.log("clicked");
-                }
-            }
-        }
+    /*
+    Calibration screen
+    ------------------
+    */
+    Window {
+        id: calibrationScreen
+        visible: false
+        width: 1280
+        height: 720
+        title: qsTr("Calibration Screen")
     }
 
 
