@@ -8,18 +8,29 @@ from sklearn.gaussian_process import kernels
 
 class Calibrator(QObject):
 
-    def __init__(self, ntargets, frequency):
+    #get_target = Signal()
+
+    def __init__(self, v_targets, h_targets, frequency):
         '''
         ntargets: number of targets that are going to be shown for calibration
         frequency: value of the tracker's frequency in Hz
         '''
         QObject.__init__(self)
-        self.ntargets  = ntargets
-        self.targets   = {i:np.empty((0,2), float) for i in range(ntargets)}
-        self.l_centers = {i:np.empty((0,2), float) for i in range(ntargets)}
-        self.r_centers = {i:np.empty((0,2), float) for i in range(ntargets)}
+        self.ntargets  = v_targets * h_targets
+        self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
+        self.l_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
+        self.r_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
         self.sleep = 1/frequency
         self.regressor = None
+        self.target_list = self.__generate_target_list(v_targets, h_targets)
+        self.current_target = -1
+
+    def __generate_target_list(self, v, h):
+        target_list = []
+        for y in np.linspace(0.09, 0.91, v):
+            for x in np.linspace(0.055, 0.935, h):
+                target_list.append([x,y])
+        return target_list
 
 
     def collect_target_data(self, idx, scene, le, re, thresh):
@@ -119,6 +130,24 @@ class Calibrator(QObject):
         for t in dic.keys():
             new_list = np.vstack((new_list, dic[t]))
         return new_list
+
+    
+    @Property('QVariantList')
+    def target(self):
+        if self.current_target >= len(self.target_list):
+            return [-1,-1]
+        tgt = self.target_list[self.current_target]
+        converted = [float(tgt[0]), float(tgt[1])]
+        return converted
+
+    @Slot()
+    def next_target(self):
+        print("proximo alvo!")
+        self.current_target += 1
+
+    @Slot()
+    def store_data(self):
+        print("storing data")
 
 
    

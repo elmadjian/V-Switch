@@ -21,9 +21,6 @@ Window {
         camManager.stop_cameras();
     }
 
-    property alias calibration: calibrationControl.calibration
-    property alias calibrationDisabledOverlay: calibrationControl.calibrationDisabledOverlay
-
 
     /*
     Scene Camera
@@ -235,29 +232,7 @@ Window {
 
     /*
       CALIBRATION CONTOL
-      ------------------
-    */
-<<<<<<< HEAD
-    CalibControl {
-        id: calibrationControl
-        calibrationBtn.onClicked: {
-            console.log("criquei!");
-            calibrationScreen.showFullScreen();
-        }
-    }
-
-
-    /*
-    Calibration screen
-    ------------------
-    */
-    Window {
-        id: calibrationScreen
-        visible: false
-        width: 1280
-        height: 720
-        title: qsTr("Calibration Screen")
-=======
+      ------------------ */
     GroupBox {
         id: calibrationSettings
         x: 30
@@ -319,7 +294,8 @@ Window {
                         calibrationOverlay.opacity = 0
                     }
                     onClicked: {
-                        calibScreen.showFullScreen();
+                        //calibScreen.showFullScreen();
+                        calibScreen.showNormal();
                     }
                 }
             }
@@ -379,19 +355,11 @@ Window {
 
     /*CALIB SCREEN
       ------------*/
-    Window {
+    CalibScreen {
         id: calibScreen
         visible: false
         height: 720
         width: 1280
-
-        Image {
-            id: calibTarget
-            source:"../imgs/marker2.png"
-            sourceSize.width: 180
-            sourceSize.height: 180
-        }
->>>>>>> 03d15638095d19edf64b4495785b979aa6ac4f4d
     }
 
 

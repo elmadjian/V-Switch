@@ -5,6 +5,7 @@ from PySide2.QtCore import QUrl, Property, Signal, QObject, Slot
 import eye
 import scene
 import videoio_uvc
+import calibration
 import cv2
 import time
 import numpy as np
@@ -14,8 +15,9 @@ if __name__=='__main__':
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
     
-    videoio = videoio_uvc.VideoIO_UVC()
-    cameras = videoio.get_cameras()
+    videoio   = videoio_uvc.VideoIO_UVC()
+    cameras   = videoio.get_cameras()
+    calib_ctl = calibration.Calibrator(4,5, 120) 
 
     scene_cam = scene.SceneCamera()
     le_cam    = eye.EyeCamera()
@@ -27,6 +29,7 @@ if __name__=='__main__':
     engine.rootContext().setContextProperty("sceneCam", scene_cam)
     engine.rootContext().setContextProperty("leftEyeCam", le_cam)
     engine.rootContext().setContextProperty("rightEyeCam", re_cam)
+    engine.rootContext().setContextProperty("calibControl", calib_ctl)
     engine.addImageProvider('sceneimg', scene_cam)
     engine.addImageProvider('leyeimg', le_cam)
     engine.addImageProvider('reyeimg', re_cam)
