@@ -18,6 +18,7 @@ class Camera(QQuickImageProvider, QObject):
         QObject.__init__(self)
         QQuickImageProvider.__init__(self, QQuickImageProvider.Image)
         self.__image = self.to_QImage(cv2.imread("../UI/test.jpg"))
+        self.__pos_data = [None,None]
         self.capturing = False
         self.dev_list = uvc.device_list()
         self.fps_res = {}
@@ -41,12 +42,12 @@ class Camera(QQuickImageProvider, QObject):
         color = True
         while attempt < attempts:
             try:
-                frame  = cap.get_frame()
-                img    = self.__adjust_gamma(frame.bgr, gamma)
-                img    = self.__cvtBlackWhite(img, color)
-                img,_  = self.process(img)                
+                frame   = cap.get_frame()
+                img     = self.__adjust_gamma(frame.bgr, gamma)
+                img     = self.__cvtBlackWhite(img, color)
+                img,pos = self.process(img)                
                 if img is not None:
-                    data = cv2.imencode('.jpg', img)[1]
+                    data = [cv2.imencode('.jpg', img)[1], pos]
                     pipe.send(data)
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
@@ -69,7 +70,8 @@ class Camera(QQuickImageProvider, QObject):
         while self.capturing:
             if self.pipe.poll(1):
                 data = self.pipe.recv()
-                img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                img = cv2.imdecode(data[0], cv2.IMREAD_COLOR)
+                self.__pos_data = data[1]
                 qimage = self.to_QImage(img)
                 if qimage is not None:
                     self.__image = qimage
@@ -82,6 +84,9 @@ class Camera(QQuickImageProvider, QObject):
 
     def requestImage(self, id, size, requestedSize):
         return self.__image
+
+    def get_processed_data(self):
+        return self.__pos_data
 
 
     def __reset_mode(self, cap, source):
@@ -161,6 +166,11 @@ class Camera(QQuickImageProvider, QObject):
         curr_fps = self.mode[2]
         fps_list = sorted(list(self.fps_res.keys()))
         return fps_list.index(curr_fps)
+
+    @Property(int)
+    def current_fps(self):
+        curr_fps = self.mode[2]
+        return curr_fps
 
     @Property(int)
     def current_res_index(self):

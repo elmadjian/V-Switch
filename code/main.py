@@ -17,12 +17,13 @@ if __name__=='__main__':
     
     videoio   = videoio_uvc.VideoIO_UVC()
     cameras   = videoio.get_cameras()
-    calib_ctl = calibration.Calibrator(4,5, 120) 
+    calib_ctl = calibration.Calibrator(4, 5, 90, 5) 
 
     scene_cam = scene.SceneCamera()
     le_cam    = eye.EyeCamera()
     re_cam    = eye.EyeCamera()
     videoio.set_active_cameras(scene_cam, le_cam, re_cam)
+    calib_ctl.set_sources(scene_cam, le_cam, re_cam)
 
     engine.rootContext().setContextProperty("camManager", videoio)
     engine.rootContext().setContextProperty("cameraSources", cameras)

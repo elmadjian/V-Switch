@@ -10,12 +10,14 @@ Window {
     height: 720
     width: 1280
     color: "white"
+    property var recording: false
 
-//    signal pointsList(QVariantList points)
-//    Component.onCompleted: calibControl.get_points_list.connect(pointsList);
-//    onPointsList: {
-//        console.log(points);
-//    }
+    signal moveOn()
+    Component.onCompleted: calibControl.move_on.connect(moveOn);
+    onMoveOn: {
+        recording = false;
+        nextStep();
+    }
 
     function nextStep() {
         if (startMessage.opacity == 1) {
@@ -27,6 +29,13 @@ Window {
 
             //move to next position
             if (calibTargetOverlay.opacity == 1) {
+
+                //recording, don't do nothing until it's finished
+                if (recording) {
+                    console.log("Wait, recording data...");
+                    return
+                }
+
                 calibControl.next_target();
                 var target = calibControl.target;
 
@@ -42,6 +51,12 @@ Window {
             //record data
             else {
                 calibTargetOverlay.opacity = 1;
+                recording = true;
+                var freq_scene = sceneCam.current_fps;
+                var freq_leye  = leftEyeCam.current_fps;
+                var freq_reye  = rightEyeCam.current_fps;
+                var max_freq   = Math.max(freq_scene, freq_leye, freq_reye);
+                calibControl.collect_data(max_freq);
             }
         }
     }

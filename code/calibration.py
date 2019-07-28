@@ -4,13 +4,14 @@ import time
 from PySide2.QtCore import QObject, Signal, Slot, Property
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process import kernels
+from threading import Thread
 
 
 class Calibrator(QObject):
 
-    #get_target = Signal()
+    move_on = Signal()
 
-    def __init__(self, v_targets, h_targets, frequency):
+    def __init__(self, v_targets, h_targets, samples, timeout):
         '''
         ntargets: number of targets that are going to be shown for calibration
         frequency: value of the tracker's frequency in Hz
@@ -20,10 +21,18 @@ class Calibrator(QObject):
         self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
         self.l_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
         self.r_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.sleep = 1/frequency
         self.regressor = None
         self.target_list = self.__generate_target_list(v_targets, h_targets)
         self.current_target = -1
+        self.scene, self.leye, self.reye = None, None, None
+        self.samples = samples
+        self.timeout = timeout
+        self.collector = None
+
+    def set_sources(self, scene, leye, reye):
+        self.scene = scene
+        self.leye  = leye
+        self.reye  = reye
 
     def __generate_target_list(self, v, h):
         target_list = []
@@ -33,23 +42,28 @@ class Calibrator(QObject):
         return target_list
 
 
-    def collect_target_data(self, idx, scene, le, re, thresh):
+    def __get_target_data(self, frequency):
         '''
         scene: sceneCamera object
         le: left eyeCamera object
         re: right eyeCamera object
         thresh: amount of data to be collected per target
         '''
-        while len(self.targets[idx]) < thresh:
-            sc_data = scene.get_data()
-            le_data = le.get_data()
-            re_data = re.get_data()
-            if sc_data is not None and le_data is not None and re_data is not None:
-                if self.__test_timestamp(sc_data[0], le_data[0], re_data[0]):
-                    self.targets[idx] = np.vstack((self.targets[idx], sc_data[1]))
-                    self.l_centers[idx] = np.vstack((self.l_centers[idx], le_data[1]))
-                    self.r_centers[idx] = np.vstack((self.r_centers[idx], re_data[1]))
-            time.sleep(self.sleep)
+        idx = self.current_target
+        t = time.time()
+        while (len(self.targets[idx]) < self.samples) and (time.time()-t < self.timeout):
+            print(time.time()-t)
+            sc = self.scene.get_processed_data()
+            le = self.leye.get_processed_data()
+            re = self.reye.get_processed_data()
+            if sc[0] is not None and le[0] is not None and re[0] is not None:
+                if self.__test_timestamp(sc[0], le[0], re[0], 1/frequency):
+                    self.targets[idx]   = np.vstack((self.targets[idx], sc[1]))
+                    self.l_centers[idx] = np.vstack((self.l_centers[idx], le[1]))
+                    self.r_centers[idx] = np.vstack((self.r_centers[idx], re[1]))
+            time.sleep(1/frequency)
+        self.move_on.emit()
+        print("data collected")
 
 
     def clean_up_data(self, deviation, reye=None):
@@ -110,10 +124,10 @@ class Calibrator(QObject):
         return self.targets.keys()
 
 
-    def __test_timestamp(self, sc, le, re):
-        if abs(sc - le) < self.sleep:
-            if abs(sc - re) < self.sleep:
-                if abs(le - re) < self.sleep:
+    def __test_timestamp(self, sc, le, re, thresh):
+        if abs(sc - le) < thresh:
+            if abs(sc - re) < thresh:
+                if abs(le - re) < thresh:
                     return True
         return False
 
@@ -142,12 +156,18 @@ class Calibrator(QObject):
 
     @Slot()
     def next_target(self):
-        print("proximo alvo!")
+        if self.collector is not None:
+            self.collector.join()
         self.current_target += 1
 
     @Slot()
-    def store_data(self):
+    def store_data_trigger(self):
         print("storing data")
+
+    @Slot(int)
+    def collect_data(self, frequency):
+        self.collector = Thread(target=self.__get_target_data, args=(frequency,))
+        self.collector.start()
 
 
    
