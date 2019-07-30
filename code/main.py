@@ -17,7 +17,7 @@ if __name__=='__main__':
     
     videoio   = videoio_uvc.VideoIO_UVC()
     cameras   = videoio.get_cameras()
-    calib_ctl = calibration.Calibrator(4, 5, 90, 5) 
+    calib_ctl = calibration.Calibrator(4, 5, 90, 4) 
 
     scene_cam = scene.SceneCamera()
     le_cam    = eye.EyeCamera()

@@ -23,29 +23,37 @@ class PupilTracker():
        
 
     def init_track(self, frame, bbox):
-        print("inicializando tracker")
+        print("starting tracker")
         self.create_tracker()
         ret = self.tracker.init(frame, bbox)
         if ret:
-            print('iniciado')
             self.tracking = True
         else:
-            print("could not initiate tracking!")
+            print("Failure while trying to start tracker!")
 
 
     def track(self, frame, extbbox):
         if self.tracking:
             ret, bbox = self.tracker.update(frame)
+            bbox = self.__to_int(bbox)
             if ret:
-                x1,y1 = int(bbox[0]), int(bbox[1])
-                x2,y2 = int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3])
-                cv2.rectangle(frame, (x1,y1), (x2,y2), (255,0,0), 2, 1)
+                x1,y1 = bbox[0], bbox[1]
+                x2,y2 = bbox[0] + bbox[2], bbox[1] + bbox[3]
+                cv2.rectangle(frame, (x1,y1), (x2,y2), (255,120,120), 2, 1)
                 return bbox
             else:
                 self.tracking = False
                 print("tracking failure...", extbbox)
         else:
             self.init_track(frame, extbbox)
+
+    
+    def __to_int(self, bbox):
+        x = int(bbox[0])
+        y = int(bbox[1])
+        w = int(bbox[2])
+        h = int(bbox[3])
+        return (x,y,w,h)
 
 
 if __name__=="__main__":

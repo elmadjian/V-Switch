@@ -15,45 +15,67 @@ class EyeCamera(camera.Camera):
         self.centroid  = None
         self.timestamp = None
         self.excentricity = 1.0
-        self.tracker = tracker.PupilTracker("KCF")
-        self.bbox = None
         self.mode = mode
+        self.blob_detector = self.__init_blob_detector()
+        self.bbox = None
+        self.tracking = False
+        
 
 
     def process(self, img):
         height, width = img.shape[0], img.shape[1]
-        centroid = None
-        # if not self.tracker.tracking:
-        #     ellipse = self.__find_pupil(img)
-        #     if ellipse is not None:
-        #         self.bbox = self.__get_bbox(ellipse, img)
-        #         self.tracker.track(img, self.bbox)
-        # else:
-        #     self.bbox = self.tracker.track(img, self.bbox)
-        #     if self.bbox:
-        #         x,y,w,h = self.bbox
-        #         crop = img[int(y):int(y+h), int(x):int(x+w)]
-        #         ellipse = self.__find_pupil(img)
-        #         #cv2.rectangle(img, rect[0],rect[1], (0,0,255))
-        #         cv2.ellipse(img, ellipse, (0,255,0), 2)
-        #     self.excentricity = ellipse[1][1]/ellipse[1][0]
-        #     x = ellipse[0][0]/width
-        #     y = ellipse[0][1]/height
-        #     centroid = [time.monotonic(), np.array([x,y], float)]
-        return img, centroid
+        if not self.tracking:
+            pupil = self.__find_pupil(img)
+            if pupil is not None:
+                p, size = pupil
+                self.__draw_tracking_info(p, size, img)
+                self.tracking = True
+        else:
+            img = self.__remove_glint(self.bbox, img)
+            x,y,w,h = self.bbox
+            crop  = img[y+3:y+h-3, x+3:x+w-3]
+            pupil = self.__find_pupil(crop)
+            if pupil is not None:
+                p, size = pupil
+                p = (p[0]+x+3, p[1]+y+3)
+                self.__draw_tracking_info(p, size, img)
+                return img, [p, time.monotonic()]
+            else:
+                self.tracking = False
+        return img, None
 
-    def __get_bbox(self, ellipse, img):
-        x1 = ellipse[0][0]-ellipse[1][0]*0.75
-        y1 = ellipse[0][1]-ellipse[1][1]*0.75
-        x2 = ellipse[0][0]+ellipse[1][0]*0.75
-        y2 = ellipse[0][1]+ellipse[1][1]*0.75
+
+    def __draw_tracking_info(self, p, size, img):
+        cv2.drawMarker(img, (int(p[0]), int(p[1])), (0,255,0),\
+                    cv2.MARKER_CROSS, 12, 1)
+        self.bbox = self.__get_bbox(p, size, img)
+        cv2.rectangle(img, self.bbox, (255,120,120), 2, 1)
+
+
+    def __init_blob_detector(self):
+        params = cv2.SimpleBlobDetector_Params()
+        params.minThreshold = 10
+        params.maxThreshold = 200
+        params.filterByArea = True
+        params.minArea = 0.01 * (self.mode[0] * self.mode[1])
+        params.filterByCircularity = True
+        params.minCircularity = 0.15
+        params.filterByConvexity = True
+        params.minConvexity = 0.7
+        return cv2.SimpleBlobDetector_create(params)
+
+
+    def __get_bbox(self, point, size, img):
+        x1 = point[0]-size
+        y1 = point[1]-size
+        x2 = point[0]+size
+        y2 = point[1]+size
         x1 = self.__test_boundaries(x1, img.shape[1])
         y1 = self.__test_boundaries(y1, img.shape[0])
         x2 = self.__test_boundaries(x2, img.shape[1])
         y2 = self.__test_boundaries(y2, img.shape[0])
         w = x2-x1
         h = y2-y1
-        # print(x1,y1,x2,y2)
         return int(x1),int(y1),int(w),int(h)
 
     def __test_boundaries(self, x, lim):
@@ -63,109 +85,25 @@ class EyeCamera(camera.Camera):
             return lim-1
         return x
 
+    def __remove_glint(self, bbox, frame):
+        x,y,w,h = bbox
+        crop = frame[y+3:y+h-3, x+3:x+w-3]
+        cropgray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        filtered = cv2.bilateralFilter(cropgray, 7, 20, 20)
+        thresh   = cv2.threshold(filtered, 150, 255, cv2.THRESH_BINARY)[1]
+        kernel   = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
+        thresh   = cv2.dilate(thresh, kernel, iterations=2)
+        painted  = cv2.inpaint(cropgray, thresh, 7, cv2.INPAINT_TELEA)
+        painted  = cv2.cvtColor(painted, cv2.COLOR_GRAY2BGR)
+        frame[y+3:y+h-3, x+3:x+w-3] = painted
+        return frame
+
 
     def __find_pupil(self, frame):
-        '''
-        Main method to track pupil position
-        IN: BGR frame from live camera or video file
-        OUT: ellipse 
-        '''
-        img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        _ = exposure.rescale_intensity(img, in_range=(0,150))
-        blur = cv2.GaussianBlur(img, (7,7), 5)
-        minVal, _, _, _ = cv2.minMaxLoc(blur)
-        _, thresh = cv2.threshold(img, minVal+25, 255, cv2.THRESH_BINARY_INV)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
-        morph = cv2.erode(thresh, kernel, iterations=2)
-        blob = self.__get_blob(morph)
-        cnt = self.__get_contours(blob)
-        if cnt is not None:
-            cnt_e, ellipse = self.__get_ellipse(cnt, img)
-            if cnt_e is not None:
-                confidence = self.__get_confidence(cnt, cnt_e)
-                if confidence > self.conf and confidence <= 1.0:
-                    self.update_centroids(ellipse[0])
-                    return ellipse
+        keypoints = self.blob_detector.detect(frame)
+        klist = [[k.pt, k.size] for k in keypoints]
+        if klist:
+            kp, ks = klist[0]
+            return kp, ks  
+            
 
-
-    def __get_blob(self, bin_img):
-        '''
-        IN: thresholded image with pupil as foreground
-        OUT: blob area containing only de pupil (hopefully)
-        '''
-        #TODO: return more than one blob
-        _, labels, stats, _ = cv2.connectedComponentsWithStats(bin_img)
-        blob = np.zeros(bin_img.shape, np.uint8)
-        stats = stats[1:]
-        max_area, idx = 0, 0
-        if len(stats) > 0:
-            for i in range(len(stats)):
-                if stats[i,4] > max_area and 1500 < stats[i,4] < 10500:
-                    max_area = stats[i,4]
-                    idx = i + 1
-            blob[labels==idx] = 255
-            return blob
-
-
-    def __get_contours(self, blob):
-        '''
-        IN: pupil blob in a binary image
-        OUT: OpenCV contours of this blob 
-        '''
-        #TODO: return more than one external contours if there is more than 1 blob
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7))
-        closing = cv2.morphologyEx(blob, cv2.MORPH_CLOSE, kernel)
-        cnt, _ = cv2.findContours(closing, cv2.RETR_EXTERNAL,
-                                        cv2.CHAIN_APPROX_NONE)
-        if len(cnt) > 0:
-            return cv2.convexHull(cnt[0])
-
-
-    def __get_ellipse(self, contour, img):
-        '''
-        IN: pupil contours and image frame
-        OUT: fitted ellipse around pupil and its contours
-        '''
-        #TODO: if there are multiple contours, return multiple ellipses
-        mask = np.zeros(img.shape, np.uint8)
-        ellipse = None
-        for c in [contour]:
-            if len(c) >= 5:
-                ellipse = cv2.fitEllipseDirect(c)
-                break
-        if ellipse is not None:
-            mask = cv2.ellipse(mask, ellipse, 255, 2)
-            cnt, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, 
-                                            cv2.CHAIN_APPROX_NONE)
-            return cnt, ellipse
-        return None, None
-
-
-    def __get_confidence(self, blob_contour, ellipse_contour):
-        '''
-        Measures the rate of how certain we are that
-        we found the pupil in a particular frame
-        IN: original blob and actual fitted ellipse contours
-        OUT: confidence index (0-1 float)
-        '''
-        #TODO: if there are multiple ellipses, choose the one with higher conf rate
-        blob_area = cv2.contourArea(blob_contour)
-        #print(len(blob_contour), len(ellipse_contour))
-        if len(ellipse_contour) >= 1:
-            ellipse_area = cv2.contourArea(ellipse_contour[0])
-            if ellipse_area > 0:
-                return blob_area/ellipse_area
-        return 0
-
-
-    def update_centroids(self, centroid):
-        '''
-        Manages the amount of centroids that have been
-        calculated from detected ellipses so far
-        IN: current detected ellipse
-        OUT: None
-        '''
-        self.centroids = np.vstack((self.centroids, centroid))
-        if len(self.centroids) > self.cutout:
-            percentile = self.cutout//10
-            self.centroids = self.centroids[percentile:, :]

@@ -42,6 +42,10 @@ Window {
                 //calibration ended
                 if (target[0] === -1 && target[1] === -1) {
                     calibTarget.visible = false;
+                    calibTargetOverlay.opacity = 0;
+                    estimationMessage.opacity = 1;
+                    calibControl.perform_estimation();
+                    calibWindow.visible = false;
                 }
                 calibTargetOverlay.opacity = 0;
                 calibTarget.x = target[0] * calibWindow.width - calibTarget.width/2;
@@ -120,7 +124,27 @@ Window {
             wrapMode: Text.WordWrap
             font.pointSize: 12
         }
+    }
+    Rectangle {
+        id: estimationMessage
+        radius: 20
+        border.width: 0
+        height: 200
+        color: "#f0dbc1"
+        width: 350
+        opacity: 0
+        z:2
+        anchors.centerIn: parent
 
+        Text {
+            width: 271
+            height: 54
+            anchors.centerIn: parent
+            text: qsTr("Performing gaze estimation. Please wait.")
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.WordWrap
+            font.pointSize: 12
+        }
     }
 }
 

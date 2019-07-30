@@ -56,7 +56,7 @@ class Calibrator(QObject):
             sc = self.scene.get_processed_data()
             le = self.leye.get_processed_data()
             re = self.reye.get_processed_data()
-            if sc[0] is not None and le[0] is not None and re[0] is not None:
+            if sc is not None and le is not None and re is not None:
                 if self.__test_timestamp(sc[0], le[0], re[0], 1/frequency):
                     self.targets[idx]   = np.vstack((self.targets[idx], sc[1]))
                     self.l_centers[idx] = np.vstack((self.l_centers[idx], le[1]))
@@ -86,27 +86,6 @@ class Calibrator(QObject):
         self.r_centers = r_centers
 
 
-    def estimate_gaze(self):
-        '''
-        Finds a gaze estimation function to be used for 
-        future predictions. Based on Gaussian Processes regression.
-        '''
-        kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0,3.0))
-        clf = GaussianProcessRegressor(alpha=1e-5,
-                                       optimizer=None,
-                                       n_restarts_optimizer=9,
-                                       kernel = kernel)
-        targets = self.__dict_to_list(self.targets)                                       
-        l_centers = self.__dict_to_list(self.l_centers)
-        if self.binocular:
-            r_centers = self.__dict_to_list(self.r_centers)
-            input_data = np.hstack((l_centers, r_centers))
-            clf.fit(input_data, targets)
-        else:
-            clf.fit(l_centers, targets)
-        self.regressor = clf
-
-
     def predict(self, leye, reye=None, w=None, h=None):
         if self.regressor is not None:
             input_data = leye.reshape(1,-1)
@@ -125,6 +104,8 @@ class Calibrator(QObject):
 
 
     def __test_timestamp(self, sc, le, re, thresh):
+        if sc is None or le is None or re is None:
+            return False
         if abs(sc - le) < thresh:
             if abs(sc - re) < thresh:
                 if abs(le - re) < thresh:
@@ -168,6 +149,27 @@ class Calibrator(QObject):
     def collect_data(self, frequency):
         self.collector = Thread(target=self.__get_target_data, args=(frequency,))
         self.collector.start()
+
+    @Slot()
+    def perform_estimation(self):
+        '''
+        Finds a gaze estimation function to be used for 
+        future predictions. Based on Gaussian Processes regression.
+        '''
+        kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0,3.0))
+        clf = GaussianProcessRegressor(alpha=1e-5,
+                                       optimizer=None,
+                                       n_restarts_optimizer=9,
+                                       kernel = kernel)
+        targets = self.__dict_to_list(self.targets)                                       
+        l_centers = self.__dict_to_list(self.l_centers)
+        if self.binocular:
+            r_centers = self.__dict_to_list(self.r_centers)
+            input_data = np.hstack((l_centers, r_centers))
+            clf.fit(input_data, targets)
+        else:
+            clf.fit(l_centers, targets)
+        self.regressor = clf
 
 
    
