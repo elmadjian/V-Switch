@@ -36,6 +36,9 @@ class Camera(QQuickImageProvider, QObject):
         attempt, attempts = 0, 8
         dev_list = uvc.device_list()
         cap = uvc.Capture(dev_list[source]['uid'])
+        controls_dict = dict([(c.display_name, c) for c in cap.controls])
+        controls_dict['Auto Exposure Mode'].value = 1
+        controls_dict['Gamma'].value = 200
         cap.frame_mode = mode
         cap.bandwidth_factor = 1.3
         gamma = 1
