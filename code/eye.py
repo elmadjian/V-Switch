@@ -6,7 +6,7 @@ import camera_proc as camera
 import tracker
 import sys 
 from matplotlib import pyplot as plt
-import fitellipse as el
+
 
 class EyeCamera(camera.Camera):
 
