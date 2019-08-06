@@ -12,7 +12,7 @@ Window {
     width: 1050
     height: 650
     color: "#202020"
-    title: qsTr("Cadu's Eye Tracker")
+    title: qsTr("V-Switch Eye Tracker")
     Universal.theme: Universal.Dark
     Universal.accent: Universal.Lime
     // @disable-check M16

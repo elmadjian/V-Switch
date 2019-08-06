@@ -39,6 +39,9 @@ class Calibrator(QObject):
         for y in np.linspace(0.09, 0.91, v):
             for x in np.linspace(0.055, 0.935, h):
                 target_list.append([x,y])
+        seed = np.random.randint(0,99)
+        rnd = np.random.RandomState(seed)
+        rnd.shuffle(target_list)
         return target_list
 
 
@@ -52,7 +55,6 @@ class Calibrator(QObject):
         idx = self.current_target
         t = time.time()
         while (len(self.targets[idx]) < self.samples) and (time.time()-t < self.timeout):
-            print(time.time()-t)
             sc = self.scene.get_processed_data()
             le = self.leye.get_processed_data()
             re = self.reye.get_processed_data()
