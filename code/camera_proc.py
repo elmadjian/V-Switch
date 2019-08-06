@@ -30,29 +30,28 @@ class Camera(QQuickImageProvider, QObject):
         self.cv = Condition()
         self.cam_process = None
         self.cam_thread = None
+        self.eye_cam = False
 
 
     def start(self, source, pipe, mode):
-        attempt, attempts = 0, 8
         dev_list = uvc.device_list()
         cap = uvc.Capture(dev_list[source]['uid'])
-        controls_dict = dict([(c.display_name, c) for c in cap.controls])
-        controls_dict['Auto Exposure Mode'].value = 1
-        controls_dict['Gamma'].value = 200
+        self.__setup_eye_cam(cap)
         cap.frame_mode = mode
         cap.bandwidth_factor = 1.3
-        gamma = 1
-        color = True
+        attempt, attempts = 0, 8
+        gamma, color = 1, True
         while attempt < attempts:
             try:
                 frame   = cap.get_frame()
                 img     = self.__adjust_gamma(frame.bgr, gamma)
                 img     = self.__cvtBlackWhite(img, color)
-                img,pos = self.process(img)                
+                img,pos = self.process(frame.bgr)                
                 if img is not None:
                     data = [cv2.imencode('.jpg', img)[1], pos]
                     pipe.send(data)
             except Exception as e:
+                print(e)
                 traceback.print_exc(file=sys.stdout)
                 self.__reset_mode(cap, source)
                 attempt += 1                
@@ -79,7 +78,6 @@ class Camera(QQuickImageProvider, QObject):
                 if qimage is not None:
                     self.__image = qimage
                     self.update_image.emit()
-
     
     def process(self, frame):
         return frame, None
@@ -90,6 +88,15 @@ class Camera(QQuickImageProvider, QObject):
 
     def get_processed_data(self):
         return self.__pos_data
+
+    def __setup_eye_cam(self, cap):
+        if self.eye_cam:
+            print('deu true')
+            controls_dict = dict([(c.display_name, c) for c in cap.controls])
+            controls_dict['Auto Exposure Mode'].value = 1
+            controls_dict['Gamma'].value = 200
+        else:
+            print('deu false')
 
 
     def __reset_mode(self, cap, source):
@@ -214,8 +221,8 @@ class Camera(QQuickImageProvider, QObject):
         if len(img.shape) == 3:
             w,h,_ = img.shape
             rgbimg = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            flipimg = cv2.flip(rgbimg,1)
-            qimg = QImage(flipimg.data, h, w, QImage.Format_RGB888)
+            #flipimg = cv2.flip(rgbimg,1)
+            qimg = QImage(rgbimg.data, h, w, QImage.Format_RGB888)
             return qimg
     
 

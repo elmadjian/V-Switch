@@ -12,8 +12,8 @@ class SceneCamera(camera.Camera):
         self.gray = None
         self.code = [
             [1,1,1],
-            [1,0,0],
-            [1,0,0]
+            [1,1,1],
+            [1,1,0]
         ] 
         self.mode = mode
 

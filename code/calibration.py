@@ -40,7 +40,7 @@ class Calibrator(QObject):
             for x in np.linspace(0.055, 0.935, h):
                 target_list.append([x,y])
         seed = np.random.randint(0,99)
-        rnd = np.random.RandomState(seed)
+        rnd  = np.random.RandomState(seed)
         rnd.shuffle(target_list)
         return target_list
 
@@ -58,14 +58,15 @@ class Calibrator(QObject):
             sc = self.scene.get_processed_data()
             le = self.leye.get_processed_data()
             re = self.reye.get_processed_data()
+            print('sc:', sc, 'le:', le, 're:', re)
             if sc is not None and le is not None and re is not None:
-                if self.__test_timestamp(sc[0], le[0], re[0], 1/frequency):
+                if self.__check_timestamp(sc[0], le[0], re[0], 1/frequency):
                     self.targets[idx]   = np.vstack((self.targets[idx], sc[1]))
                     self.l_centers[idx] = np.vstack((self.l_centers[idx], le[1]))
                     self.r_centers[idx] = np.vstack((self.r_centers[idx], re[1]))
             time.sleep(1/frequency)
         self.move_on.emit()
-        print("data collected")
+        print("number of samples collected: {}".format(len(self.targets[idx])))
 
 
     def clean_up_data(self, deviation, reye=None):
@@ -105,7 +106,7 @@ class Calibrator(QObject):
         return self.targets.keys()
 
 
-    def __test_timestamp(self, sc, le, re, thresh):
+    def __check_timestamp(self, sc, le, re, thresh):
         if sc is None or le is None or re is None:
             return False
         if abs(sc - le) < thresh:

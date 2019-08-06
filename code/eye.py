@@ -22,6 +22,7 @@ class EyeCamera(camera.Camera):
         self.bbox = None
         self.tracking = False
         self.lost_tracking = 0
+        self.eye_cam = True
         
 
     def process(self, img):
