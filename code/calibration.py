@@ -11,7 +11,7 @@ class Calibrator(QObject):
 
     move_on = Signal()
 
-    def __init__(self, v_targets, h_targets, samples, timeout):
+    def __init__(self, v_targets, h_targets, samples_per_tgt, timeout):
         '''
         ntargets: number of targets that are going to be shown for calibration
         frequency: value of the tracker's frequency in Hz
@@ -21,11 +21,12 @@ class Calibrator(QObject):
         self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
         self.l_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
         self.r_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.regressor = None
+        self.l_regressor = None
+        self.r_regressor = None
         self.target_list = self.__generate_target_list(v_targets, h_targets)
         self.current_target = -1
         self.scene, self.leye, self.reye = None, None, None
-        self.samples = samples
+        self.samples = samples_per_tgt
         self.timeout = timeout
         self.collector = None
 
@@ -55,15 +56,14 @@ class Calibrator(QObject):
         idx = self.current_target
         t = time.time()
         while (len(self.targets[idx]) < self.samples) and (time.time()-t < self.timeout):
-            sc = self.scene.get_processed_data()
+            sc = self.scene.get_processed_data() 
             le = self.leye.get_processed_data()
             re = self.reye.get_processed_data()
-            print('sc:', sc, 'le:', le, 're:', re)
             if sc is not None and le is not None and re is not None:
-                if self.__check_timestamp(sc[0], le[0], re[0], 1/frequency):
-                    self.targets[idx]   = np.vstack((self.targets[idx], sc[1]))
-                    self.l_centers[idx] = np.vstack((self.l_centers[idx], le[1]))
-                    self.r_centers[idx] = np.vstack((self.r_centers[idx], re[1]))
+                if self.__check_timestamp(sc[1], le[1], re[1], 1/frequency):
+                    self.targets[idx]   = np.vstack((self.targets[idx], sc[0]))
+                    self.l_centers[idx] = np.vstack((self.l_centers[idx], le[0]))
+                    self.r_centers[idx] = np.vstack((self.r_centers[idx], re[0]))
             time.sleep(1/frequency)
         self.move_on.emit()
         print("number of samples collected: {}".format(len(self.targets[idx])))
@@ -159,20 +159,24 @@ class Calibrator(QObject):
         Finds a gaze estimation function to be used for 
         future predictions. Based on Gaussian Processes regression.
         '''
+        clf_l = self.__get_clf()
+        clf_r = self.__get_clf()                                  
+        targets = self.__dict_to_list(self.targets)                                       
+        l_centers = self.__dict_to_list(self.l_centers)
+        r_centers = self.__dict_to_list(self.r_centers)
+        clf_l.fit(l_centers, targets)
+        clf_r.fit(r_centers, targets)
+        self.l_regressor = clf_l
+        self.r_regressor = clf_r
+        print("Gaze estimation finished")
+ 
+    def __get_clf(self):
         kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0,3.0))
         clf = GaussianProcessRegressor(alpha=1e-5,
                                        optimizer=None,
                                        n_restarts_optimizer=9,
                                        kernel = kernel)
-        targets = self.__dict_to_list(self.targets)                                       
-        l_centers = self.__dict_to_list(self.l_centers)
-        if self.binocular:
-            r_centers = self.__dict_to_list(self.r_centers)
-            input_data = np.hstack((l_centers, r_centers))
-            clf.fit(input_data, targets)
-        else:
-            clf.fit(l_centers, targets)
-        self.regressor = clf
+        return clf
 
 
    

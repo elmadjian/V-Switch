@@ -11,13 +11,30 @@ Window {
     width: 1280
     color: "white"
     property var recording: false
+    property var counter: 0
 
     signal moveOn()
-    Component.onCompleted: calibControl.move_on.connect(moveOn);
+    signal showMarkerCenter(var showMarker)
+
+    Component.onCompleted: {
+        calibControl.move_on.connect(moveOn);
+        sceneCam.show_marker_center.connect(showMarkerCenter);
+    }
     onMoveOn: {
         recording = false;
         nextStep();
     }
+
+    onShowMarkerCenter:  {
+        counter++;
+        console.log("recebi o sinal:", counter, showMarker);
+        if (showMarker) {
+            markerCenter.opacity = 1
+        } else {
+            markerCenter.opacity = 0
+        }
+    }
+
 
     function nextStep() {
         if (startMessage.opacity == 1) {
@@ -98,7 +115,18 @@ Window {
         id: calibTargetOverlay
         anchors.fill: calibTarget
         source: calibTarget
-        color: "red"
+        color: "#752b26"
+        opacity: 1
+    }
+
+    Rectangle {
+        id: markerCenter
+        width: calibTarget.width/12
+        height: calibTarget.height/12
+        color:"green"
+        radius: width*0.5
+        x: calibTarget.x + calibTarget.width/2
+        y: calibTarget.y + calibTarget.height/2
         opacity: 1
     }
 

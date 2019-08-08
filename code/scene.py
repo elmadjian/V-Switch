@@ -2,9 +2,12 @@ import cv2
 import numpy as np
 import time
 import sys
+from PySide2.QtCore import Signal, Slot, Property
 import camera_proc as camera
 
 class SceneCamera(camera.Camera):
+
+    show_marker_center = Signal(bool)
 
     def __init__(self, calibration=None, mode=(1024,768,30)):
         super().__init__()
@@ -18,7 +21,7 @@ class SceneCamera(camera.Camera):
         self.mode = mode
 
     
-    def process(self, img, normalized=True):
+    def process(self, img):
         height, width = img.shape[0], img.shape[1]
         code = np.array(self.code).reshape((3,3)).astype("bool")
         preprocessed_img = self._preprocess(img)
@@ -26,13 +29,13 @@ class SceneCamera(camera.Camera):
         possible_markers = self._find_candidates(contour_list, img)
         transformed_ones = self._transform_marker(possible_markers, img)
         ret, center      = self._get_marker_code(transformed_ones, code, img)
-        target_pos = None
+        target_pos, detected = None, False
         if ret:
-            target_pos = [time.monotonic(), np.array([center[0], center[1]], int)]
-            if normalized:
-                x = center[0]/width
-                y = center[1]/height
-                target_pos = [time.monotonic(), np.array([x,y], float)]
+            detected = True
+            x = center[0]/width
+            y = center[1]/height
+            target_pos = [np.array([x,y], float), time.monotonic()]
+        self.show_marker_center.emit(detected)
         return img, target_pos
         
 

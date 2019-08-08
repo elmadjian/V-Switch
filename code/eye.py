@@ -31,14 +31,15 @@ class EyeCamera(camera.Camera):
             self.bbox = self.__find_ROI(img)
             self.tracking = True
         else:
-            x,y,w,h = self.bbox
+            x,y,_,_ = self.bbox
             pupil = self.__find_contours(self.bbox, img)
             if pupil is not None:
                 p = pupil[0]
                 p = (p[0]+x+3, p[1]+y+3)
                 size = max(pupil[1])
                 self.__draw_tracking_info(p, size, img)
-                return img, [p, time.monotonic()]
+                p_norm = np.array([p[0]/width, p[1]/height])
+                return img, [p_norm, time.monotonic()]
             else:
                 self.lost_tracking += 1
                 if self.lost_tracking > 20:

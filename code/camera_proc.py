@@ -46,7 +46,7 @@ class Camera(QQuickImageProvider, QObject):
                 frame   = cap.get_frame()
                 img     = self.__adjust_gamma(frame.bgr, gamma)
                 img     = self.__cvtBlackWhite(img, color)
-                img,pos = self.process(frame.bgr)                
+                img,pos = self.process(img)                
                 if img is not None:
                     data = [cv2.imencode('.jpg', img)[1], pos]
                     pipe.send(data)
