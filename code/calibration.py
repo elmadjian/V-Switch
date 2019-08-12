@@ -46,7 +46,7 @@ class Calibrator(QObject):
         return target_list
 
 
-    def __get_target_data(self, frequency):
+    def __get_target_data(self, maxfreq, minfreq):
         '''
         scene: sceneCamera object
         le: left eyeCamera object
@@ -59,12 +59,12 @@ class Calibrator(QObject):
             sc = self.scene.get_processed_data() 
             le = self.leye.get_processed_data()
             re = self.reye.get_processed_data()
-            if sc is not None and le is not None and re is not None:
-                if self.__check_timestamp(sc[1], le[1], re[1], 1/frequency):
+            if sc is not None and (le is not None or re is not None):
+                if self.__check_timestamp(sc[1], le[1], re[1], 1/minfreq):
                     self.targets[idx]   = np.vstack((self.targets[idx], sc[0]))
                     self.l_centers[idx] = np.vstack((self.l_centers[idx], le[0]))
                     self.r_centers[idx] = np.vstack((self.r_centers[idx], re[0]))
-            time.sleep(1/frequency)
+            time.sleep(1/maxfreq)
         self.move_on.emit()
         print("number of samples collected: {}".format(len(self.targets[idx])))
 
@@ -148,9 +148,10 @@ class Calibrator(QObject):
     def store_data_trigger(self):
         print("storing data")
 
-    @Slot(int)
-    def collect_data(self, frequency):
-        self.collector = Thread(target=self.__get_target_data, args=(frequency,))
+    @Slot(int, int)
+    def collect_data(self, minfq, maxfq):
+        print(minfq, maxfq)
+        self.collector = Thread(target=self.__get_target_data, args=(minfq,maxfq,))
         self.collector.start()
 
     @Slot()

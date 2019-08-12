@@ -26,8 +26,8 @@ Window {
     }
 
     onShowMarkerCenter:  {
-        counter++;
-        console.log("recebi o sinal:", counter, showMarker);
+        //counter++;
+        //console.log("recebi o sinal:", counter, showMarker);
         if (showMarker) {
             markerCenter.opacity = 1
         } else {
@@ -77,7 +77,8 @@ Window {
                 var freq_leye  = leftEyeCam.current_fps;
                 var freq_reye  = rightEyeCam.current_fps;
                 var max_freq   = Math.max(freq_scene, freq_leye, freq_reye);
-                calibControl.collect_data(max_freq);
+                var min_freq   = Math.min(freq_scene, freq_leye, freq_reye);
+                calibControl.collect_data(min_freq, max_freq);
             }
         }
     }
@@ -121,12 +122,12 @@ Window {
 
     Rectangle {
         id: markerCenter
-        width: calibTarget.width/12
-        height: calibTarget.height/12
+        width: calibTarget.width/16
+        height: calibTarget.height/16
         color:"green"
         radius: width*0.5
-        x: calibTarget.x + calibTarget.width/2
-        y: calibTarget.y + calibTarget.height/2
+        x: calibTarget.x + calibTarget.width/2 - markerCenter.width/2
+        y: calibTarget.y + calibTarget.height/2 - markerCenter.height/2
         opacity: 1
     }
 

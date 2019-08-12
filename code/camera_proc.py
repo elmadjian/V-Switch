@@ -131,9 +131,15 @@ class Camera(QQuickImageProvider, QObject):
             self.capturing = False
             self.cam_thread.join(1)
 
-
     def get_source(self):
         return self.source
+
+    
+    def is_cam_open(self):
+        if self.cam_thread is not None:
+            if self.cam_thread.is_alive():
+                return True
+        return False
 
 
     def set_source(self, source):
