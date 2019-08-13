@@ -18,7 +18,7 @@ class Camera(QQuickImageProvider, QObject):
         QObject.__init__(self)
         QQuickImageProvider.__init__(self, QQuickImageProvider.Image)
         self.__image = self.to_QImage(cv2.imread("../UI/test.jpg"))
-        self.__pos_data = [None,None]
+        self.__pos_data = None
         self.capturing = False
         self.dev_list = uvc.device_list()
         self.fps_res = {}
@@ -135,7 +135,7 @@ class Camera(QQuickImageProvider, QObject):
         return self.source
 
     
-    def is_cam_open(self):
+    def is_cam_active(self):
         if self.cam_thread is not None:
             if self.cam_thread.is_alive():
                 return True

@@ -1,1 +1,8 @@
+.vscode/
+ch18-python/
+code/build/
+code/node_modules/
+hmd-eyes/
+papers/
 *.pyc
+*.avi

@@ -78,6 +78,7 @@ Window {
                 var freq_reye  = rightEyeCam.current_fps;
                 var max_freq   = Math.max(freq_scene, freq_leye, freq_reye);
                 var min_freq   = Math.min(freq_scene, freq_leye, freq_reye);
+                print("maxfreq:", max_freq, "minfreq:", min_freq);
                 calibControl.collect_data(min_freq, max_freq);
             }
         }

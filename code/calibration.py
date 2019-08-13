@@ -59,14 +59,19 @@ class Calibrator(QObject):
             sc = self.scene.get_processed_data() 
             le = self.leye.get_processed_data()
             re = self.reye.get_processed_data()
-            if sc is not None and (le is not None or re is not None):
-                if self.__check_timestamp(sc[1], le[1], re[1], 1/minfreq):
-                    self.targets[idx]   = np.vstack((self.targets[idx], sc[0]))
-                    self.l_centers[idx] = np.vstack((self.l_centers[idx], le[0]))
-                    self.r_centers[idx] = np.vstack((self.r_centers[idx], re[0]))
+            if self.__check_data_and_timestamp(sc, le, re, 1/minfreq):
+                self.__add_data(sc, le, re, idx)
             time.sleep(1/maxfreq)
         self.move_on.emit()
         print("number of samples collected: {}".format(len(self.targets[idx])))
+
+
+    def __add_data(self, sc, le, re, idx):
+        self.targets[idx] = np.vstack((self.targets[idx], sc[0]))
+        if self.leye.is_cam_active():
+            self.l_centers[idx] = np.vstack((self.l_centers[idx], le[0]))
+        if self.reye.is_cam_active():
+            self.r_centers[idx] = np.vstack((self.r_centers[idx], re[0]))
 
 
     def clean_up_data(self, deviation, reye=None):
@@ -106,12 +111,21 @@ class Calibrator(QObject):
         return self.targets.keys()
 
 
-    def __check_timestamp(self, sc, le, re, thresh):
-        if sc is None or le is None or re is None:
+    def __check_data_and_timestamp(self, sc, le, re, thresh):
+        if le is None and self.leye.is_cam_active():
             return False
-        if abs(sc - le) < thresh:
-            if abs(sc - re) < thresh:
-                if abs(le - re) < thresh:
+        if re is None and self.reye.is_cam_active():
+            return False
+        if sc is not None:
+            if le is not None and re is not None:
+                if abs(sc[1] - le[1]) < thresh:
+                    if abs(sc[1] - re[1]) < thresh:
+                        return True
+            if le is not None and re is None:
+                if abs(sc[1] - le[1]) < thresh:
+                    return True
+            if le is None and re is not None:
+                if abs(sc[1] - re[1]) < thresh:
                     return True
         return False
 
@@ -139,6 +153,15 @@ class Calibrator(QObject):
         return converted
 
     @Slot()
+    def start_calibration(self):
+        self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
+        self.l_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
+        self.r_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
+        self.l_regressor = None
+        self.r_regressor = None
+        self.current_target = -1
+
+    @Slot()
     def next_target(self):
         if self.collector is not None:
             self.collector.join()
@@ -162,15 +185,18 @@ class Calibrator(QObject):
         '''
         clf_l = self.__get_clf()
         clf_r = self.__get_clf()                                  
-        targets = self.__dict_to_list(self.targets)                                       
-        l_centers = self.__dict_to_list(self.l_centers)
-        r_centers = self.__dict_to_list(self.r_centers)
-        clf_l.fit(l_centers, targets)
-        clf_r.fit(r_centers, targets)
+        targets = self.__dict_to_list(self.targets)
+        if self.leye.is_cam_active():                                       
+            l_centers = self.__dict_to_list(self.l_centers)
+            clf_l.fit(l_centers, targets)
+        if self.reye.is_cam_active():
+            r_centers = self.__dict_to_list(self.r_centers)
+            clf_r.fit(r_centers, targets)
         self.l_regressor = clf_l
         self.r_regressor = clf_r
         print("Gaze estimation finished")
  
+
     def __get_clf(self):
         kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0,3.0))
         clf = GaussianProcessRegressor(alpha=1e-5,

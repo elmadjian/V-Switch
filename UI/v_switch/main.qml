@@ -296,6 +296,7 @@ Window {
                     onClicked: {
                         //calibScreen.showFullScreen();
                         calibScreen.showNormal();
+                        calibControl.start_calibration();
                     }
                 }
             }
