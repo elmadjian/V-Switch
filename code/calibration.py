@@ -154,6 +154,7 @@ class Calibrator(QObject):
 
     @Slot()
     def start_calibration(self):
+        print('reseting calibration')
         self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
         self.l_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
         self.r_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}

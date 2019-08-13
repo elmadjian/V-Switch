@@ -16,6 +16,15 @@ Window {
     signal moveOn()
     signal showMarkerCenter(var showMarker)
 
+    // @disable-check M16
+    onClosing: {
+        console.log("closing calib window");
+        markerCenter.opacity = 0;
+        calibTarget.visible = false;
+        calibTargetOverlay.opacity = 0;
+        reset();
+    }
+
     Component.onCompleted: {
         calibControl.move_on.connect(moveOn);
         sceneCam.show_marker_center.connect(showMarkerCenter);
@@ -35,16 +44,25 @@ Window {
         }
     }
 
+    function reset() {
+        calibWindow.visible = false;
+        estimationMessage.opacity = 0;
+        startMessage.opacity = 1;
+    }
+
 
     function nextStep() {
         if (startMessage.opacity == 1) {
             startMessage.opacity = 0;
             calibTarget.visible = true;
             calibTargetOverlay.visible = true;
+            markerCenter.opacity = 1
+            calibTargetOverlay.opacity = 1
+            calibControl.start_calibration();
         }
         if (calibTarget.visible) {
 
-            //move to next position
+            //target was being collected: move to next position
             if (calibTargetOverlay.opacity == 1) {
 
                 //recording, don't do nothing until it's finished
@@ -58,11 +76,12 @@ Window {
 
                 //calibration ended
                 if (target[0] === -1 && target[1] === -1) {
+                    markerCenter.opacity = 0;
                     calibTarget.visible = false;
                     calibTargetOverlay.opacity = 0;
                     estimationMessage.opacity = 1;
                     calibControl.perform_estimation();
-                    calibWindow.visible = false;
+                    reset();
                 }
                 calibTargetOverlay.opacity = 0;
                 calibTarget.x = target[0] * calibWindow.width - calibTarget.width/2;
@@ -78,7 +97,6 @@ Window {
                 var freq_reye  = rightEyeCam.current_fps;
                 var max_freq   = Math.max(freq_scene, freq_leye, freq_reye);
                 var min_freq   = Math.min(freq_scene, freq_leye, freq_reye);
-                print("maxfreq:", max_freq, "minfreq:", min_freq);
                 calibControl.collect_data(min_freq, max_freq);
             }
         }
@@ -129,7 +147,7 @@ Window {
         radius: width*0.5
         x: calibTarget.x + calibTarget.width/2 - markerCenter.width/2
         y: calibTarget.y + calibTarget.height/2 - markerCenter.height/2
-        opacity: 1
+        opacity: 0
     }
 
     Rectangle {
