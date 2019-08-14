@@ -14,7 +14,6 @@ Window {
     property var counter: 0
 
     signal moveOn()
-    signal showMarkerCenter(var showMarker)
 
     // @disable-check M16
     onClosing: {
@@ -27,21 +26,10 @@ Window {
 
     Component.onCompleted: {
         calibControl.move_on.connect(moveOn);
-        sceneCam.show_marker_center.connect(showMarkerCenter);
     }
     onMoveOn: {
         recording = false;
         nextStep();
-    }
-
-    onShowMarkerCenter:  {
-        //counter++;
-        //console.log("recebi o sinal:", counter, showMarker);
-        if (showMarker) {
-            markerCenter.opacity = 1
-        } else {
-            markerCenter.opacity = 0
-        }
     }
 
     function reset() {
@@ -141,13 +129,26 @@ Window {
 
     Rectangle {
         id: markerCenter
-        width: calibTarget.width/16
-        height: calibTarget.height/16
-        color:"green"
+        width: calibTarget.width/18
+        height: calibTarget.height/18
+        color: "green";
         radius: width*0.5
         x: calibTarget.x + calibTarget.width/2 - markerCenter.width/2
         y: calibTarget.y + calibTarget.height/2 - markerCenter.height/2
         opacity: 0
+
+        signal showMarkerCenter(var showMarker)
+
+        Component.onCompleted: {
+            sceneCam.show_marker_center.connect(showMarkerCenter);
+        }
+        onShowMarkerCenter:  {
+            if (showMarker) {
+                console.log("update this exposing a QT Property in Python. Can't make changes from another process call!");
+            } else {
+                console.log("update this exposing a QT Property in Python. Can't make changes from another process call!");
+            }
+        }
     }
 
     Rectangle {

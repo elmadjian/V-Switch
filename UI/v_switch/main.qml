@@ -80,6 +80,7 @@ Window {
                     sceneImage.source = "image://sceneimg/scene" + sceneImage.counter;
                 }
             }
+            //Draw gaze prediction on top of the image !!!
         }
 
     }

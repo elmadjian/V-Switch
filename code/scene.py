@@ -5,6 +5,7 @@ import sys
 from PySide2.QtCore import Signal, Slot, Property
 import camera_proc as camera
 
+
 class SceneCamera(camera.Camera):
 
     show_marker_center = Signal(bool)

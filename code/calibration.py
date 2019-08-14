@@ -190,12 +190,31 @@ class Calibrator(QObject):
         if self.leye.is_cam_active():                                       
             l_centers = self.__dict_to_list(self.l_centers)
             clf_l.fit(l_centers, targets)
+            self.l_regressor = clf_l
         if self.reye.is_cam_active():
             r_centers = self.__dict_to_list(self.r_centers)
             clf_r.fit(r_centers, targets)
-        self.l_regressor = clf_l
-        self.r_regressor = clf_r
+            self.r_regressor = clf_r
         print("Gaze estimation finished")
+
+
+    @Property('QVariantList')
+    def predict(self):
+        data = [-1,-1,-1,-1]
+        if self.l_regressor:
+            le = self.leye.get_processed_data()
+            if le is not None:
+                pass
+                #clf_predict
+                #save prediction in data[0,1]
+        if self.r_regressor:
+            re = self.reye.get_processed_data()
+            if re is not None:
+                pass
+                #clf_r predict
+                #save prediction in data[2,3]
+        return data
+
  
 
     def __get_clf(self):
