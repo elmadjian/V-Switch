@@ -113,7 +113,7 @@ Window {
     Image {
         visible: false
         id: calibTarget
-        source:"../imgs/marker2.png"
+        source:"../imgs/aruco.png"
         sourceSize.width: calibWindow.width/12
         sourceSize.height: calibWindow.height/6.75
     }
@@ -137,18 +137,18 @@ Window {
         y: calibTarget.y + calibTarget.height/2 - markerCenter.height/2
         opacity: 0
 
-        signal showMarkerCenter(var showMarker)
+//        signal showMarkerCenter(var showMarker)
 
-        Component.onCompleted: {
-            sceneCam.show_marker_center.connect(showMarkerCenter);
-        }
-        onShowMarkerCenter:  {
-            if (showMarker) {
-                console.log("update this exposing a QT Property in Python. Can't make changes from another process call!");
-            } else {
-                console.log("update this exposing a QT Property in Python. Can't make changes from another process call!");
-            }
-        }
+//        Component.onCompleted: {
+//            sceneCam.show_marker_center.connect(showMarkerCenter);
+//        }
+//        onShowMarkerCenter:  {
+//            if (showMarker) {
+//                console.log("update this exposing a QT Property in Python. Can't make changes from another process call!");
+//            } else {
+//                console.log("update this exposing a QT Property in Python. Can't make changes from another process call!");
+//            }
+//        }
     }
 
     Rectangle {
