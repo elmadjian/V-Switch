@@ -263,7 +263,7 @@ Window {
     }
 
     function enable_calibration() {
-        if (prefSceneImg.enabled && prefLeftEyeImg.enabled && prefRightEyeImg.enabled) {
+        if (prefSceneImg.enabled && (prefLeftEyeImg.enabled || prefRightEyeImg.enabled)) {
             calibration.enabled = true;
             calibrationDisabledOverlay.opacity = 0;
         }
@@ -302,7 +302,7 @@ Window {
                 Layout.preferredHeight: 50
                 Layout.preferredWidth: 50
                 source: "../imgs/calibration.png"
-                //enabled: false <--DEBUG!
+                enabled: false
                 z:1
 
                 ColorOverlay {
@@ -334,7 +334,13 @@ Window {
                     }
                     onClicked: {
                         //calibScreen.showFullScreen();
-                        calibScreen.showNormal();
+                        if (calibrationModeBox.currentText == "Screen") {
+                            console.log("initializing on-screen calibration");
+                            calibScreen.showNormal();
+                        }
+                        else if (calibrationModeBox.currentText == "HMD") {
+                            console.log("initializing HMD calibration");
+                        }
                     }
                 }
             }
