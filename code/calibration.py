@@ -74,39 +74,6 @@ class Calibrator(QObject):
             self.r_centers[idx] = np.vstack((self.r_centers[idx], re[0]))
 
 
-    def clean_up_data(self, deviation, reye=None):
-        '''
-        remove misrepresented data associated with a target
-        '''
-        targets   = {i:np.empty((0,2), float) for i in range(self.ntg)}
-        l_centers = {i:np.empty((0,2), float) for i in range(self.ntg)}
-        r_centers = {i:np.empty((0,2), float) for i in range(self.ntg)}
-        for t in self.targets.keys():
-            nx, ny = self.__get_outliers(self.l_centers[t])
-            for i in range(len(self.targets[t])):
-                if nx[i] < deviation and ny[i] < deviation:
-                    l_centers[t] = np.vstack((l_centers[t], self.l_centers[t][i]))
-                    targets[t]   = np.vstack((targets[t], self.targets[t][i]))
-                    if reye is not None:
-                        r_centers[t] = np.vstack((r_centers[t], self.r_centers[t][i]))
-        self.targets = targets
-        self.l_centers = l_centers
-        self.r_centers = r_centers
-
-
-    def predict(self, leye, reye=None, w=None, h=None):
-        if self.regressor is not None:
-            input_data = leye.reshape(1,-1)
-            if reye is not None:
-                input_data = np.hstack((leye, reye))
-            coord = self.regressor.predict(input_data)[0]
-            x = coord[0] * w
-            y = coord[1] * h
-            if len(coord) == 3:
-                return coord 
-            return (int(x), int(y))
-
-
     def get_keys(self):
         return self.targets.keys()
 
@@ -130,13 +97,6 @@ class Calibrator(QObject):
         return False
 
     
-    def __get_outliers(self, data):
-        d      = np.abs(data - np.median(data, axis=0))
-        std    = np.std(d)
-        nx, ny = d[:,0]/std, d[:,1]/std
-        return nx, ny
-
-
     def __dict_to_list(self, dic):
         new_list = np.empty((dic[0].shape), float)
         for t in dic.keys():
@@ -204,18 +164,17 @@ class Calibrator(QObject):
         if self.l_regressor:
             le = self.leye.get_processed_data()
             if le is not None:
-                pass
-                #clf_predict
-                #save prediction in data[0,1]
+                input_data = le[0].reshape(1,-1)
+                le_coord = self.l_regressor.predict(input_data)[0]
+                data[0], data[1] = float(le_coord[0]), float(le_coord[1])
         if self.r_regressor:
             re = self.reye.get_processed_data()
             if re is not None:
-                pass
-                #clf_r predict
-                #save prediction in data[2,3]
+                input_data = re[0].reshape(1,-1)
+                re_coord = self.r_regressor.predict(input_data)[0]
+                data[2], data[3] = float(re_coord[0]), float(re_coord[1])
         return data
 
- 
 
     def __get_clf(self):
         kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0,3.0))

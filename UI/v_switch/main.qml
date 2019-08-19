@@ -78,9 +78,47 @@ Window {
                 onUpdateImage: {
                     sceneImage.counter = !sceneImage.counter; //hack to force update
                     sceneImage.source = "image://sceneimg/scene" + sceneImage.counter;
+                    var gazePoints = calibControl.predict;
+                    //@disable-check M126
+                    if (gazePoints[0] != -1.0 || gazePoints[2] != -1.0) {
+                        leyePrediction.x = gazePoints[0] * sceneImage.width - leyePrediction.width/2;
+                        leyePrediction.y = gazePoints[1] * sceneImage.height - leyePrediction.width/2;
+                        reyePrediction.x = gazePoints[2] * sceneImage.width - reyePrediction.width/2;
+                        reyePrediction.y = gazePoints[3] * sceneImage.height - reyePrediction.width/2;
+                    }
                 }
             }
-            //Draw gaze prediction on top of the image !!!
+            Rectangle {
+                id: leyePrediction
+                x: 10
+                y: 10
+                z: 3
+                width: sceneImage.width/25
+                height: width
+                color: "purple"
+                radius: width*0.5
+                Text {
+                    anchors.centerIn: parent
+                    color: "white"
+                    text: "L"
+                }
+            }
+
+            Rectangle {
+                id: reyePrediction
+                x: 50
+                y: 10
+                z: 3
+                width: sceneImage.width/25
+                height: width
+                color: "green"
+                radius: width*0.5
+                Text {
+                    anchors.centerIn: parent
+                    color: "white"
+                    text: "R"
+                }
+            }
         }
 
     }
