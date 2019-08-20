@@ -8,6 +8,7 @@ import QtGraphicalEffects 1.0
 import QtQuick.Layouts 1.0
 
 Window {
+    id: mainWindow
     visible: true
     width: 1050
     height: 650
@@ -263,15 +264,27 @@ Window {
     }
 
     function enable_calibration() {
-        if (prefSceneImg.enabled && (prefLeftEyeImg.enabled || prefRightEyeImg.enabled)) {
-            calibration.enabled = true;
-            calibrationDisabledOverlay.opacity = 0;
+        if (calibrationModeBox.currentText == "Screen") {
+            if (prefSceneImg.enabled && (prefLeftEyeImg.enabled || prefRightEyeImg.enabled)) {
+                calibration.enabled = true;
+                calibrationDisabledOverlay.opacity = 0;
+            }
+        }
+        else if (calibrationModeBox.currentText == "HMD") {
+            if (prefLeftEyeImg.enabled && prefRightEyeImg.enabled) {
+                calibration.enabled = true;
+                calibrationDisabledOverlay.opacity = 0;
+            }
         }
     }
 
+    function activate_HMD_calibration() {
+        calibHMDitem.visible = true;
+    }
+
     /*
-      CALIBRATION CONTOL
-      ------------------ */
+    CALIBRATION CONTOL
+    ------------------ */
     GroupBox {
         id: calibrationSettings
         x: 30
@@ -302,7 +315,7 @@ Window {
                 Layout.preferredHeight: 50
                 Layout.preferredWidth: 50
                 source: "../imgs/calibration.png"
-                enabled: false
+                //enabled: false DEBUG!
                 z:1
 
                 ColorOverlay {
@@ -339,9 +352,17 @@ Window {
                             calibScreen.showNormal();
                         }
                         else if (calibrationModeBox.currentText == "HMD") {
-                            console.log("initializing HMD calibration");
+                            dropdownHMD.enabled = true;
+                            dropdownHMD.opacity = 1;
                         }
                     }
+                }
+                DropdownHMD {
+                    id: dropdownHMD
+                    x: 34
+                    y: 50
+                    enabled: false
+                    opacity: 0
                 }
             }
         }
@@ -406,6 +427,49 @@ Window {
         height: 720
         width: 1280
     }
+
+    /*CALIB HMD
+      ----------*/
+    Item {
+        id: calibHMDitem
+        visible: false
+        width: mainWindow.width
+        height: mainWindow.height
+
+        Rectangle {
+            id: calibHMDmode
+            width: parent.width
+            height: parent.height
+            anchors.fill: parent
+            opacity: 0.5
+            color: "black"
+            z:3
+        }
+
+        Rectangle {
+            id: calibHMDmessage
+            radius: 20
+            border.width: 0
+            height: 200
+            color: "#f0dbc1"
+            width: 350
+            opacity: 1
+            z:4
+            anchors.centerIn: parent
+
+            Text {
+                width: 271
+                height: 54
+                anchors.centerIn: parent
+                text: qsTr("HMD calibration in progress...")
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                wrapMode: Text.WordWrap
+                font.pointSize: 12
+            }
+        }
+    }
+
 
 
 

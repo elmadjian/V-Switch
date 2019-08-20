@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import time
+import os
 from PySide2.QtCore import QObject, Signal, Slot, Property
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process import kernels
@@ -25,15 +26,25 @@ class HMDCalibrator(QObject):
         self.r_regressor = None
         self.target_list = self.__generate_target_list(v_targets, h_targets)
         self.current_target = -1
-        self.scene, self.leye, self.reye = None, None, None
+        self.leye, self.reye = None, None
         self.samples = samples_per_tgt
         self.timeout = timeout
         self.collector = None
+        self.remote_ip, self.remote_port = self.load_network_options()
 
-    def set_sources(self, scene, leye, reye):
-        self.scene = scene
+    def set_sources(self, leye, reye):
         self.leye  = leye
         self.reye  = reye
+
+    def load_network_options(self):
+        ip, port = "", ""
+        if os.path.isfile('hmd_config.txt'):
+            with open('hmd_config.txt', 'r') as hmd_config:
+                data = hmd_config.readline()
+                ip, port = data.split(':')
+        print("ip:", ip, "port:", port)
+        return ip, port
+    
 
     def __generate_target_list(self, v, h):
         target_list = []
@@ -183,6 +194,26 @@ class HMDCalibrator(QObject):
                                        n_restarts_optimizer=9,
                                        kernel = kernel)
         return clf
+
+    @Property(str)
+    def hmd_ip(self):
+        return self.remote_ip
+
+    @Property(str)
+    def hmd_port(self):
+        return self.remote_port        
+
+
+    @Slot(str, str)
+    def connect(self, ip, port):
+        with open('hmd_config.txt', 'w') as hmd_config:
+            text = ip + ':' + port
+            hmd_config.write(text)
+         
+         
+    def run(self):
+        pass
+        
 
 
    

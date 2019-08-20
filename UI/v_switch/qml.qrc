@@ -6,5 +6,6 @@
         <file>CalibScreen.qml</file>
         <file>Dropdown.qml</file>
         <file>CalibControl.qml</file>
+        <file>DropdownHMD.qml</file>
     </qresource>
 </RCC>
