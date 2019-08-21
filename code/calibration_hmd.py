@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import time
 import os
+import socket
 from PySide2.QtCore import QObject, Signal, Slot, Property
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process import kernels
@@ -30,11 +31,12 @@ class HMDCalibrator(QObject):
         self.samples = samples_per_tgt
         self.timeout = timeout
         self.collector = None
-        self.remote_ip, self.remote_port = self.load_network_options()
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.ip, self.port = self.load_network_options()
 
     def set_sources(self, leye, reye):
-        self.leye  = leye
-        self.reye  = reye
+        self.leye = leye
+        self.reye = reye
 
     def load_network_options(self):
         ip, port = "", ""
@@ -42,8 +44,7 @@ class HMDCalibrator(QObject):
             with open('hmd_config.txt', 'r') as hmd_config:
                 data = hmd_config.readline()
                 ip, port = data.split(':')
-        print("ip:", ip, "port:", port)
-        return ip, port
+        return ip, int(port)
     
 
     def __generate_target_list(self, v, h):
@@ -67,18 +68,18 @@ class HMDCalibrator(QObject):
         idx = self.current_target
         t = time.time()
         while (len(self.targets[idx]) < self.samples) and (time.time()-t < self.timeout):
-            sc = self.scene.get_processed_data() 
             le = self.leye.get_processed_data()
             re = self.reye.get_processed_data()
-            if self.__check_data_and_timestamp(sc, le, re, 1/minfreq):
-                self.__add_data(sc, le, re, idx)
+            if self.__check_data_and_timestamp(le, re, 1/minfreq):
+                self.__add_data(le, re, idx)
             time.sleep(1/maxfreq)
         self.move_on.emit()
         print("number of samples collected: {}".format(len(self.targets[idx])))
 
 
-    def __add_data(self, sc, le, re, idx):
-        self.targets[idx] = np.vstack((self.targets[idx], sc[0]))
+    def __add_data(self, le, re, idx):
+        tgt = self.target_list[self.current_target]
+        self.targets[idx] = np.vstack((self.targets[idx], tgt))
         if self.leye.is_cam_active():
             self.l_centers[idx] = np.vstack((self.l_centers[idx], le[0]))
         if self.reye.is_cam_active():
@@ -89,22 +90,18 @@ class HMDCalibrator(QObject):
         return self.targets.keys()
 
 
-    def __check_data_and_timestamp(self, sc, le, re, thresh):
+    def __check_data_and_timestamp(self, le, re, thresh):
         if le is None and self.leye.is_cam_active():
             return False
         if re is None and self.reye.is_cam_active():
             return False
-        if sc is not None:
-            if le is not None and re is not None:
-                if abs(sc[1] - le[1]) < thresh:
-                    if abs(sc[1] - re[1]) < thresh:
-                        return True
+        if le is not None and re is not None:
+            if abs(le[1] - re[1]) < thresh:
+                return True
             if le is not None and re is None:
-                if abs(sc[1] - le[1]) < thresh:
-                    return True
+                return True
             if le is None and re is not None:
-                if abs(sc[1] - re[1]) < thresh:
-                    return True
+                return True
         return False
 
     
@@ -118,12 +115,12 @@ class HMDCalibrator(QObject):
     @Property('QVariantList')
     def target(self):
         if self.current_target >= len(self.target_list):
+            self.socket.sendto("F".encode(), (self.ip, self.port))
             return [-1,-1]
         tgt = self.target_list[self.current_target]
         converted = [float(tgt[0]), float(tgt[1])]
         return converted
 
-    @Slot()
     def start_calibration(self):
         print('reseting calibration')
         self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
@@ -145,7 +142,9 @@ class HMDCalibrator(QObject):
 
     @Slot(int, int)
     def collect_data(self, minfq, maxfq):
-        print(minfq, maxfq)
+        tgt = self.target_list[self.current_target]
+        msg = 'N:' + str(tgt[0]) + ':' + str(tgt[1])
+        self.socket.sendto(msg.encode(), (self.ip, self.port))
         self.collector = Thread(target=self.__get_target_data, args=(minfq,maxfq,))
         self.collector.start()
 
@@ -206,11 +205,14 @@ class HMDCalibrator(QObject):
 
     @Slot(str, str)
     def connect(self, ip, port):
+        self.ip, self.port = ip, int(port)
         with open('hmd_config.txt', 'w') as hmd_config:
             text = ip + ':' + port
             hmd_config.write(text)
+        self.socket.sendto('C'.encode(), (self.ip, self.port))
+        self.start_calibration()
          
-         
+
     def run(self):
         pass
         

@@ -280,6 +280,7 @@ Window {
 
     function activate_HMD_calibration() {
         calibHMDitem.visible = true;
+        calibHMDitem.keyListenerHMD.focus = true;
     }
 
     /*
@@ -354,6 +355,7 @@ Window {
                         else if (calibrationModeBox.currentText == "HMD") {
                             dropdownHMD.enabled = true;
                             dropdownHMD.opacity = 1;
+                            calibHMDitem.focus = true;
                         }
                     }
                 }
@@ -430,45 +432,13 @@ Window {
 
     /*CALIB HMD
       ----------*/
-    Item {
+    CalibHMD {
         id: calibHMDitem
         visible: false
         width: mainWindow.width
         height: mainWindow.height
-
-        Rectangle {
-            id: calibHMDmode
-            width: parent.width
-            height: parent.height
-            anchors.fill: parent
-            opacity: 0.5
-            color: "black"
-            z:3
-        }
-
-        Rectangle {
-            id: calibHMDmessage
-            radius: 20
-            border.width: 0
-            height: 200
-            color: "#f0dbc1"
-            width: 350
-            opacity: 1
-            z:4
-            anchors.centerIn: parent
-
-            Text {
-                width: 271
-                height: 54
-                anchors.centerIn: parent
-                text: qsTr("HMD calibration in progress...")
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                wrapMode: Text.WordWrap
-                font.pointSize: 12
-            }
-        }
     }
+
 
 
 
