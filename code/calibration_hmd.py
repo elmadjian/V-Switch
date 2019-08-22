@@ -44,13 +44,14 @@ class HMDCalibrator(QObject):
             with open('hmd_config.txt', 'r') as hmd_config:
                 data = hmd_config.readline()
                 ip, port = data.split(':')
+        print("ip:", ip, "port:", port)
         return ip, int(port)
     
 
     def __generate_target_list(self, v, h):
         target_list = []
-        for y in np.linspace(0.09, 0.91, v):
-            for x in np.linspace(0.055, 0.935, h):
+        for y in np.linspace(-1, 1, v):
+            for x in np.linspace(-1, 1, h):
                 target_list.append([x,y])
         seed = np.random.randint(0,99)
         rnd  = np.random.RandomState(seed)
@@ -116,7 +117,7 @@ class HMDCalibrator(QObject):
     def target(self):
         if self.current_target >= len(self.target_list):
             self.socket.sendto("F".encode(), (self.ip, self.port))
-            return [-1,-1]
+            return [-9,-9]
         tgt = self.target_list[self.current_target]
         converted = [float(tgt[0]), float(tgt[1])]
         return converted
@@ -135,6 +136,9 @@ class HMDCalibrator(QObject):
         if self.collector is not None:
             self.collector.join()
         self.current_target += 1
+        tgt = self.target_list[self.current_target]
+        msg = 'N:' + str(tgt[0]) + ':' + str(tgt[1])
+        self.socket.sendto(msg.encode(), (self.ip, self.port))
 
     @Slot()
     def store_data_trigger(self):
@@ -142,9 +146,6 @@ class HMDCalibrator(QObject):
 
     @Slot(int, int)
     def collect_data(self, minfq, maxfq):
-        tgt = self.target_list[self.current_target]
-        msg = 'N:' + str(tgt[0]) + ':' + str(tgt[1])
-        self.socket.sendto(msg.encode(), (self.ip, self.port))
         self.collector = Thread(target=self.__get_target_data, args=(minfq,maxfq,))
         self.collector.start()
 
@@ -196,11 +197,11 @@ class HMDCalibrator(QObject):
 
     @Property(str)
     def hmd_ip(self):
-        return self.remote_ip
+        return self.ip
 
     @Property(str)
     def hmd_port(self):
-        return self.remote_port        
+        return self.port        
 
 
     @Slot(str, str)

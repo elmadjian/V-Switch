@@ -11,7 +11,8 @@ Item {
     width: mainWindow.width
     height: mainWindow.height
     property alias keyListenerHMD: keyListenerHMD
-    property var recording: false
+    property bool recording: false
+    property bool stalling: true
     signal moveOn()
 
     Component.onCompleted: {
@@ -19,31 +20,37 @@ Item {
     }
     onMoveOn: {
         recording = false;
+        console.log("move on, dude");
         nextStep();
     }
 
     function nextStep() {
 
-        //recording, don't do nothing until it's finished
-        if (recording) {
-            console.log("Wait, recording data...");
-            return
-        }
-        calibHMD.next_target();
-        var target = calibControl.target;
+        if (stalling) {
+            //recording, don't do nothing until it's finished
+            if (recording) {
+                console.log("Wait, recording data...");
+                return
+            }
+            calibHMD.next_target();
+            var target = calibControl.target;
 
-        //calibration ended
-        if (target[0] === -1 && target[1] === -1) {
-            console.log("calibration ended");
-        }
+            //calibration ended
+            if (target[0] === -9 && target[1] === -9) {
+                console.log("calibration ended");
 
-        //record data
+            }
+            stalling = false;
+
+        }
+        //record data        
         else {
+            stalling = true;
             recording = true;
-            var freq_leye  = leftEyeCam.current_fps;
-            var freq_reye  = rightEyeCam.current_fps;
-            var max_freq   = Math.max(freq_leye, freq_reye);
-            var min_freq   = Math.min(freq_leye, freq_reye);
+            var freq_leye = leftEyeCam.current_fps;
+            var freq_reye = rightEyeCam.current_fps;
+            var max_freq  = Math.max(freq_leye, freq_reye);
+            var min_freq  = Math.min(freq_leye, freq_reye);
             calibHMD.collect_data(min_freq, max_freq);
         }
     }
@@ -68,12 +75,17 @@ Item {
         opacity: 1
         z:4
         anchors.centerIn: parent
+        Component.onCompleted: {
+            nextStep();
+        }
 
         Text {
             width: 271
             height: 54
             anchors.centerIn: parent
-            text: qsTr("HMD calibration in progress...")
+            text: qsTr("HMD calibration in progress...\n"+
+                       "Press SPACE or DOUBLE_CLICK to\n"+
+                       "start recording data from target")
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             wrapMode: Text.WordWrap
@@ -87,7 +99,7 @@ Item {
         Keys.onPressed: {
             if (event.key === Qt.Key_Space) {
                 event.accepted = true;
-                console.log('aperteiiiii');
+                nextStep();
             }
         }
     }
@@ -96,7 +108,7 @@ Item {
         focus: true
         anchors.fill: parent
         onDoubleClicked: {
-            console.log("key pressed");
+            nextStep();
         }
     }
 }
