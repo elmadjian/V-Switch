@@ -74,7 +74,7 @@ Rectangle {
         onClicked: {
             if (textfieldIP.acceptableInput && textfieldPort.acceptableInput) {
                 errorMsg.opacity = 0;
-                calibHMD.connect(textfieldIP.text, textfieldPort.text);
+                calibHMD.update_network(textfieldIP.text, textfieldPort.text);
                 mainWindow.activate_HMD_calibration();
                 dropdownHMD.enabled = false;
                 dropdownHMD.opacity = 0;

@@ -12,6 +12,7 @@ from threading import Thread
 class HMDCalibrator(QObject):
 
     move_on = Signal()
+    conn_status = Signal(bool)
 
     def __init__(self, v_targets, h_targets, samples_per_tgt, timeout):
         '''
@@ -44,7 +45,6 @@ class HMDCalibrator(QObject):
             with open('hmd_config.txt', 'r') as hmd_config:
                 data = hmd_config.readline()
                 ip, port = data.split(':')
-        print("ip:", ip, "port:", port)
         return ip, int(port)
     
 
@@ -116,7 +116,6 @@ class HMDCalibrator(QObject):
     @Property('QVariantList')
     def target(self):
         if self.current_target >= len(self.target_list):
-            self.socket.sendto("F".encode(), (self.ip, self.port))
             return [-9,-9]
         tgt = self.target_list[self.current_target]
         converted = [float(tgt[0]), float(tgt[1])]
@@ -136,6 +135,9 @@ class HMDCalibrator(QObject):
         if self.collector is not None:
             self.collector.join()
         self.current_target += 1
+        if self.current_target >= len(self.target_list):
+            self.socket.sendto("F".encode(), (self.ip, self.port))
+            return
         tgt = self.target_list[self.current_target]
         msg = 'N:' + str(tgt[0]) + ':' + str(tgt[1])
         self.socket.sendto(msg.encode(), (self.ip, self.port))
@@ -146,6 +148,8 @@ class HMDCalibrator(QObject):
 
     @Slot(int, int)
     def collect_data(self, minfq, maxfq):
+        msg = 'R'.encode()
+        self.socket.sendto(msg, (self.ip, self.port))
         self.collector = Thread(target=self.__get_target_data, args=(minfq,maxfq,))
         self.collector.start()
 
@@ -199,20 +203,31 @@ class HMDCalibrator(QObject):
     def hmd_ip(self):
         return self.ip
 
-    @Property(str)
+    @Property(int)
     def hmd_port(self):
         return self.port        
 
 
     @Slot(str, str)
-    def connect(self, ip, port):
+    def update_network(self, ip, port):
         self.ip, self.port = ip, int(port)
         with open('hmd_config.txt', 'w') as hmd_config:
             text = ip + ':' + port
             hmd_config.write(text)
+
+
+    @Slot()
+    def connect(self):
+        self.socket.settimeout(4)
         self.socket.sendto('C'.encode(), (self.ip, self.port))
-        self.start_calibration()
-         
+        try:
+            response = self.socket.recv(1024).decode()
+            if response == 'C':
+                self.conn_status.emit(True)
+                self.start_calibration()
+        except Exception:
+            self.conn_status.emit(False)
+        
 
     def run(self):
         pass

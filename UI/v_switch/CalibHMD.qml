@@ -8,23 +8,39 @@ import QtQuick.Layouts 1.0
 
 Item {
     id: calibHMDitem
+    visible: false
     width: mainWindow.width
     height: mainWindow.height
     property alias keyListenerHMD: keyListenerHMD
     property bool recording: false
-    property bool stalling: true
+    property bool stalling: false
     signal moveOn()
+    signal connStatus(var connectionStatus)
 
     Component.onCompleted: {
         calibHMD.move_on.connect(moveOn);
+        calibHMD.conn_status.connect(connStatus);
     }
+
     onMoveOn: {
         recording = false;
         console.log("move on, dude");
         nextStep();
     }
 
+    onConnStatus: {
+        if (connectionStatus)
+            calibHMDText.state = "success";
+        else {
+            calibHMDText.state = "failed";
+        }
+    }
+
     function nextStep() {
+        if (calibHMDText.state == "success") {
+            calibHMDText.state = "calibrating";
+            stalling = true;
+        }
 
         if (stalling) {
             //recording, don't do nothing until it's finished
@@ -43,7 +59,7 @@ Item {
             stalling = false;
 
         }
-        //record data        
+        //record data
         else {
             stalling = true;
             recording = true;
@@ -76,20 +92,77 @@ Item {
         z:4
         anchors.centerIn: parent
         Component.onCompleted: {
-            nextStep();
+            calibHMDText.state = "connecting";
         }
 
         Text {
+            id: calibHMDText
             width: 271
             height: 54
             anchors.centerIn: parent
-            text: qsTr("HMD calibration in progress...\n"+
-                       "Press SPACE or DOUBLE_CLICK to\n"+
-                       "start recording data from target")
+            text: qsTr("")
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             wrapMode: Text.WordWrap
             font.pointSize: 12
+
+            onVisibleChanged: {
+                if (visible) {
+                    console.log("connecting");
+                    calibHMD.connect();
+                }
+            }
+
+            Button {
+                id: closeHMDbtn
+                x: 86
+                y: 62
+                visible: false
+                text: "OK"
+                onClicked: {
+                    calibHMDitem.visible = false;
+                    closeHMDbtn.visible = false;
+                    calibHMDText.state = "connecting";
+                }
+            }
+
+            states: [
+                State {
+                    name: "connecting"
+                    PropertyChanges {
+                        target: calibHMDText
+                        text: qsTr("Searching for HMD...")
+                    }
+                },
+                State {
+                    name: "failed"
+                    PropertyChanges {
+                        target: calibHMDText
+                        text: qsTr("Could not find an HMD with current network settings")
+                    }
+                    PropertyChanges {
+                        target: closeHMDbtn
+                        visible: true
+                    }
+                },
+                State {
+                    name: "success"
+                    PropertyChanges {
+                        target: calibHMDText
+                        text: qsTr("HMD found!\n"+
+                                   "Press SPACE or DOUBLE_CLICK to "+
+                                   "start recording data from target")
+                    }
+                },
+                State {
+                    name: "calibrating"
+                    PropertyChanges {
+                        target: calibHMDText
+                        text: qsTr("Calibration in progress...")
+
+                    }
+                }
+            ]
         }
     }
     Item {
