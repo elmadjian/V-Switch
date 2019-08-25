@@ -134,7 +134,6 @@ class Calibrator(QObject):
 
     @Slot(int, int)
     def collect_data(self, minfq, maxfq):
-        print(minfq, maxfq)
         self.collector = Thread(target=self.__get_target_data, args=(minfq,maxfq,))
         self.collector.start()
 
@@ -177,7 +176,7 @@ class Calibrator(QObject):
 
 
     def __get_clf(self):
-        kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0,3.0))
+        kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0,1.0))
         clf = GaussianProcessRegressor(alpha=1e-5,
                                        optimizer=None,
                                        n_restarts_optimizer=9,

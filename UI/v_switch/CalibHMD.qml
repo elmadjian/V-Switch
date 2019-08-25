@@ -24,7 +24,6 @@ Item {
 
     onMoveOn: {
         recording = false;
-        console.log("move on, dude");
         nextStep();
     }
 
@@ -34,6 +33,11 @@ Item {
         else {
             calibHMDText.state = "failed";
         }
+    }
+
+    function reset() {
+        calibHMDitem.visible = false;
+        calibHMDText.state = "connecting";
     }
 
     function nextStep() {
@@ -49,12 +53,13 @@ Item {
                 return
             }
             calibHMD.next_target();
-            var target = calibControl.target;
+            var target = calibHMD.target;
 
             //calibration ended
             if (target[0] === -9 && target[1] === -9) {
                 console.log("calibration ended");
-
+                calibHMD.perform_estimation();
+                reset();
             }
             stalling = false;
 

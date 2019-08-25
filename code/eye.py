@@ -38,7 +38,7 @@ class EyeCamera(camera.Camera):
                 p = (p[0]+x+3, p[1]+y+3)
                 size = max(pupil[1])
                 self.__draw_tracking_info(p, size, img)
-                p_norm = np.array([p[0]/width, p[1]/height])
+                p_norm = np.array([p[0]/width, p[1]/height], dtype='float32')
                 return img, [p_norm, time.monotonic()]
             else:
                 self.lost_tracking += 1

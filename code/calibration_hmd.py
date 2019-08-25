@@ -32,6 +32,8 @@ class HMDCalibrator(QObject):
         self.samples = samples_per_tgt
         self.timeout = timeout
         self.collector = None
+        self.predictor = None
+        self.stream = False
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ip, self.port = self.load_network_options()
 
@@ -50,8 +52,8 @@ class HMDCalibrator(QObject):
 
     def __generate_target_list(self, v, h):
         target_list = []
-        for y in np.linspace(-1, 1, v):
-            for x in np.linspace(-1, 1, h):
+        for y in np.linspace(0.0000001, 0.9999999, v):
+            for x in np.linspace(0.0000001, 0.9999999, h):
                 target_list.append([x,y])
         seed = np.random.randint(0,99)
         rnd  = np.random.RandomState(seed)
@@ -85,7 +87,14 @@ class HMDCalibrator(QObject):
             self.l_centers[idx] = np.vstack((self.l_centers[idx], le[0]))
         if self.reye.is_cam_active():
             self.r_centers[idx] = np.vstack((self.r_centers[idx], re[0]))
-
+        #DEBUG!
+        if tgt[0] > 1 or tgt[1] > 1:
+            print('error tgt:', tgt)
+        if le[0][0] > 1 or le[0][1] >1 :
+            print('error le:', le)
+        if re[0][0] > 1 or re[0][1] >1 :
+            print('error re:', re)
+        
 
     def get_keys(self):
         return self.targets.keys()
@@ -95,6 +104,10 @@ class HMDCalibrator(QObject):
         if le is None and self.leye.is_cam_active():
             return False
         if re is None and self.reye.is_cam_active():
+            return False
+        if np.any(np.isnan(le[0])) or not np.all(np.isfinite(le[0])):
+            return False
+        if np.any(np.isnan(re[0])) or not np.all(np.isfinite(re[0])):
             return False
         if le is not None and re is not None:
             if abs(le[1] - re[1]) < thresh:
@@ -128,6 +141,9 @@ class HMDCalibrator(QObject):
         self.r_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
         self.l_regressor = None
         self.r_regressor = None
+        if self.predictor is not None:
+            self.stream = False
+            self.predictor.join()
         self.current_target = -1
 
     @Slot()
@@ -171,11 +187,35 @@ class HMDCalibrator(QObject):
             clf_r.fit(r_centers, targets)
             self.r_regressor = clf_r
         print("Gaze estimation finished")
+        if self.l_regressor is not None or self.r_regressor is not None:
+            self.stream = True
+            self.predictor = Thread(target=self.predict, args=())
+            self.predictor.start()
 
 
-    @Property('QVariantList')
     def predict(self):
-        data = [-1,-1,-1,-1]
+        count = 0
+        while self.stream:
+            try:
+                demand = self.socket.recv(1024).decode()
+                if demand.startswith('G'):
+                    data = self.__predict()
+                    x1, y1 = data[0], data[1]
+                    x2, y2 = data[2], data[3]
+                    x1, y1 = '{:.8f}'.format(x1), '{:.8f}'.format(y1)
+                    x2, y2 = '{:.8f}'.format(x2), '{:.8f}'.format(y2)
+                    msg = 'G:'+x1+':'+y1+':'+x2+':'+y2
+                    print(msg)
+                    self.socket.sendto(msg.encode(), (self.ip, self.port))
+            except Exception as e:
+                print("no request from HMD...", e)
+                count += 1
+                if count > 3:
+                    break
+
+
+    def __predict(self):
+        data = [-9,-9,-9,-9]
         if self.l_regressor:
             le = self.leye.get_processed_data()
             if le is not None:
@@ -192,10 +232,9 @@ class HMDCalibrator(QObject):
 
 
     def __get_clf(self):
-        kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0,3.0))
+        kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0,1.0))
         clf = GaussianProcessRegressor(alpha=1e-5,
-                                       optimizer=None,
-                                       n_restarts_optimizer=9,
+                                       n_restarts_optimizer=5,
                                        kernel = kernel)
         return clf
 
@@ -227,11 +266,7 @@ class HMDCalibrator(QObject):
                 self.start_calibration()
         except Exception:
             self.conn_status.emit(False)
-        
-
-    def run(self):
-        pass
-        
+                
 
 
    
