@@ -21,9 +21,9 @@ class HMDCalibrator(QObject):
         '''
         QObject.__init__(self)
         self.ntargets  = v_targets * h_targets
-        self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.l_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.r_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
+        self.targets   = {i:np.empty((0,2), 'float32') for i in range(self.ntargets)}
+        self.l_centers = {i:np.empty((0,2), 'float32') for i in range(self.ntargets)}
+        self.r_centers = {i:np.empty((0,2), 'float32') for i in range(self.ntargets)}
         self.l_regressor = None
         self.r_regressor = None
         self.target_list = self.__generate_target_list(v_targets, h_targets)
@@ -36,6 +36,9 @@ class HMDCalibrator(QObject):
         self.stream = False
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ip, self.port = self.load_network_options()
+        self.tg_list = np.empty((0,2), dtype='float32')
+        self.le_list = np.empty((0,2), dtype='float32')
+        self.re_list = np.empty((0,2), dtype='float32')
 
     def set_sources(self, leye, reye):
         self.leye = leye
@@ -52,9 +55,9 @@ class HMDCalibrator(QObject):
 
     def __generate_target_list(self, v, h):
         target_list = []
-        for y in np.linspace(0.0000001, 0.9999999, v):
-            for x in np.linspace(0.0000001, 0.9999999, h):
-                target_list.append([x,y])
+        for y in np.linspace(0,1, v):
+            for x in np.linspace(0,1, h):
+                target_list.append(np.array([x,y], dtype=np.float32))
         seed = np.random.randint(0,99)
         rnd  = np.random.RandomState(seed)
         rnd.shuffle(target_list)
@@ -83,17 +86,13 @@ class HMDCalibrator(QObject):
     def __add_data(self, le, re, idx):
         tgt = self.target_list[self.current_target]
         self.targets[idx] = np.vstack((self.targets[idx], tgt))
+        self.tg_list = np.vstack((self.tg_list, tgt))
         if self.leye.is_cam_active():
             self.l_centers[idx] = np.vstack((self.l_centers[idx], le[0]))
+            self.le_list = np.vstack((self.le_list, le[0]))
         if self.reye.is_cam_active():
             self.r_centers[idx] = np.vstack((self.r_centers[idx], re[0]))
-        #DEBUG!
-        if tgt[0] > 1 or tgt[1] > 1:
-            print('error tgt:', tgt)
-        if le[0][0] > 1 or le[0][1] >1 :
-            print('error le:', le)
-        if re[0][0] > 1 or re[0][1] >1 :
-            print('error re:', re)
+            self.re_list = np.vstack((self.re_list, re[0]))
         
 
     def get_keys(self):
@@ -104,10 +103,6 @@ class HMDCalibrator(QObject):
         if le is None and self.leye.is_cam_active():
             return False
         if re is None and self.reye.is_cam_active():
-            return False
-        if np.any(np.isnan(le[0])) or not np.all(np.isfinite(le[0])):
-            return False
-        if np.any(np.isnan(re[0])) or not np.all(np.isfinite(re[0])):
             return False
         if le is not None and re is not None:
             if abs(le[1] - re[1]) < thresh:
@@ -120,7 +115,7 @@ class HMDCalibrator(QObject):
 
     
     def __dict_to_list(self, dic):
-        new_list = np.empty((dic[0].shape), float)
+        new_list = np.empty((dic[0].shape), np.float32)
         for t in dic.keys():
             new_list = np.vstack((new_list, dic[t]))
         return new_list
@@ -176,15 +171,12 @@ class HMDCalibrator(QObject):
         future predictions. Based on Gaussian Processes regression.
         '''
         clf_l = self.__get_clf()
-        clf_r = self.__get_clf()                                  
-        targets = self.__dict_to_list(self.targets)
-        if self.leye.is_cam_active():                                       
-            l_centers = self.__dict_to_list(self.l_centers)
-            clf_l.fit(l_centers, targets)
+        clf_r = self.__get_clf()                                 
+        if self.leye.is_cam_active():                
+            clf_l.fit(self.le_list, self.tg_list)
             self.l_regressor = clf_l
         if self.reye.is_cam_active():
-            r_centers = self.__dict_to_list(self.r_centers)
-            clf_r.fit(r_centers, targets)
+            clf_r.fit(self.re_list, self.tg_list)
             self.r_regressor = clf_r
         print("Gaze estimation finished")
         if self.l_regressor is not None or self.r_regressor is not None:
@@ -205,7 +197,6 @@ class HMDCalibrator(QObject):
                     x1, y1 = '{:.8f}'.format(x1), '{:.8f}'.format(y1)
                     x2, y2 = '{:.8f}'.format(x2), '{:.8f}'.format(y2)
                     msg = 'G:'+x1+':'+y1+':'+x2+':'+y2
-                    print(msg)
                     self.socket.sendto(msg.encode(), (self.ip, self.port))
             except Exception as e:
                 print("no request from HMD...", e)
@@ -232,9 +223,10 @@ class HMDCalibrator(QObject):
 
 
     def __get_clf(self):
-        kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0,1.0))
+        kernel = 1.5*kernels.RBF(length_scale=1.0, length_scale_bounds=(0.0,1.0))
         clf = GaussianProcessRegressor(alpha=1e-5,
-                                       n_restarts_optimizer=5,
+                                       optimizer=None,
+                                       n_restarts_optimizer=3,
                                        kernel = kernel)
         return clf
 

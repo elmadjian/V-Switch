@@ -19,7 +19,7 @@ if __name__=='__main__':
     videoio   = videoio_uvc.VideoIO_UVC()
     cameras   = videoio.get_cameras()
     calib_ctl = calibration.Calibrator(3, 3, 60, 6)
-    calib_hmd = calibration_hmd.HMDCalibrator(3, 3, 70, 4) 
+    calib_hmd = calibration_hmd.HMDCalibrator(3, 3, 150, 4) 
 
     scene_cam = scene.SceneCamera()
     le_cam    = eye.EyeCamera()
