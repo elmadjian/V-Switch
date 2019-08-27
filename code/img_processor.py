@@ -1,21 +1,27 @@
 import uvc
-from multiprocessing import Process, Pipe
+from multiprocessing import Process, Pipe, Array
 import traceback
 import cv2
 import sys
 import time
 import numpy as np
+import ctypes
 
 
 class ImageProcessor(Process):
 
-    def __init__(self, source, mode, pipe, queue):
+    def __init__(self, source, mode, pipe, array):
         Process.__init__(self)
         self.eye_cam = False
         self.source = source
         self.mode = mode
         self.pipe = pipe
-        self.queue = queue
+        self.shared_array = array
+    
+    def __get_shared_np_array(self):
+        nparray = np.frombuffer(self.shared_array, dtype=ctypes.c_uint8)
+        w, h = self.mode[0], self.mode[1]
+        return nparray.reshape((h,w,3))
 
     def __adjust_gamma(self, img, gamma):
         lut = np.empty((1,256), np.uint8)
@@ -54,37 +60,32 @@ class ImageProcessor(Process):
         cap.bandwidth_factor = 1.3
         attempt, attempts = 0, 8
         gamma, color = 1, True 
-        while attempt < attempts:           
+        while attempt < attempts:      
             try:
                 frame   = cap.get_frame()
                 img     = self.__adjust_gamma(frame.bgr, gamma)
                 img     = self.__cvtBlackWhite(img, color)
                 img,pos = self.process(img)                
                 if img is not None:
-                    encoding = [int(cv2.IMWRITE_JPEG_QUALITY), 50]
-                    data = [cv2.imencode('.jpg', img, encoding)[1], pos]
-                    self.queue.put(data)
+                    #encoding = [int(cv2.IMWRITE_JPEG_QUALITY), 50]
+                    #data = [cv2.imencode('.jpg', img, encoding)[1], pos]
+                        # self.pipe.send(data)
+                    npshared = self.__get_shared_np_array()
+                    np.copyto(npshared, img)
             except Exception as e:
-                print('eiiiita nois')
                 print(e)
                 traceback.print_exc(file=sys.stdout)
                 self.__reset_mode(cap)
-                attempt += 1
-            try:                
-                if self.pipe.poll():
-                    msg = self.pipe.recv()
-                    if msg == "stop":
-                        cap.stop_stream()
-                        break
-                    elif msg == "gamma":
-                        gamma = self.pipe.recv()
-                    elif msg == "color":
-                        color = self.pipe.recv()
-            except Exception as e:
-                print('aiiii carai')
-                print(e)
-                traceback.print_exc(file=sys.stdout)
-
+                attempt += 1               
+            # if self.pipe.poll():
+            #     msg = self.pipe.recv()
+            #     if msg == "stop":
+            #         cap.stop_stream()
+            #         break
+            #     elif msg == "gamma":
+            #         gamma = self.pipe.recv()
+            #     elif msg == "color":
+            #         color = self.pipe.recv()
         cap.close()
         print("camera", self.source, "closed")
 

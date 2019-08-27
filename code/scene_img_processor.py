@@ -4,8 +4,8 @@ import img_processor as imp
 
 class SceneImageProcessor(imp.ImageProcessor):
 
-    def __init__(self, source, mode, pipe, queue):
-        super().__init__(source, mode, pipe, queue)
+    def __init__(self, source, mode, pipe, array):
+        super().__init__(source, mode, pipe, array)
         
 
     def process(self, img):

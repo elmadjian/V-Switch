@@ -6,8 +6,8 @@ import sys
 
 class EyeImageProcessor(imp.ImageProcessor):
 
-    def __init__(self, source, mode, pipe, queue):
-        super().__init__(source, mode, pipe, queue)
+    def __init__(self, source, mode, pipe, array):
+        super().__init__(source, mode, pipe, array)
         self.eye_cam = True
         self.bbox = None
         self.tracking = False

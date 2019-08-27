@@ -6,9 +6,10 @@ import numpy as np
 import time
 import uvc
 from threading import Thread, Lock
-from multiprocessing import Process, Pipe, Value, Condition, Queue
+from multiprocessing import Process, Pipe, Value, Condition, Array
 import sys
 import traceback
+import ctypes
 
 class Camera(QQuickImageProvider, QObject):
 
@@ -23,28 +24,27 @@ class Camera(QQuickImageProvider, QObject):
         self.dev_list = uvc.device_list()
         self.fps_res = {}
         self.modes = {}
-        self.mode = None    # --> subclassed property!
+        self.mode = None         # --> subclassed property
+        self.shared_array = None # --> subclassed property
         self.source = None
         self.cap = None
         self.pipe, self.child = Pipe()
-        self.queue = Queue()
         self.cam_process = None
         self.cam_thread = None
 
     def thread_loop(self):
         while self.capturing:
-            # if self.pipe.poll(1):
-            #     data = self.pipe.recv()
-            try:
-                data = self.queue.get(2)
-                img = cv2.imdecode(data[0], cv2.IMREAD_COLOR)
-                self.__pos_data = data[1]
-                qimage = self.to_QImage(img)
-                if qimage is not None:
-                    self.__image = qimage
-                    self.update_image.emit()
-            except Exception:
-                print('no data to retrieve')
+            time.sleep(0.033)
+            img = self.__get_shared_np_array()
+            qimage = self.to_QImage(img)
+            if qimage is not None:
+                self.__image = qimage
+                self.update_image.emit()
+
+    def __get_shared_np_array(self):
+        nparray = np.frombuffer(self.shared_array, dtype=ctypes.c_uint8)
+        w, h = self.mode[0], self.mode[1]
+        return nparray.reshape((h,w,3))
     
     def requestImage(self, id, size, requestedSize):
         return self.__image
@@ -81,7 +81,7 @@ class Camera(QQuickImageProvider, QObject):
         self.source = source
         self.__set_fps_modes()
         self.capturing = True
-        self.init_process(source, self.child, self.queue, self.mode)
+        self.init_process(source, self.child, self.shared_array, self.mode)
         self.cam_thread = Thread(target=self.thread_loop, args=())
         self.cam_thread.start()
 
@@ -138,8 +138,8 @@ class Camera(QQuickImageProvider, QObject):
             print("setting mode:", self.modes[int(fps)][0])
             self.mode = self.modes[int(fps)][0]
         self.capturing = True
-        self.init_process(self.source, self.child, self.queue, self.mode)
-        self.cam_thread = Thread(target=self.run, args=())
+        self.init_process(self.source, self.child, self.shared_array, self.mode)
+        self.cam_thread = Thread(target=self.thread_loop, args=())
         self.cam_thread.start()
 
     @Slot(float)
