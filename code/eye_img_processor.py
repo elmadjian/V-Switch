@@ -6,8 +6,8 @@ import sys
 
 class EyeImageProcessor(imp.ImageProcessor):
 
-    def __init__(self, source, mode, pipe, array):
-        super().__init__(source, mode, pipe, array)
+    def __init__(self, source, mode, pipe, array, pos):
+        super().__init__(source, mode, pipe, array, pos)
         self.eye_cam = True
         self.bbox = None
         self.tracking = False
@@ -27,8 +27,8 @@ class EyeImageProcessor(imp.ImageProcessor):
                 p = (p[0]+x+3, p[1]+y+3)
                 size = max(pupil[1])
                 self.__draw_tracking_info(p, size, img)
-                p_norm = np.array([p[0]/width, p[1]/height], dtype=np.float32)
-                return img, [p_norm, time.monotonic()]
+                return img, np.array([p[0]/width, p[1]/height, 
+                                      time.monotonic()], dtype='float32')
             else:
                 self.lost_tracking += 1
                 if self.lost_tracking > 20:

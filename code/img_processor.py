@@ -10,13 +10,14 @@ import ctypes
 
 class ImageProcessor(Process):
 
-    def __init__(self, source, mode, pipe, array):
+    def __init__(self, source, mode, pipe, array, pos):
         Process.__init__(self)
         self.eye_cam = False
         self.source = source
         self.mode = mode
         self.pipe = pipe
         self.shared_array = array
+        self.shared_pos = pos
     
     def __get_shared_np_array(self):
         nparray = np.frombuffer(self.shared_array, dtype=ctypes.c_uint8)
@@ -62,30 +63,31 @@ class ImageProcessor(Process):
         gamma, color = 1, True 
         while attempt < attempts:      
             try:
-                frame   = cap.get_frame()
-                img     = self.__adjust_gamma(frame.bgr, gamma)
-                img     = self.__cvtBlackWhite(img, color)
-                img,pos = self.process(img)                
+                frame    = cap.get_frame()
+                img      = self.__adjust_gamma(frame.bgr, gamma)
+                img      = self.__cvtBlackWhite(img, color)
+                img, pos = self.process(img)                
                 if img is not None:
-                    #encoding = [int(cv2.IMWRITE_JPEG_QUALITY), 50]
-                    #data = [cv2.imencode('.jpg', img, encoding)[1], pos]
-                        # self.pipe.send(data)
-                    npshared = self.__get_shared_np_array()
-                    np.copyto(npshared, img)
+                    shared_img = self.__get_shared_np_array()
+                    shared_pos = np.frombuffer(self.shared_pos, 
+                                               dtype=ctypes.c_float)
+                    np.copyto(shared_img, img)
+                    if pos is not None:
+                        np.copyto(shared_pos, pos)
             except Exception as e:
                 print(e)
                 traceback.print_exc(file=sys.stdout)
                 self.__reset_mode(cap)
                 attempt += 1               
-            # if self.pipe.poll():
-            #     msg = self.pipe.recv()
-            #     if msg == "stop":
-            #         cap.stop_stream()
-            #         break
-            #     elif msg == "gamma":
-            #         gamma = self.pipe.recv()
-            #     elif msg == "color":
-            #         color = self.pipe.recv()
+            if self.pipe.poll():
+                msg = self.pipe.recv()
+                if msg == "stop":
+                    cap.stop_stream()
+                    break
+                elif msg == "gamma":
+                    gamma = self.pipe.recv()
+                elif msg == "color":
+                    color = self.pipe.recv()
         cap.close()
         print("camera", self.source, "closed")
 

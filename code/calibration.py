@@ -67,11 +67,14 @@ class Calibrator(QObject):
 
 
     def __add_data(self, sc, le, re, idx):
-        self.targets[idx] = np.vstack((self.targets[idx], sc[0]))
+        scd = np.array([sc[0], sc[1]], dtype='float')
+        self.targets[idx] = np.vstack((self.targets[idx], scd))
         if self.leye.is_cam_active():
-            self.l_centers[idx] = np.vstack((self.l_centers[idx], le[0]))
+            led = np.array([le[0], le[1]], dtype='float')
+            self.l_centers[idx] = np.vstack((self.l_centers[idx], led))
         if self.reye.is_cam_active():
-            self.r_centers[idx] = np.vstack((self.r_centers[idx], re[0]))
+            red = np.array([re[0], re[1]], dtype='float')
+            self.r_centers[idx] = np.vstack((self.r_centers[idx], red))
 
 
     def get_keys(self):
@@ -85,14 +88,14 @@ class Calibrator(QObject):
             return False
         if sc is not None:
             if le is not None and re is not None:
-                if abs(sc[1] - le[1]) < thresh:
-                    if abs(sc[1] - re[1]) < thresh:
+                if abs(sc[2] - le[2]) < thresh:
+                    if abs(sc[2] - re[2]) < thresh:
                         return True
             if le is not None and re is None:
-                if abs(sc[1] - le[1]) < thresh:
+                if abs(sc[2] - le[2]) < thresh:
                     return True
             if le is None and re is not None:
-                if abs(sc[1] - re[1]) < thresh:
+                if abs(sc[2] - re[2]) < thresh:
                     return True
         return False
 
