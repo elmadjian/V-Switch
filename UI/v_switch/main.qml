@@ -22,6 +22,15 @@ Window {
         camManager.stop_cameras();
     }
 
+//    Timer {
+//        interval: 33
+//        running: true
+//        repeat: true
+//        onTriggered: {
+//            sceneImage.counter = !sceneImage.counter;
+//        }
+//    }
+
 
     /*
     Scene Camera

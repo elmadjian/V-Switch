@@ -19,10 +19,9 @@ class ImageProcessor(Process):
         self.shared_array = array
         self.shared_pos = pos
     
-    def __get_shared_np_array(self):
-        nparray = np.frombuffer(self.shared_array, dtype=ctypes.c_uint8)
-        w, h = self.mode[0], self.mode[1]
-        return nparray.reshape((h,w,3))
+    def __get_shared_np_array(self, img):
+        nparray = np.frombuffer(self.shared_array, dtype=ctypes.c_uint8) 
+        return nparray.reshape(img.shape)
 
     def __adjust_gamma(self, img, gamma):
         lut = np.empty((1,256), np.uint8)
@@ -61,14 +60,14 @@ class ImageProcessor(Process):
         cap.bandwidth_factor = 1.3
         attempt, attempts = 0, 8
         gamma, color = 1, True 
-        while attempt < attempts:      
+        while attempt < attempts:     
             try:
                 frame    = cap.get_frame()
                 img      = self.__adjust_gamma(frame.bgr, gamma)
                 img      = self.__cvtBlackWhite(img, color)
                 img, pos = self.process(img)                
                 if img is not None:
-                    shared_img = self.__get_shared_np_array()
+                    shared_img = self.__get_shared_np_array(img)
                     shared_pos = np.frombuffer(self.shared_pos, 
                                                dtype=ctypes.c_float)
                     np.copyto(shared_img, img)
@@ -78,7 +77,7 @@ class ImageProcessor(Process):
                 print(e)
                 traceback.print_exc(file=sys.stdout)
                 self.__reset_mode(cap)
-                attempt += 1               
+                attempt += 1              
             if self.pipe.poll():
                 msg = self.pipe.recv()
                 if msg == "stop":

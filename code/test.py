@@ -71,19 +71,29 @@ from multiprocessing import Process, Pipe
 #             cv2.imshow('test', img)
 #             cv2.waitKey(1)
 
-class Supertest(Process):
+# class Supertest(Process):
 
-    def __init__(self):
-        Process.__init__(self)
-        self.property = "casinha"
+#     def __init__(self):
+#         Process.__init__(self)
+#         self.property = "casinha"
     
-    def run(self):
-        print(self.property)
-        print('qualquer coisa')
+#     def run(self):
+#         print(self.property)
+#         print('qualquer coisa')
+
+def main():
+    dev_list = uvc.device_list()
+    cap = uvc.Capture(dev_list[2]['uid'])
+    cap.frame_mode = (1280,720,30)
+    cap.bandwidth_factor = 1.3
+    while True:
+        frame = cap.get_frame()
+        cv2.imshow('testy', frame.bgr)
+        cv2.waitKey(10)
+
+
 
 
 if __name__=="__main__":
-    a = Supertest()
-    a.start()
-    a.join()
+    main()
 
