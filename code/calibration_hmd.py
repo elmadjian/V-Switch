@@ -88,11 +88,11 @@ class HMDCalibrator(QObject):
         self.targets[idx] = np.vstack((self.targets[idx], tgt))
         self.tg_list = np.vstack((self.tg_list, tgt))
         if self.leye.is_cam_active():
-            self.l_centers[idx] = np.vstack((self.l_centers[idx], le[0]))
-            self.le_list = np.vstack((self.le_list, le[0]))
+            self.l_centers[idx] = np.vstack((self.l_centers[idx], le[:2]))
+            self.le_list = np.vstack((self.le_list, le[:2]))
         if self.reye.is_cam_active():
-            self.r_centers[idx] = np.vstack((self.r_centers[idx], re[0]))
-            self.re_list = np.vstack((self.re_list, re[0]))
+            self.r_centers[idx] = np.vstack((self.r_centers[idx], re[:2]))
+            self.re_list = np.vstack((self.re_list, re[:2]))
         
 
     def get_keys(self):
@@ -105,7 +105,7 @@ class HMDCalibrator(QObject):
         if re is None and self.reye.is_cam_active():
             return False
         if le is not None and re is not None:
-            if abs(le[1] - re[1]) < thresh:
+            if abs(le[2] - re[2]) < thresh:
                 return True
             if le is not None and re is None:
                 return True
@@ -210,13 +210,13 @@ class HMDCalibrator(QObject):
         if self.l_regressor:
             le = self.leye.get_processed_data()
             if le is not None:
-                input_data = le[0].reshape(1,-1)
+                input_data = le[:2].reshape(1,-1)
                 le_coord = self.l_regressor.predict(input_data)[0]
                 data[0], data[1] = float(le_coord[0]), float(le_coord[1])
         if self.r_regressor:
             re = self.reye.get_processed_data()
             if re is not None:
-                input_data = re[0].reshape(1,-1)
+                input_data = re[:2].reshape(1,-1)
                 re_coord = self.r_regressor.predict(input_data)[0]
                 data[2], data[3] = float(re_coord[0]), float(re_coord[1])
         return data

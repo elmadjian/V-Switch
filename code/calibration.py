@@ -166,13 +166,13 @@ class Calibrator(QObject):
         if self.l_regressor:
             le = self.leye.get_processed_data()
             if le is not None:
-                input_data = le[0].reshape(1,-1)
+                input_data = le[:2].reshape(1,-1)
                 le_coord = self.l_regressor.predict(input_data)[0]
                 data[0], data[1] = float(le_coord[0]), float(le_coord[1])
         if self.r_regressor:
             re = self.reye.get_processed_data()
             if re is not None:
-                input_data = re[0].reshape(1,-1)
+                input_data = re[:2].reshape(1,-1)
                 re_coord = self.r_regressor.predict(input_data)[0]
                 data[2], data[3] = float(re_coord[0]), float(re_coord[1])
         return data

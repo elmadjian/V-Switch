@@ -55,7 +55,7 @@ class ImageProcessor(Process):
     def run(self):
         dev_list = uvc.device_list()
         cap = uvc.Capture(dev_list[self.source]['uid'])
-        self.__setup_eye_cam(cap)
+        #self.__setup_eye_cam(cap)
         cap.frame_mode = self.mode
         cap.bandwidth_factor = 1.3
         attempt, attempts = 0, 8
