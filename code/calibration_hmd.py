@@ -8,6 +8,9 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process import kernels
 from threading import Thread
 
+#DEBUG
+import matplotlib.pyplot as plt
+
 
 class HMDCalibrator(QObject):
 
@@ -39,6 +42,10 @@ class HMDCalibrator(QObject):
         self.tg_list = np.empty((0,2), dtype='float32')
         self.le_list = np.empty((0,2), dtype='float32')
         self.re_list = np.empty((0,2), dtype='float32')
+        
+        #DEBUG
+        self.dist_list = []
+        self.instant = []
 
     def set_sources(self, leye, reye):
         self.leye = leye
@@ -201,8 +208,19 @@ class HMDCalibrator(QObject):
             except Exception as e:
                 print("no request from HMD...", e)
                 count += 1
-                if count > 3:
+                #DEBUG
+                if count > 0:
                     break
+        
+        #DEBUG
+        _, ax = plt.subplots()
+        ax.plot(self.instant, self.dist_list)
+        ax.set(xlabel='time (s)', ylabel='normalized distance (0-1)', 
+               title='Vergence Test')
+        ax.set_ylim([0,1])
+        ax.grid()
+        plt.show()
+
 
 
     def __predict(self):
@@ -219,6 +237,14 @@ class HMDCalibrator(QObject):
                 input_data = re[:2].reshape(1,-1)
                 re_coord = self.r_regressor.predict(input_data)[0]
                 data[2], data[3] = float(re_coord[0]), float(re_coord[1])
+
+        #DEBUG
+        if data[0] != -9 and data[2] != -9:
+            l = np.array([data[0], data[1]])
+            r = np.array([data[2], data[3]])
+            dist = np.linalg.norm(l-r)
+            self.dist_list.append(dist)
+            self.instant.append(time.time())
         return data
 
 

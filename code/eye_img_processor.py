@@ -15,6 +15,8 @@ class EyeImageProcessor(imp.ImageProcessor):
         
 
     def process(self, img):
+        if img is None:
+            return None, None
         height, width = img.shape[0], img.shape[1]
         if not self.tracking:
             self.bbox = self.__find_ROI(img)
