@@ -37,19 +37,22 @@ class HMDCalibrator(QObject):
         self.collector = None
         self.predictor = None
         self.stream = False
+        self.vergence = None
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ip, self.port = self.load_network_options()
+
+        #used to avoid scikit-learn issues
         self.tg_list = np.empty((0,2), dtype='float32')
         self.le_list = np.empty((0,2), dtype='float32')
         self.re_list = np.empty((0,2), dtype='float32')
         
-        #DEBUG
-        self.dist_list = []
-        self.instant = []
 
     def set_sources(self, leye, reye):
         self.leye = leye
         self.reye = reye
+
+    def set_vergence_control(self, vergence):
+        self.vergence = vergence
 
     def load_network_options(self):
         ip, port = "", ""
@@ -208,18 +211,17 @@ class HMDCalibrator(QObject):
             except Exception as e:
                 print("no request from HMD...", e)
                 count += 1
-                #DEBUG
-                if count > 0:
+                if count > 3:
                     break
         
         #DEBUG
-        _, ax = plt.subplots()
-        ax.plot(self.instant, self.dist_list)
-        ax.set(xlabel='time (s)', ylabel='normalized distance (0-1)', 
-               title='Vergence Test')
-        ax.set_ylim([0,1])
-        ax.grid()
-        plt.show()
+        # _, ax = plt.subplots()
+        # ax.plot(self.instant, self.dist_list)
+        # ax.set(xlabel='time (s)', ylabel='normalized distance (0-1)', 
+        #        title='Vergence Test')
+        # ax.set_ylim([0,1])
+        # ax.grid()
+        # plt.show()
 
 
 
@@ -237,14 +239,7 @@ class HMDCalibrator(QObject):
                 input_data = re[:2].reshape(1,-1)
                 re_coord = self.r_regressor.predict(input_data)[0]
                 data[2], data[3] = float(re_coord[0]), float(re_coord[1])
-
-        #DEBUG
-        if data[0] != -9 and data[2] != -9:
-            l = np.array([data[0], data[1]])
-            r = np.array([data[2], data[3]])
-            dist = np.linalg.norm(l-r)
-            self.dist_list.append(dist)
-            self.instant.append(time.time())
+        self.vergence.update(data)
         return data
 
 

@@ -22,6 +22,7 @@ if __name__=='__main__':
     cameras   = videoio.get_cameras()
     calib_ctl = calibration.Calibrator(3, 3, 60, 6)
     calib_hmd = calibration_hmd.HMDCalibrator(3, 3, 150, 4) 
+    vergence  = vergence.VergenceCtl()
 
     scene_cam = scene.SceneCamera()
     le_cam    = eye.EyeCamera()
@@ -29,6 +30,7 @@ if __name__=='__main__':
     videoio.set_active_cameras(scene_cam, le_cam, re_cam)
     calib_ctl.set_sources(scene_cam, le_cam, re_cam)
     calib_hmd.set_sources(le_cam, re_cam)
+    calib_hmd.set_vergence_control(vergence)
 
     engine.rootContext().setContextProperty("camManager", videoio)
     engine.rootContext().setContextProperty("cameraSources", cameras)
@@ -37,6 +39,7 @@ if __name__=='__main__':
     engine.rootContext().setContextProperty("rightEyeCam", re_cam)
     engine.rootContext().setContextProperty("calibControl", calib_ctl)
     engine.rootContext().setContextProperty("calibHMD", calib_hmd)
+    engine.rootContext().setContextProperty("vergenceControl", vergence)
     engine.addImageProvider('sceneimg', scene_cam)
     engine.addImageProvider('leyeimg', le_cam)
     engine.addImageProvider('reyeimg', re_cam)
