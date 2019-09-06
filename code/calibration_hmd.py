@@ -194,6 +194,10 @@ class HMDCalibrator(QObject):
             self.predictor = Thread(target=self.predict, args=())
             self.predictor.start()
 
+    @Slot()
+    def calibrate_planes(self):
+        pass
+
 
     def predict(self):
         count = 0
@@ -214,16 +218,6 @@ class HMDCalibrator(QObject):
                 if count > 3:
                     break
         
-        #DEBUG
-        # _, ax = plt.subplots()
-        # ax.plot(self.instant, self.dist_list)
-        # ax.set(xlabel='time (s)', ylabel='normalized distance (0-1)', 
-        #        title='Vergence Test')
-        # ax.set_ylim([0,1])
-        # ax.grid()
-        # plt.show()
-
-
 
     def __predict(self):
         data = [-9,-9,-9,-9]
@@ -279,6 +273,7 @@ class HMDCalibrator(QObject):
                 self.start_calibration()
         except Exception:
             self.conn_status.emit(False)
+
                 
 
 

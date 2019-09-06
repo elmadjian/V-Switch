@@ -10,9 +10,12 @@ class VergenceCtl(QObject):
         self.plane = 0
         self.frequency = None
 
-    def is_fixating(self):
-        x = self.buffer[:,0]
-        y = self.buffer[:,1]
+    def is_fixating(self, l, r):
+        l_std = np.std(l, axis=0)
+        r_std = np.std(r, axis=0)
+        if np.mean(l_std) < 0.1 and np.mean(r_std) < 0.1:
+            return True
+        return False 
 
     def update(self, data):
         if data[0] != -9 and data[2] != -9:
