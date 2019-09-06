@@ -8,7 +8,7 @@ class VergenceCtl(QObject):
         self.buffer = []
         self.fixation = False
         self.plane = 0
-        self.frequency
+        self.frequency = None
 
     def is_fixating(self):
         x = self.buffer[:,0]

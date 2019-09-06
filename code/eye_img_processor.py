@@ -23,19 +23,22 @@ class EyeImageProcessor(imp.ImageProcessor):
             self.tracking = True
         else:
             x,y,_,_ = self.bbox
-            pupil = self.__find_contours(self.bbox, img)
-            if pupil is not None:
-                p = pupil[0]
-                p = (p[0]+x+3, p[1]+y+3)
-                size = max(pupil[1])
-                self.__draw_tracking_info(p, size, img)
-                return img, np.array([p[0]/width, p[1]/height, 
-                                      time.monotonic()], dtype='float32')
-            else:
-                self.lost_tracking += 1
-                if self.lost_tracking > 20:
-                    self.tracking = False
-                    self.lost_tracking = 0
+            try:
+                pupil = self.__find_contours(self.bbox, img)
+                if pupil is not None:
+                    p = pupil[0]
+                    p = (p[0]+x+3, p[1]+y+3)
+                    size = max(pupil[1])
+                    self.__draw_tracking_info(p, size, img)
+                    return img, np.array([p[0]/width, p[1]/height, 
+                                        time.monotonic()], dtype='float32')
+                else:
+                    self.lost_tracking += 1
+                    if self.lost_tracking > 20:
+                        self.tracking = False
+                        self.lost_tracking = 0
+            except:
+                pass
         return img, None
 
 
