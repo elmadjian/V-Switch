@@ -91,12 +91,12 @@ class Camera(QQuickImageProvider, QObject):
 
     def __setup_eye_cam(self, cap):
         if self.eye_cam:
-            print('deu true')
-            controls_dict = dict([(c.display_name, c) for c in cap.controls])
-            controls_dict['Auto Exposure Mode'].value = 1
-            controls_dict['Gamma'].value = 200
-        else:
-            print('deu false')
+            try:
+                controls_dict = dict([(c.display_name, c) for c in cap.controls])
+                controls_dict['Auto Exposure Mode'].value = 1
+                controls_dict['Gamma'].value = 200
+            except:
+                print("Exposure settings not available for this camera.")
 
 
     def __reset_mode(self, cap, source):
@@ -106,7 +106,7 @@ class Camera(QQuickImageProvider, QObject):
         time.sleep(0.4)
         dev_list = uvc.device_list()
         cap = uvc.Capture(dev_list[source]['uid'])
-        print("MODE:", mode)
+        print("Trying mode:", mode)
         cap.frame_mode = mode
         cap.bandwidth_factor = 1.3
 
@@ -166,6 +166,8 @@ class Camera(QQuickImageProvider, QObject):
             resolution = str(mode[0]) + " x " + str(mode[1])
             self.modes[fps].append(mode)
             self.fps_res[fps].append(resolution)
+        if self.mode not in cap.avaible_modes:
+            self.mode = sorted(cap.avaible_modes)[0]
         cap.close()
 
     @Property('QVariantList')

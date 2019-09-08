@@ -4,6 +4,19 @@ import uvc
 import numpy as np
 import eye
 
+if sys.argv[1] == "--uvc":
+    dev_list = uvc.device_list()
+    cap = uvc.Capture(dev_list[2]['uid'])
+    print(sorted(cap.avaible_modes))
+    cap.bandwidth_factor = 1.3
+    while True:
+        frame = cap.get_frame()
+        cv2.imshow('uvc test', frame.bgr)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    cap.close()
+    cv2.destroyAllWindows()
+
 #RECORDING
 if sys.argv[1] == "--rec":
     dev_list = uvc.device_list()
