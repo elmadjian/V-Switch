@@ -1,139 +1,85 @@
 from PySide2.QtGui import QImage, QPixmap
-from PySide2.QtCore import QObject, Signal, Slot, Property, QBasicTimer, QPoint
+from PySide2 .QtCore import QObject, Signal, Slot, Property, QBasicTimer, QPoint
 from PySide2.QtQuick import QQuickPaintedItem, QQuickImageProvider
 import cv2
 import numpy as np
 import time
 import uvc
 from threading import Thread, Lock
-from multiprocessing import Process, Pipe, Value, Condition
+from multiprocessing import Process, Pipe, Value, Condition, Array
 import sys
 import traceback
+import ctypes
 
 class Camera(QQuickImageProvider, QObject):
 
     update_image = Signal()
 
     def __init__(self):
+        QQuickImageProvider.__init__(self, QQuickImageProvider.Pixmap)
         QObject.__init__(self)
-        QQuickImageProvider.__init__(self, QQuickImageProvider.Image)
         self.__image = self.to_QImage(cv2.imread("../UI/test.jpg"))
-        self.__pos_data = None
-        self.capturing = False
+        self.capturing = Value('i', 0)
         self.dev_list = uvc.device_list()
         self.fps_res = {}
         self.modes = {}
-        self.mode = None    # --> subclassed property!
+        self.mode = None         # --> subclassed property
+        self.shared_array = None # --> subclassed property
+        self.shared_pos = None   # --> subclassed property
         self.source = None
         self.cap = None
         self.pipe, self.child = Pipe()
-        self.cv = Condition()
         self.cam_process = None
         self.cam_thread = None
-        self.eye_cam = False
 
-
-    def start(self, source, pipe, mode):
-        dev_list = uvc.device_list()
-        cap = uvc.Capture(dev_list[source]['uid'])
-        self.__setup_eye_cam(cap)
-        cap.frame_mode = mode
-        cap.bandwidth_factor = 1.3
-        attempt, attempts = 0, 8
-        gamma, color = 1, True
-        while attempt < attempts:
+    def thread_loop(self):
+        while self.capturing.value:
+            time.sleep(0.005)
             try:
-                frame   = cap.get_frame()
-                img     = self.__adjust_gamma(frame.bgr, gamma)
-                img     = self.__cvtBlackWhite(img, color)
-                img,pos = self.process(img)                
-                if img is not None:
-                    data = [cv2.imencode('.jpg', img)[1], pos]
-                    pipe.send(data)
-            except Exception as e:
-                print(e)
-                traceback.print_exc(file=sys.stdout)
-                self.__reset_mode(cap, source)
-                attempt += 1                
-            if pipe.poll():
-                msg = pipe.recv()
-                if msg == "stop":
-                    cap.stop_stream()
-                    break
-                elif msg == "gamma":
-                    gamma = pipe.recv()
-                elif msg == "color":
-                    color = pipe.recv()
-        cap.close()
-        print("camera", source, "closed")
-
-
-    def run(self):
-        while self.capturing:
-            if self.pipe.poll(1):
-                data = self.pipe.recv()
-                img = cv2.imdecode(data[0], cv2.IMREAD_COLOR)
-                self.__pos_data = data[1]
+                img = self.__get_shared_np_array()
                 qimage = self.to_QImage(img)
                 if qimage is not None:
                     self.__image = qimage
                     self.update_image.emit()
-    
-    def process(self, frame):
-        return frame, None
+            except Exception as e:
+                print(e)
 
+    def __get_shared_np_array(self):
+        nparray = np.frombuffer(self.shared_array, dtype=ctypes.c_uint8)
+        w, h = self.mode[0], self.mode[1]
+        return nparray.reshape((h,w,3))
+
+    def create_shared_array(self, mode):
+        w = mode[0]
+        h = mode[1]
+        return Array(ctypes.c_uint8, h*w*3, lock=False)
 
     def requestImage(self, id, size, requestedSize):
         return self.__image
 
+    def requestPixmap(self, id, size, requestImage):
+        return self.__image
+
     def get_processed_data(self):
-        return self.__pos_data
+        nparray = np.frombuffer(self.shared_pos, dtype=ctypes.c_float)
+        return nparray
 
-    def __setup_eye_cam(self, cap):
-        if self.eye_cam:
-            try:
-                controls_dict = dict([(c.display_name, c) for c in cap.controls])
-                controls_dict['Auto Exposure Mode'].value = 1
-                controls_dict['Gamma'].value = 200
-            except:
-                print("Exposure settings not available for this camera.")
+    def init_process(self, source, pipe, array, pos, mode, cap): #abstract
+        return 
 
-
-    def __reset_mode(self, cap, source):
-        print("resetting...")
-        mode = cap.frame_mode
-        cap.close()
-        time.sleep(0.4)
-        dev_list = uvc.device_list()
-        cap = uvc.Capture(dev_list[source]['uid'])
-        print("Trying mode:", mode)
-        cap.frame_mode = mode
-        cap.bandwidth_factor = 1.3
-
-    def __adjust_gamma(self, img, gamma):
-        lut = np.empty((1,256), np.uint8)
-        for i in range(256):
-            lut[0,i] = np.clip(pow(i/255.0, gamma) * 255.0, 0, 255)
-        return cv2.LUT(img, lut)
-
-    def __cvtBlackWhite(self, img, color):
-        if color:
-            return img
-        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
+    def join_process(self): #abstract
+        return
 
     def stop(self):
-        if self.capturing:
+        if self.capturing.value:
             self.pipe.send("stop")
-            self.cam_process.join(1)
+            self.join_process()
             if self.cam_process.is_alive():
                 self.cam_process.terminate()
-            self.capturing = False
             self.cam_thread.join(1)
 
     def get_source(self):
         return self.source
-
     
     def is_cam_active(self):
         if self.cam_thread is not None:
@@ -141,16 +87,15 @@ class Camera(QQuickImageProvider, QObject):
                 return True
         return False
 
-
     def set_source(self, source):
         print('setting camera source to', source)
         self.source = source
         self.__set_fps_modes()
-        self.capturing = True
-        self.cam_process = Process(target=self.start, 
-                                   args=(source,self.child,self.mode))
-        self.cam_process.start()
-        self.cam_thread = Thread(target=self.run, args=())
+        self.shared_array = self.create_shared_array(self.mode)
+        self.capturing.value = 1
+        self.init_process(source, self.child, self.shared_array, 
+                          self.shared_pos, self.mode, self.capturing)
+        self.cam_thread = Thread(target=self.thread_loop, args=())
         self.cam_thread.start()
 
     def __set_fps_modes(self):
@@ -207,11 +152,12 @@ class Camera(QQuickImageProvider, QObject):
         if resolution not in self.fps_res[int(fps)]:
             print("setting mode:", self.modes[int(fps)][0])
             self.mode = self.modes[int(fps)][0]
-        self.capturing = True
-        self.cam_process = Process(target=self.start, 
-                                  args=(self.source,self.child,self.mode))
-        self.cam_process.start()
-        self.cam_thread = Thread(target=self.run, args=())
+        self.shared_array = self.create_shared_array(self.mode)
+        self.pipe, self.child = Pipe()
+        self.capturing.value = 1
+        self.init_process(self.source, self.child, self.shared_array, 
+                          self.shared_pos, self.mode, self.capturing)
+        self.cam_thread = Thread(target=self.thread_loop, args=())
         self.cam_thread.start()
 
     @Slot(float)
@@ -224,21 +170,23 @@ class Camera(QQuickImageProvider, QObject):
         self.pipe.send("color")
         self.pipe.send(bool(value))
 
-
     def to_QImage(self, img):
         if len(img.shape) == 3:
-            w,h,_ = img.shape
+            h,w,_ = img.shape
             rgbimg = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             #flipimg = cv2.flip(rgbimg,1)
-            qimg = QImage(rgbimg.data, h, w, QImage.Format_RGB888)
-            return qimg
+            qimg = QImage(rgbimg.data, w, h, QImage.Format_RGB888)
+            pixmap = QPixmap.fromImage(qimg)
+            return pixmap
     
 
 
 if __name__=="__main__":
-    #cam = Camera(2)
-    dev_list = uvc.device_list()
-    cap = uvc.Capture(dev_list[2]['uid'])
-    print(cap.avaible_modes)
+    cam = Camera()
+    cam.set_source(0)
+    cam.start()
+    # dev_list = uvc.device_list()
+    # cap = uvc.Capture(dev_list[2]['uid'])
+    # print(cap.avaible_modes)
 
 

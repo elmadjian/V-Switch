@@ -3,15 +3,19 @@ import sys
 import uvc
 import numpy as np
 import eye
+from multiprocessing import Process, Pipe
 
 if sys.argv[1] == "--uvc":
     dev_list = uvc.device_list()
-    cap = uvc.Capture(dev_list[2]['uid'])
+    cap = uvc.Capture(dev_list[1]['uid'])
+    cap2 = uvc.Capture(dev_list[2]['uid'])
     print(sorted(cap.avaible_modes))
-    cap.bandwidth_factor = 1.3
+    #cap.bandwidth_factor = 1.3
     while True:
         frame = cap.get_frame()
+        frame2 = cap2.get_frame()
         cv2.imshow('uvc test', frame.bgr)
+        cv2.imshow('uvc test2', frame2.bgr)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     cap.close()
@@ -82,3 +86,6 @@ if sys.argv[1] == "--eye":
             img, centroid = eyeobj.process(img)
             cv2.imshow('test', img)
             cv2.waitKey(1)
+
+
+

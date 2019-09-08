@@ -8,6 +8,9 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process import kernels
 from threading import Thread
 
+#DEBUG
+import matplotlib.pyplot as plt
+
 
 class HMDCalibrator(QObject):
 
@@ -34,15 +37,22 @@ class HMDCalibrator(QObject):
         self.collector = None
         self.predictor = None
         self.stream = False
+        self.vergence = None
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ip, self.port = self.load_network_options()
+
+        #used to avoid scikit-learn issues
         self.tg_list = np.empty((0,2), dtype='float32')
         self.le_list = np.empty((0,2), dtype='float32')
         self.re_list = np.empty((0,2), dtype='float32')
+        
 
     def set_sources(self, leye, reye):
         self.leye = leye
         self.reye = reye
+
+    def set_vergence_control(self, vergence):
+        self.vergence = vergence
 
     def load_network_options(self):
         ip, port = "", ""
@@ -88,11 +98,11 @@ class HMDCalibrator(QObject):
         self.targets[idx] = np.vstack((self.targets[idx], tgt))
         self.tg_list = np.vstack((self.tg_list, tgt))
         if self.leye.is_cam_active():
-            self.l_centers[idx] = np.vstack((self.l_centers[idx], le[0]))
-            self.le_list = np.vstack((self.le_list, le[0]))
+            self.l_centers[idx] = np.vstack((self.l_centers[idx], le[:2]))
+            self.le_list = np.vstack((self.le_list, le[:2]))
         if self.reye.is_cam_active():
-            self.r_centers[idx] = np.vstack((self.r_centers[idx], re[0]))
-            self.re_list = np.vstack((self.re_list, re[0]))
+            self.r_centers[idx] = np.vstack((self.r_centers[idx], re[:2]))
+            self.re_list = np.vstack((self.re_list, re[:2]))
         
 
     def get_keys(self):
@@ -105,7 +115,7 @@ class HMDCalibrator(QObject):
         if re is None and self.reye.is_cam_active():
             return False
         if le is not None and re is not None:
-            if abs(le[1] - re[1]) < thresh:
+            if abs(le[2] - re[2]) < thresh:
                 return True
             if le is not None and re is None:
                 return True
@@ -184,6 +194,10 @@ class HMDCalibrator(QObject):
             self.predictor = Thread(target=self.predict, args=())
             self.predictor.start()
 
+    @Slot()
+    def calibrate_planes(self):
+        pass
+
 
     def predict(self):
         count = 0
@@ -203,22 +217,23 @@ class HMDCalibrator(QObject):
                 count += 1
                 if count > 3:
                     break
-
+        
 
     def __predict(self):
         data = [-9,-9,-9,-9]
         if self.l_regressor:
             le = self.leye.get_processed_data()
             if le is not None:
-                input_data = le[0].reshape(1,-1)
+                input_data = le[:2].reshape(1,-1)
                 le_coord = self.l_regressor.predict(input_data)[0]
                 data[0], data[1] = float(le_coord[0]), float(le_coord[1])
         if self.r_regressor:
             re = self.reye.get_processed_data()
             if re is not None:
-                input_data = re[0].reshape(1,-1)
+                input_data = re[:2].reshape(1,-1)
                 re_coord = self.r_regressor.predict(input_data)[0]
                 data[2], data[3] = float(re_coord[0]), float(re_coord[1])
+        self.vergence.update(data)
         return data
 
 
@@ -258,6 +273,7 @@ class HMDCalibrator(QObject):
                 self.start_calibration()
         except Exception:
             self.conn_status.emit(False)
+
                 
 
 

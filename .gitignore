@@ -4,5 +4,6 @@ code/build/
 code/node_modules/
 hmd-eyes/
 papers/
+__pycache__/
 *.pyc
 *.avi
