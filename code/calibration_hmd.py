@@ -268,7 +268,7 @@ class HMDCalibrator(QObject):
         self.socket.sendto('C'.encode(), (self.ip, self.port))
         try:
             response = self.socket.recv(1024).decode()
-            if response == 'C':
+            if response:
                 self.conn_status.emit(True)
                 self.start_calibration()
         except Exception:

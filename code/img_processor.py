@@ -63,7 +63,7 @@ class ImageProcessor(Process):
         self.__setup_eye_cam(cap)
         cap.frame_mode = self.mode
         cap.bandwidth_factor = 0.9
-        attempt, attempts = 0, 5
+        attempt, attempts = 0, 6
         gamma, color = 1, True
         while attempt < attempts:     
             try:
@@ -81,7 +81,6 @@ class ImageProcessor(Process):
                         np.copyto(shared_pos, pos)
             except Exception as e:
                 print(e)
-                traceback.print_exc(file=sys.stdout)
                 cap = self.__reset_mode(cap)
                 attempt += 1           
             if self.pipe.poll():
