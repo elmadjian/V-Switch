@@ -8,9 +8,6 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process import kernels
 from threading import Thread
 
-#DEBUG
-import matplotlib.pyplot as plt
-
 
 class HMDCalibrator(QObject):
 
@@ -196,7 +193,14 @@ class HMDCalibrator(QObject):
 
     @Slot()
     def calibrate_planes(self):
-        pass
+        for i in range(self.vergence.planes):
+            try:
+                msg = 'P:' + str(i)
+                self.socket.sento(msg.encode(), (self.ip, self.port))
+                plane_calibrator = Thread(target=self.vergence.get_plane_data, args=(i,))
+                plane_calibrator.start()
+                plane_calibrator.join()
+        self.socket.sendto('F'.encode(), (self.ip, self.port))
 
 
     def predict(self):
