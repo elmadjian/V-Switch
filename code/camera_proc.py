@@ -18,7 +18,7 @@ class Camera(QQuickImageProvider, QObject):
     def __init__(self):
         QQuickImageProvider.__init__(self, QQuickImageProvider.Pixmap)
         QObject.__init__(self)
-        self.__image = self.to_QImage(cv2.imread("../UI/test.jpg"))
+        self.__image = self.to_QPixmap(cv2.imread("../UI/test.jpg"))
         self.capturing = Value('i', 0)
         self.dev_list = uvc.device_list()
         self.fps_res = {}
@@ -37,7 +37,7 @@ class Camera(QQuickImageProvider, QObject):
             time.sleep(0.005)
             try:
                 img = self.__get_shared_np_array()
-                qimage = self.to_QImage(img)
+                qimage = self.to_QPixmap(img)
                 if qimage is not None:
                     self.__image = qimage
                     self.update_image.emit()
@@ -170,7 +170,7 @@ class Camera(QQuickImageProvider, QObject):
         self.pipe.send("color")
         self.pipe.send(bool(value))
 
-    def to_QImage(self, img):
+    def to_QPixmap(self, img):
         if len(img.shape) == 3:
             h,w,_ = img.shape
             rgbimg = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

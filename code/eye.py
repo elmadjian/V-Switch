@@ -13,7 +13,7 @@ import uvc
 
 class EyeCamera(camera.Camera):
 
-    def __init__(self, mode=(400,400,120)):
+    def __init__(self, mode=(640,480,30)):
         super().__init__()
         self.mode = mode
         self.cam_process = None

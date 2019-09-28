@@ -3,6 +3,7 @@ import sys
 import uvc
 import numpy as np
 import eye
+import eye_img_processor as eip
 from multiprocessing import Process, Pipe
 
 if sys.argv[1] == "--uvc":
@@ -86,6 +87,20 @@ if sys.argv[1] == "--eye":
             img, centroid = eyeobj.process(img)
             cv2.imshow('test', img)
             cv2.waitKey(1)
+
+
+if sys.argv[1] == '--3D':
+    cap = cv2.VideoCapture('pupil1.mkv')
+    eyeobj = eip.EyeImageProcessor(0,0,0,0,0,0)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret:
+            img, ellipse = eyeobj.process(frame)
+            if ellipse is not None:
+                (center, (w,h), radian) = ellipse
+                print('ellipse:', center, w, h, radian)
+            cv2.imshow('test', img)
+            cv2.waitKey(0)
 
 
 

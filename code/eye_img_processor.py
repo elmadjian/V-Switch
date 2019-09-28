@@ -30,8 +30,10 @@ class EyeImageProcessor(imp.ImageProcessor):
                     p = (p[0]+x+3, p[1]+y+3)
                     size = max(pupil[1])
                     self.__draw_tracking_info(p, size, img)
-                    return img, np.array([p[0]/width, p[1]/height, 
-                                        time.monotonic()], dtype='float32')
+                    #return img, np.array([p[0]/width, p[1]/height, 
+                    #                    time.monotonic()], dtype='float32')
+                    #DEBUG
+                    return img, pupil
                 else:
                     self.lost_tracking += 1
                     if self.lost_tracking > 20:
