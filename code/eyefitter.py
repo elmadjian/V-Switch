@@ -57,10 +57,6 @@ class SingleEyeFitter(object):
 
 
     def unproject_single_observation(self, ellipse):
-        # "prediction" is an numpy array with shape (image_height, image_width) and data type: float [0-1]
-        # Our deeplearning model's outpupt is Y~(240, 320, 3),
-        # you will have to slice it manually as Y[:,:,1] as input to this function.
-
         # We unproject the gaze vectors and pupil center only if an ellipse has been detected
         if ellipse is not None:
             (center, (w, h), radian) = ellipse
@@ -144,7 +140,7 @@ class SingleEyeFitter(object):
             self.projected_eye_center = intersection.fit_ransac(a, n, max_iters, 
                                                                 samples_to_fit, min_distance)
         else:
-            self.projected_eye_center = intersect(a, n)
+            self.projected_eye_center = intersection.intersect(a, n)
         if (self.projected_eye_center is None):
             raise TypeError("Projected_eye_center was not fitted. You may need -v and -m argument to check whether the pupil segmentation works properly.")
         return self.projected_eye_center
@@ -165,7 +161,7 @@ class SingleEyeFitter(object):
 
         # Unprojection: Nearest intersection of two lines. 
         # a = [eye_center, pupil_3Dcenter], n =[gaze_vector, pupil_3D_center]
-        projected_eye_center_camera_frame_scaled = reverse_reproject(projected_eye_center_camera_frame,
+        projected_eye_center_camera_frame_scaled = unprojection.reverse_reproject(projected_eye_center_camera_frame,
                                                                      self.initial_eye_z, self.focal_length)
         eye_center_camera_frame = np.append(projected_eye_center_camera_frame_scaled, self.initial_eye_z).reshape(3, 1)
 
@@ -193,7 +189,7 @@ class SingleEyeFitter(object):
             a_3Dfitting = np.vstack((eye_center_camera_frame.reshape(1, 3), position))
             n_3Dfitting = np.vstack((gaze, (position / np.linalg.norm(position))))
 
-            intersected_pupil_3D_center = intersect(a_3Dfitting, n_3Dfitting)
+            intersected_pupil_3D_center = intersection.intersect(a_3Dfitting, n_3Dfitting)
             radius = np.linalg.norm(intersected_pupil_3D_center - eye_center_camera_frame)
             radius_counter.append(radius)
         aver_radius = np.mean(radius_counter)
@@ -213,7 +209,7 @@ class SingleEyeFitter(object):
             o = np.zeros((3, 1))
 
             try:
-                d1, d2 = line_sphere_intersect(self.eye_center, self.aver_eye_radius, o,
+                d1, d2 = intersection.line_sphere_intersect(self.eye_center, self.aver_eye_radius, o,
                                                selected_position / np.linalg.norm(selected_position))
                 new_position_min = o + min([d1, d2]) * (selected_position / np.linalg.norm(selected_position))
                 new_position_max = o + max([d1, d2]) * (selected_position / np.linalg.norm(selected_position))
@@ -263,9 +259,9 @@ class SingleEyeFitter(object):
 
         selected_gaze = gazes[0]
         selected_position = positions[0]
-        projected_center = reproject(eye_center_camera_frame, self.focal_length)
-        projected_gaze = reproject(selected_position + selected_gaze, self.focal_length) - projected_center
-        projected_position = reproject(selected_position, self.focal_length)
+        projected_center = unprojection.reproject(eye_center_camera_frame, self.focal_length)
+        projected_gaze = unprojection.reproject(selected_position + selected_gaze, self.focal_length) - projected_center
+        projected_position = unprojection.reproject(selected_position, self.focal_length)
         if np.dot(projected_gaze.T, (projected_position - projected_center)) > 0:
             return selected_gaze, selected_position
         else:
