@@ -1,0 +1,158 @@
+import numpy as np 
+
+class Geometry():
+
+    def __init__(self):
+        pass
+
+    
+    def convert_ellipse_to_general(self, xc, yc, w, h, radian):
+        A = (w**2)*(np.sin(radian)**2) + (h**2) * (np.cos(radian)**2)
+        B = 2 * ((h**2) - (w**2)) * np.sin(radian) * np.cos(radian)
+        C = (w**2)*(np.cos(radian)**2) + (h**2)*(np.sin(radian)**2)
+        D = -2*A*xc - B*yc
+        E = -B*xc - 2*C*yc
+        F = A*(xc**2) + B*xc*yc + C*(yc**2) - (w**2)*(h**2)
+        return (A,B,C,D,E,F)
+
+
+    def unproject_gaze(self, vertex, ell_co, radius=None):
+        a,b,c,d,f,g,h,u,v,w = self.__gen_cone_co(vertex, ell_co)
+        lamb_co1 = 1
+        lamb_co2 = -(a+b+c)
+        lamb_co3 = (b*c + c*a + a*b - np.power(f,2)\
+                   - np.power(g,2) - np.power(h,2))
+        lamb_co4 = -(a*b*c + 2*f*g*h - a*np.power(f,2)\
+                   - b*np.power(g,2) - c*np.power(h,2))
+        lamb1, lamb2, lamb3 = np.roots([lamb_co1,lamb_co2,lamb_co3,lamb_co4])
+        l,m,n = self.__gen_lmn(lamb1, lamb2, lamb3)
+        norm_cano_pos = np.array([l[0],m[0],n[0],1]).reshape(4,1)
+        norm_cano_neg = np.array([l[1],m[1],n[1],1]).reshape(4,1)
+        
+        #Calculating T1
+        l1, m1, n1 = self.__get_rotmat_co(lamb1, a,b,g,f,h)
+        l2, m2, n2 = self.__get_rotmat_co(lamb2, a,b,g,f,h)
+        l3, m3, n3 = self.__get_rotmat_co(lamb3, a,b,g,f,h)
+        T1 = np.array([l1,l2,l3,0,m1,m2,m3,0,n1,n2,n3,0,0,0,0,1]).reshape(4,4)
+        li, mi, ni = T1[0,0:3], T1[1,0:3], T1[2,0:3]
+        if np.cross(li,mi).dot(ni) < 0:
+            li, mi, ni = -li, -mi, -ni
+        T1[0,0:3], T1[1,0:3], T1[2,0:3] = li, mi, ni
+        norm_cam_pos = np.dot(T1, norm_cano_pos)
+        norm_cam_neg = np.dot(T1, norm_cano_neg)
+
+        #Calculating T2
+        T2 = np.eye(4)
+        T2[0:3,3] = -(u*li+v*mi+w*ni)/np.array([lamb1, lamb2, lamb3])
+
+        #Calculating T3
+        T3_pos = self.__calc_T3(l[0], m[0], n[0])
+        T3_neg = self.__calc_T3(l[1], m[1], n[1])
+
+        A_pos,B_pos,C_pos,D_pos = self.__calc_ABCD(T3_pos,lamb1,lamb2,lamb3)
+        A_neg,B_neg,C_neg,D_neg = self.__calc_ABCD(T3_neg,lamb1,lamb2,lamb3)
+
+        T0 = np.eye(4)
+        T0[2,3] = -vertex[2]
+        center_pos = self.__calc_XYZ_frame(A_pos,B_pos,C_pos,D_pos,radius)
+        center_neg = self.__calc_XYZ_frame(A_neg,B_neg,C_neg,D_neg,radius)
+        true_center_pos, true_center_neg = self.__get_true_centers(T0, T1, T2, 
+            [T3_pos, T3_neg], [center_pos, center_neg])
+        return norm_cam_pos[0:3], norm_cam_neg[0:3],\
+            true_center_pos[0:3], true_center_neg[0:3]
+
+
+    def __get_true_centers(self, T0, T1, T2, T3, centers):
+        T3_pos, T3_neg = T3[0], T3[1]
+        center_pos, center_neg = centers[0], centers[1]
+        true_center_pos = np.matmul(T0, np.matmul(T1, np.matmul(
+            T2, np.matmul(T3_pos, center_pos))))
+        if true_center_pos[2] < 0:
+            center_pos[0:3] = -center_pos[0:3]
+            true_center_pos = np.matmul(T0, np.matmul(T1, np.matmul(
+                T2, np.matmul(T3_pos, center_pos))))
+        true_center_neg = np.matmul(T0, np.matmul(T1, np.matmul(
+            T2, np.matmul(T3_neg, center_neg))))
+        if true_center_neg[2] < 0:
+            center_neg[0:3] = -center_neg[0:3]
+            true_center_neg = np.matmul(T0, np.matmul(T1, np.matmul(
+                T2, np.matmul(T3_neg, center_neg))))
+        return true_center_pos, true_center_neg
+
+    def __calc_XYZ_frame(self, A,B,C,D,r):
+        Z = (A*r)/np.sqrt((B**2)+(C**2)-A*D)
+        X = (-B/A)*Z
+        Y = (-C/A)*Z
+        center = np.array([X,Y,Z,1]).reshape(4,1)
+        return center
+
+    
+    def __calc_ABCD(self, T3, lamb1, lamb2, lamb3):
+        li, mi, ni = T3[0:3,0], T3[0:3,1], T3[0:3,2]
+        lamb_array = np.array([lamb1, lamb2, lamb3])
+        A = np.dot(np.power(li,2), lamb_array)
+        B = np.sum(li*ni*lamb_array)
+        C = np.sum(mi*ni*lamb_array)
+        D = np.dot(np.power(ni,2), lamb_array)
+        return A,B,C,D
+
+
+    def __calc_T3(self, l, m ,n ):
+        lm_sqrt = np.sqrt((l**2)+(m**2))
+        T3 = np.array([-m/lm_sqrt, -(l*n)/lm_sqrt, l, 0,
+                        l/lm_sqrt, -(m*n)/lm_sqrt, m, 0,
+                        0, lm_sqrt, n, 0,
+                        0, 0, 0, 1]).reshape(4,4)
+        return T3
+
+    
+    def __get_rotmat_co(self, lamb, a, b, g, f, h):
+        t1 = (b-lamb)*g - f*h
+        t2 = (a - lamb)*f - g*h
+        t3 = -(a-lamb)*(t1/t2)/g - (h/g)
+        m = 1/(np.sqrt(1+np.power((t1/t2),2)+np.power(t3,2)))
+        l = (t1/t2)*m
+        n = t3*m
+        return l, m, n
+
+
+    def __gen_cone_co(self, vertex, ell_co):
+        A,B,C,D,E,F = ell_co
+        alpha, beta, gamma = vertex
+        a_prime, h_prime, b_prime = A, B/2, C
+        g_prime, f_prime, d_prime = D/2, E/2, F
+        gamma_square = np.power(gamma,2)
+        a = gamma_square * a_prime
+        b = gamma_square * b_prime
+        c = a_prime * np.power(alpha,2) + 2 * h_prime * alpha * beta\
+            + b_prime * np.power(beta,2) + 2 * g_prime * alpha + 2\
+            * f_prime * beta + d_prime
+        d = gamma_square * d_prime
+        f = -gamma * (b_prime * beta + h_prime * alpha +f_prime)
+        g = -gamma * (h_prime * beta + a_prime * alpha + g_prime)
+        h = gamma_square * h_prime
+        u = gamma_square * g_prime
+        v = gamma_square * f_prime
+        w = -gamma * (f_prime * beta + g_prime * alpha + d_prime)
+        return (a,b,c,d,f,g,h,u,v,w)
+
+
+    def __gen_lmn(self, lamb1, lamb2, lamb3):
+        if lamb1 < lamb2:
+            m_pos = np.sqrt((lamb2-lamb1)/(lamb2-lamb3))
+            m_neg = -m_pos
+            n = np.sqrt((lamb1-lamb3)/(lamb2-lamb3))
+            return [0, 0], [m_pos, m_neg], [n, n]
+        elif lamb1 > lamb2:
+            l_pos = np.sqrt((lamb1-lamb2)/(lamb1-lamb3))
+            l_neg = -l_pos
+            n = np.sqrt((lamb2-lamb3)/(lamb1-lamb3))
+            return [l_pos, l_neg], [0, 0], [n, n]
+        elif lamb1 == lamb2:
+            return [0,0], [0,0], [1,1]
+        else:
+            return None, None, None
+
+
+    def __gen_norm_vectors(self, cone):
+        a,b,c,d,f,g,h,u,v,w = cone

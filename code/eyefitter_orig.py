@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 import unprojection
 import intersection
-import geometry
 from .draw_ellipse import fit_ellipse_compact, fit_ellipse
 from .unprojection import convert_ell_to_general, unprojectGazePositions, reproject, reverse_reproject
 from .intersection import NoIntersectionError, intersect, fit_ransac, line_sphere_intersect
@@ -16,22 +15,6 @@ Python code based on the one provided by Yiu Yuk Hoi, Seyed-Ahmad Ahmadi, and Mo
 (https://github.com/pydsgz/DeepVOG)
 
 """
-
-class EyeFitter():
-
-    def __init__(self, focal_length, pupil_radius, z):
-        self.geo = geometry.Geometry()
-    
-
-    def unproject_ellipse(self, ellipse, image):
-        if ellipse is not None:
-            ((xc,yc), (w,h), radian) = ellipse
-            xc = xc - image.shape[1]/2
-            yc = yc - image.shape[0]/2
-            ell_co = self.geo.convert_ellipse_to_general(xc,yc,w,h,radian)
-            
-
-
 
 
 class SingleEyeFitter(object):
