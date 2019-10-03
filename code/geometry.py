@@ -2,9 +2,10 @@ import numpy as np
 
 class Geometry():
 
-    def __init__(self):
-        pass
-
+    def __init__(self, focal_length, eye_z):
+        self.focal_length = focal_length
+        self.eye_z = eye_z
+        
     
     def convert_ellipse_to_general(self, xc, yc, w, h, radian):
         A = (w**2)*(np.sin(radian)**2) + (h**2) * (np.cos(radian)**2)
@@ -60,6 +61,84 @@ class Geometry():
             [T3_pos, T3_neg], [center_pos, center_neg])
         return norm_cam_pos[0:3], norm_cam_neg[0:3],\
             true_center_pos[0:3], true_center_neg[0:3]
+
+
+    def reproject(self, vec3d):
+        return (self.focal_length * vec3d[0:2]) / vec3d[2]
+
+    def reverse_reproject(self, vec2d):
+        vec2d_scaled = (vec2d*self.eye_z)/self.focal_length
+        return vec2d_scaled
+
+
+    def line_sphere_intersect(self, c,r,o,l):
+        '''
+        c -> eyeball center
+        r -> eyeball radius
+        o -> line origin
+        l -> direction unit vector
+        '''
+        l = l/np.linalg.norm(l)
+        delta = np.square(np.dot(l.T, (o-c))) - np.dot((o-c).T,(o-c))\
+            + np.square(r)
+        if delta < 0:
+            raise Exception
+        else:
+            d1 = -np.dot(l.T,(o-c)) + np.sqrt(delta)
+            d2 = -np.dot(l.T,(o-c)) - np.sqrt(delta)
+        return [d1,d2]
+
+
+    def fit_ransac(self, a, n, max_iters=2000, samples=20, min_distance=2000):
+        num_lines = a.shape[0]
+        best_model = None
+        best_distance = min_distance
+        for i in range(max_iters):
+            samp_idx = np.random.choice(num_lines, size=samples, replace=False)
+            a_sampled = a[samp_idx, :]
+            n_sampled = n[samp_idx, :]
+            model_sampled = self.__intersect(a_sampled, n_sampled)
+            sampled_distance = self.__calc_distance(a,n,model_sampled)
+            if sampled_distance > min_distance:
+                continue
+            else:
+                if sampled_distance < best_distance:
+                    best_model = model_sampled
+                    best_distance = sampled_distance
+        return best_model
+
+
+    def __intersect(self, a, n):
+        '''
+        a -> vector coordinates
+        n -> vector orientation
+        ''' 
+        n = n/np.linalg.norm(n, axis=1, keepdims=True)
+        num_lines = a.shape[0]
+        dim = a.shape[1]
+        I = np.eye(dim)
+        R_sum, q_sum = 0, 0
+        for i in range(num_lines):
+            R = I - np.matmul(n[i].reshape(dim,1), n[i].reshape(1,dim))
+            q = np.matmul(R, a[i].reshape(dim, 1))
+            q_sum = q_sum + q
+            R_sum = R_sum + R
+        p = np.matmul(np.linalg.inv(R_sum), q_sum)
+        return p
+
+    def __calc_distance(self, a, n, p):
+        num_lines = a.shape[0]
+        dim = a.shape[1]
+        I = np.eye(dim)
+        D_sum = 0
+        for i in range(num_lines):
+            D_1 = (a[i].reshape(dim,1) - p.reshape(dim,1)).T
+            D_2 = I - np.matmul(n[i].reshape(dim,1), n[i].reshape(1,dim))
+            D_3 = D_1.T 
+            D   = np.matmul(np.matmul(D_1, D_2), D_3)
+            D_sum += D
+        D_sum /= num_lines
+        return D_sum
 
 
     def __get_true_centers(self, T0, T1, T2, T3, centers):
@@ -153,6 +232,4 @@ class Geometry():
         else:
             return None, None, None
 
-
-    def __gen_norm_vectors(self, cone):
-        a,b,c,d,f,g,h,u,v,w = cone
+    
