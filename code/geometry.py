@@ -97,7 +97,7 @@ class Geometry():
             samp_idx = np.random.choice(num_lines, size=samples, replace=False)
             a_sampled = a[samp_idx, :]
             n_sampled = n[samp_idx, :]
-            model_sampled = self.__intersect(a_sampled, n_sampled)
+            model_sampled = self.intersect(a_sampled, n_sampled)
             sampled_distance = self.__calc_distance(a,n,model_sampled)
             if sampled_distance > min_distance:
                 continue
@@ -108,7 +108,7 @@ class Geometry():
         return best_model
 
 
-    def __intersect(self, a, n):
+    def intersect(self, a, n):
         '''
         a -> vector coordinates
         n -> vector orientation
