@@ -16,11 +16,12 @@ Python code based on the one provided by Yiu Yuk Hoi, Seyed-Ahmad Ahmadi, and Mo
 
 class EyeFitter():
 
-    def __init__(self, focal_length, pupil_radius, eye_z, min_fit):
+    def __init__(self, focal_length, pupil_radius, eye_z=50, min_fit=15):
         self.pupil_radius = pupil_radius
         self.focal_length = focal_length
         self.eye_z = eye_z
-        self.min_fit = 15
+        self.min_fit = min_fit
+        self.mm2px_scaling = None
         self.aver_eye_radius = None
         self.eyeball = None
         self.geo = geometry.Geometry(focal_length, eye_z)
@@ -38,9 +39,22 @@ class EyeFitter():
             "pupil3D_neg": np.empty((0,3), float),
             "ell_center": np.empty((0,2), float)
         }
+
+    
+    def update_mm2px_scaling(self, image):
+        '''
+        0.
+        '''
+        img_scaled = np.linalg.norm(image.shape)
+        sensor_scaled = np.linalg.norm(self.sensor_size)
+        self.mm2px_scaling = img_scaled / sensor_scaled
     
 
     def unproject_ellipse(self, ellipse, image):
+        '''
+        1.a. Unprojects a single ellipse observation from image
+        1.b. "
+        '''
         if ellipse is not None:
             ((xc,yc), (w,h), radian) = ellipse
             xc = xc - image.shape[1]/2
@@ -55,6 +69,9 @@ class EyeFitter():
 
 
     def add_to_fitting(self):
+        '''
+        2.a. Stores single ellipse observations
+        '''
         if self.curr_state['ell_center'] is not None:
             self.data['gaze_pos'] = np.vstack(
                 (self.data['gaze_pos'], self.curr_state['gaze_pos']))
@@ -67,8 +84,13 @@ class EyeFitter():
 
 
     def fit_projected_centers(self, max_iters=1000, min_distante=2000):
+        '''
+        3.a. Finds a model with intersection between ellipse coordinate
+             center (a) and orientation (n)
+        '''
         if len(self.data['ell_center']) >= self.min_fit:
-            a = np.vstack((self.data['ell_center'], self.data['ell_center']))
+            a = np.vstack((self.data['ell_center'], 
+                           self.data['ell_center']))
             n = np.vstack((self.data['gaze_pos'][:,0:2],
                            self.data['gaze_neg'][:,0:2]))
             samples_to_fit = np.ceil(a.shape[0]/6).astype(np.int)
@@ -77,6 +99,9 @@ class EyeFitter():
         
 
     def estimate_eye_sphere(self, image):
+        '''
+        4.a. Reconstructs 3D sphere
+        '''
         proj_eyeball_center = self.proj_eyeball_center.copy()
         proj_eyeball_center[0] -= image.shape[1]/2
         proj_eyeball_center[1] -= image.shape[0]/2
@@ -105,6 +130,9 @@ class EyeFitter():
 
          
     def gen_consistent_pupil(self):
+        '''
+        2.b. Generates gaze position, gaze, radius and pupil consistence
+        '''
         if self.eyeball is not None:
             gazes = [self.curr_state['gaze_pos'], self.curr_state['gaze_neg']]
             posis = [self.curr_state['pupil3D_pos'],self.curr_state['pupil3D_neg']]

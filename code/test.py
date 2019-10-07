@@ -92,13 +92,15 @@ if sys.argv[1] == "--eye":
 if sys.argv[1] == '--3D':
     cap = cv2.VideoCapture('pupil1.mkv')
     eyeobj = eip.EyeImageProcessor(0,0,0,0,0,0)
+    sensor_size = (3.6, 4.8)
+    focal_length = 6
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
             img, ellipse = eyeobj.process(frame)
             if ellipse is not None:
                 (center, (w,h), radian) = ellipse
-                print('ellipse:', center, w, h, radian)
+                
             cv2.imshow('test', img)
             cv2.waitKey(0)
 
