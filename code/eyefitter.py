@@ -3,10 +3,6 @@ import cv2
 import unprojection
 import intersection
 import geometry
-from .draw_ellipse import fit_ellipse_compact, fit_ellipse
-from .unprojection import convert_ell_to_general, unprojectGazePositions, reproject, reverse_reproject
-from .intersection import NoIntersectionError, intersect, fit_ransac, line_sphere_intersect
-from .CheckEllipse import computeEllipseConfidence
 
 """
 Python code based on the one provided by Yiu Yuk Hoi, Seyed-Ahmad Ahmadi, and Moustafa Aboulatta
@@ -16,15 +12,17 @@ Python code based on the one provided by Yiu Yuk Hoi, Seyed-Ahmad Ahmadi, and Mo
 
 class EyeFitter():
 
-    def __init__(self, focal_length, pupil_radius, eye_z=50, min_fit=15):
-        self.pupil_radius = pupil_radius
-        self.focal_length = focal_length
-        self.eye_z = eye_z
+    def __init__(self, focal_length, image_shape, sensor, eye_z=50, min_fit=15):
         self.min_fit = min_fit
         self.mm2px_scaling = None
+        self.sensor_size = sensor
+        self.update_mm2px_scaling(image_shape)
+        self.focal_length = focal_length * self.mm2px_scaling
+        self.pupil_radius = 2 * self.mm2px_scaling
+        self.eye_z = eye_z * self.mm2px_scaling
         self.aver_eye_radius = None
         self.eyeball = None
-        self.geo = geometry.Geometry(focal_length, eye_z)
+        self.geo = geometry.Geometry(self.focal_length, self.eye_z)
         self.curr_state = {
             "gaze_pos": None,
             "gaze_neg": None,
@@ -41,11 +39,11 @@ class EyeFitter():
         }
 
     
-    def update_mm2px_scaling(self, image):
+    def update_mm2px_scaling(self, image_shape):
         '''
         0.
         '''
-        img_scaled = np.linalg.norm(image.shape)
+        img_scaled = np.linalg.norm(image_shape)
         sensor_scaled = np.linalg.norm(self.sensor_size)
         self.mm2px_scaling = img_scaled / sensor_scaled
     
@@ -72,18 +70,26 @@ class EyeFitter():
         '''
         2.a. Stores single ellipse observations
         '''
+        # print('curr_state shape:')
+        # for k in self.curr_state.keys():
+        #     print(self.curr_state[k].shape)
+        # print('data shape:')
+        # for k in self.data.keys():
+        #     print(self.data[k])
         if self.curr_state['ell_center'] is not None:
-            self.data['gaze_pos'] = np.vstack(
-                (self.data['gaze_pos'], self.curr_state['gaze_pos']))
-            self.data['gaze_neg'] = np.vstack(
-                (self.data['gaze_neg'], self.curr_state['gaze_neg']))
-            self.data['pupil3D_pos'] = np.vstack(
-                (self.data['pupil3D_pos'], self.curr_state['pupil3D_pos']))
-            self.data['pupil3D_neg'] = np.vstack(
-                (self.data['pupil3D_neg'], self.curr_state['pupil3D_neg']))
+            self.data['gaze_pos'] = np.vstack((self.data['gaze_pos'], 
+                self.curr_state['gaze_pos'].reshape(1,3)))
+            self.data['gaze_neg'] = np.vstack((self.data['gaze_neg'], 
+                self.curr_state['gaze_neg'].reshape(1,3)))
+            self.data['pupil3D_pos'] = np.vstack((self.data['pupil3D_pos'], 
+                self.curr_state['pupil3D_pos'].reshape(1,3)))
+            self.data['pupil3D_neg'] = np.vstack((self.data['pupil3D_neg'], 
+                self.curr_state['pupil3D_neg'].reshape(1,3)))
+            self.data['ell_center'] = np.vstack((self.data['ell_center'],
+                self.curr_state['ell_center'].reshape(1,2)))
 
 
-    def fit_projected_centers(self, max_iters=1000, min_distante=2000):
+    def fit_projected_centers(self, max_iters=1000, min_distance=2000):
         '''
         3.a. Finds a model with intersection between ellipse coordinate
              center (a) and orientation (n)
@@ -94,8 +100,9 @@ class EyeFitter():
             n = np.vstack((self.data['gaze_pos'][:,0:2],
                            self.data['gaze_neg'][:,0:2]))
             samples_to_fit = np.ceil(a.shape[0]/6).astype(np.int)
+            #THIS SHOULD BE THREADED - HEAVY!
             self.proj_eyeball_center = self.geo.fit_ransac(a,n,
-                                max_iters, samples_to_fit. min_distance)
+                                max_iters, samples_to_fit, min_distance)
         
 
     def estimate_eye_sphere(self, image):

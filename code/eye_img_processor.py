@@ -33,7 +33,8 @@ class EyeImageProcessor(imp.ImageProcessor):
                     #return img, np.array([p[0]/width, p[1]/height, 
                     #                    time.monotonic()], dtype='float32')
                     #DEBUG
-                    return img, pupil
+                    pipu = (p, pupil[1], pupil[2])
+                    return img, pipu
                 else:
                     self.lost_tracking += 1
                     if self.lost_tracking > 20:
