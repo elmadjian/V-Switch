@@ -92,7 +92,8 @@ if sys.argv[1] == "--eye":
 
 
 if sys.argv[1] == '--3D':
-    cap = cv2.VideoCapture('pupil1.mkv')
+    #cap = cv2.VideoCapture('pupil1.mkv')
+    cap = cv2.VideoCapture('demo.mp4')
     eyeobj = eip.EyeImageProcessor(0,0,0,0,0,0)
     sensor_size = (3.6, 4.8) #mm
     focal_length = 6         #mm
@@ -102,12 +103,13 @@ if sys.argv[1] == '--3D':
         ret, frame = cap.read()
         if ret:
             img, ellipse = eyeobj.process(frame)
-            print('ELLIPSE:', ellipse)
+            #print('ELLIPSE:', ellipse)
             if ellipse is not None:
                 (center, (w,h), radian) = ellipse
                 fitter.unproject_ellipse(ellipse, img)
                 fitter.add_to_fitting()
-                fitter.fit_projected_centers()
+                # fitter.fit_projected_centers()
+                # fitter.estimate_eye_sphere(img)
 
                 
             cv2.imshow('test', img)

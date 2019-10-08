@@ -12,8 +12,10 @@ Python code based on the one provided by Yiu Yuk Hoi, Seyed-Ahmad Ahmadi, and Mo
 
 class EyeFitter():
 
-    def __init__(self, focal_length, image_shape, sensor, eye_z=50, min_fit=15):
+    def __init__(self, focal_length, image_shape, sensor, eye_z=50, 
+                 min_fit=15, max_fit=90):
         self.min_fit = min_fit
+        self.max_fit = max_fit
         self.mm2px_scaling = None
         self.sensor_size = sensor
         self.update_mm2px_scaling(image_shape)
@@ -55,11 +57,16 @@ class EyeFitter():
         '''
         if ellipse is not None:
             ((xc,yc), (w,h), radian) = ellipse
+            print('center:', xc, yc, 'w:', w, 'h:', h, 'angle:', radian)
             xc = xc - image.shape[1]/2
             yc = yc - image.shape[0]/2
+            #print('data:', xc, yc, w, h, radian)
             ell_co = self.geo.convert_ellipse_to_general(xc,yc,w,h,radian)
+            #print('ell_co:', ell_co)
             vertex = [0,0,-self.focal_length]
             unprojected = self.geo.unproject_gaze(vertex, ell_co, self.pupil_radius)
+            #print("unprojected_pos:", unprojected[0], "\nunprojected_neg:", unprojected[1])
+            #print('---------------\n')
             unprojected = self.__normalize_and_to_real(unprojected)
             self.__update_current_state(unprojected, [xc,yc])
         else:
@@ -70,12 +77,6 @@ class EyeFitter():
         '''
         2.a. Stores single ellipse observations
         '''
-        # print('curr_state shape:')
-        # for k in self.curr_state.keys():
-        #     print(self.curr_state[k].shape)
-        # print('data shape:')
-        # for k in self.data.keys():
-        #     print(self.data[k])
         if self.curr_state['ell_center'] is not None:
             self.data['gaze_pos'] = np.vstack((self.data['gaze_pos'], 
                 self.curr_state['gaze_pos'].reshape(1,3)))
@@ -94,7 +95,7 @@ class EyeFitter():
         3.a. Finds a model with intersection between ellipse coordinate
              center (a) and orientation (n)
         '''
-        if len(self.data['ell_center']) >= self.min_fit:
+        if len(self.data['ell_center']) % self.min_fit == 0:
             a = np.vstack((self.data['ell_center'], 
                            self.data['ell_center']))
             n = np.vstack((self.data['gaze_pos'][:,0:2],
@@ -103,37 +104,41 @@ class EyeFitter():
             #THIS SHOULD BE THREADED - HEAVY!
             self.proj_eyeball_center = self.geo.fit_ransac(a,n,
                                 max_iters, samples_to_fit, min_distance)
+        if len(self.data['ell_center']) >= self.max_fit:
+            self.__dump_samples()
         
 
     def estimate_eye_sphere(self, image):
         '''
         4.a. Reconstructs 3D sphere
         '''
-        proj_eyeball_center = self.proj_eyeball_center.copy()
-        proj_eyeball_center[0] -= image.shape[1]/2
-        proj_eyeball_center[1] -= image.shape[0]/2
-        proj_eyeball_scaled = self.geo.reverse_reproject(proj_eyeball_center)
-        eyeball_cam = np.append(proj_eyeball_scaled, self.eye_z).reshape(3,1)
-        sel_gazes, sel_positions, rad_counter = [], [], []
-        for i in range(self.data['gaze_pos'].shape[0]):
-            gazes = [self.data['gaze_pos'][i,:].reshape(3,1),
-                     self.data['gaze_neg'][i,:].reshape(3,1)]
-            positions = [self.data['pupil3D_pos'][i,:].reshape(3,1),
-                         self.data['pupil3D_neg'][i,:].reshape(3,1)]
-            gaze, position = self.select_pupil(gazes,positions,eyeball_cam)
-            sel_gazes, sel_positions = self.__stack_nx1_to_mxn(gazes,
-                        positions, gaze, position, [3,3])
-        for i in range(sel_gazes.shape[0]):
-            gaze = sel_gazes[i,:].reshape(1,3)
-            position = sel_positions[i,:].reshape(1,3)
-            a_3Dfit  = np.vstack((eyeball_cam.reshape(1,3), position))
-            n_3Dfit  = np.vstack((gaze, (position/np.linalg.norm(position))))
-            intersected_center = self.geo.intersect(a_3Dfit, n_3Dfit)
-            radius   = np.linalg.norm(intersected_center-eyeball_cam)
-            rad_counter.append(radius)
-            self.aver_eye_radius = np.mean(rad_counter)
-            self.eyeball = eyeball_cam
-            return self.aver_eye_radius, rad_counter
+        if len(self.data['ell_center']) % self.min_fit == 0 and\
+            self.proj_eyeball_center is not None:
+            proj_eyeball_center = self.proj_eyeball_center.copy()
+            proj_eyeball_center[0] -= image.shape[1]/2
+            proj_eyeball_center[1] -= image.shape[0]/2
+            proj_eyeball_scaled = self.geo.reverse_reproject(proj_eyeball_center)
+            eyeball_cam = np.append(proj_eyeball_scaled, self.eye_z).reshape(3,1)
+            sel_gazes, sel_positions, rad_counter = [], [], []
+            for i in range(self.data['gaze_pos'].shape[0]):
+                gazes = [self.data['gaze_pos'][i,:].reshape(3,1),
+                        self.data['gaze_neg'][i,:].reshape(3,1)]
+                positions = [self.data['pupil3D_pos'][i,:].reshape(3,1),
+                            self.data['pupil3D_neg'][i,:].reshape(3,1)]
+                gaze, position = self.select_pupil(gazes,positions,eyeball_cam)
+                sel_gazes, sel_positions = self.__stack_nx1_to_mxn(gazes,
+                            positions, gaze, position, [3,3])
+            for i in range(sel_gazes.shape[0]):
+                gaze = sel_gazes[i,:].reshape(1,3)
+                position = sel_positions[i,:].reshape(1,3)
+                a_3Dfit  = np.vstack((eyeball_cam.reshape(1,3), position))
+                n_3Dfit  = np.vstack((gaze, (position/np.linalg.norm(position))))
+                intersected_center = self.geo.intersect(a_3Dfit, n_3Dfit)
+                radius   = np.linalg.norm(intersected_center-eyeball_cam)
+                rad_counter.append(radius)
+                self.aver_eye_radius = np.mean(rad_counter)
+                self.eyeball = eyeball_cam
+                return self.aver_eye_radius, rad_counter
 
          
     def gen_consistent_pupil(self):
@@ -170,10 +175,10 @@ class EyeFitter():
     def select_pupil(self, gazes, positions, globe_center):
         sel_gaze = gazes[0]
         sel_position = positions[0]
-        proj_center = self.geo.reproject(globe_center, self.focal_length)
-        proj_gaze = self.geo.reproject(sel_position+sel_gaze, self.focal_length)
+        proj_center = self.geo.reproject(globe_center)
+        proj_gaze = self.geo.reproject(sel_position+sel_gaze)
         proj_gaze -= proj_center
-        proj_position = self.geo.reproject(sel_position, self.focal_length)
+        proj_position = self.geo.reproject(sel_position)
         if np.dot(proj_gaze.T, (proj_position - proj_center)) > 0:
             return sel_gaze, sel_position
         else:
@@ -208,18 +213,25 @@ class EyeFitter():
         list_as_array = np.array([[gazes, positions]])
         new_stacked_list = []
         if np.all(list_as_array == None):
-            for stacked_array, stacked_vector, n in zip(new_stacked_list,
-                        [gazes, positions], [s_gaze, s_position], dim):
+            for stacked_array, stacked_vector, n in zip([gazes, positions],
+                                                [s_gaze, s_position], dim):
                 stacked_array = stacked_vector.reshape(1,n)
                 new_stacked_list.append(stacked_array)
         elif np.all(list_as_array != None):
-            for stacked_array, stacked_vector, n in zip(new_stacked_list,
-                        [gazes, positions], [s_gaze, s_position], dim):
+            for stacked_array, stacked_vector, n in zip([gazes, positions], 
+                                                [s_gaze, s_position], dim):
                 stacked_array = np.vstack((stacked_array, 
                                 stacked_vector.reshape(1,n)))
                 new_stacked_list.append(stacked_array)
         else:
             print("Data error")
+        print("new_stacked_list: ", new_stacked_list)
         return new_stacked_list
+
+    
+    def __dump_samples(self, dump=30):
+        for k in self.data.keys():
+            self.data[k] = self.data[k][dump:]
+
 
 
