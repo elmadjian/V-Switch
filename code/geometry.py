@@ -18,7 +18,7 @@ class Geometry():
 
 
     def unproject_gaze(self, vertex, ell_co, radius=None):
-        a,b,c,d,f,g,h,u,v,w = self.__gen_cone_co(vertex, ell_co)
+        a,b,c,_,f,g,h,u,v,w = self.__gen_cone_co(vertex, ell_co)
         lamb_co1 = 1
         lamb_co2 = -(a+b+c)
         lamb_co3 = (b*c + c*a + a*b - np.power(f,2)\
@@ -93,7 +93,7 @@ class Geometry():
         num_lines = a.shape[0]
         best_model = None
         best_distance = min_distance
-        for i in range(max_iters):
+        for _ in range(max_iters):
             samp_idx = np.random.choice(num_lines, size=samples, replace=False)
             a_sampled = a[samp_idx, :]
             n_sampled = n[samp_idx, :]
@@ -125,6 +125,30 @@ class Geometry():
             R_sum = R_sum + R
         p = np.matmul(np.linalg.inv(R_sum), q_sum)
         return p
+
+
+    def convert_vec2angle31(n1):
+        """
+        Inputs:
+            n1 = numpy array with shape (3,1)
+        """
+        assert n1.shape == (3,1)
+        n1 = n1/np.linalg.norm(n1)
+        n1_x, n1_y, n1_z_abs = n1[0,0], n1[1,0], np.abs(n1[2,0])
+        # x-angulation            
+        if n1_x > 0:
+            x_angle = np.arctan(n1_z_abs/n1_x)
+        else:
+            x_angle = np.pi - np.arctan(n1_z_abs/np.abs(n1_x))
+        # y-angulation
+        if n1_y > 0:
+            y_angle = np.arctan(n1_z_abs/n1_y)
+        else:
+            y_angle = np.pi - np.arctan(n1_z_abs/np.abs(n1_y))
+        x_angle = np.rad2deg(x_angle)
+        y_angle = np.rad2deg(y_angle)
+        return [x_angle, y_angle]
+        
 
     def __calc_distance(self, a, n, p):
         num_lines = a.shape[0]

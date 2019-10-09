@@ -13,7 +13,7 @@ Python code based on the one provided by Yiu Yuk Hoi, Seyed-Ahmad Ahmadi, and Mo
 class EyeFitter():
 
     def __init__(self, focal_length, image_shape, sensor, eye_z=50, 
-                 min_fit=15, max_fit=90):
+                 min_fit=30, max_fit=120):
         self.min_fit = min_fit
         self.max_fit = max_fit
         self.mm2px_scaling = None
@@ -57,17 +57,16 @@ class EyeFitter():
         '''
         if ellipse is not None:
             ((xc,yc), (w,h), radian) = ellipse
-            print('center:', xc, yc, 'w:', w, 'h:', h, 'angle:', radian)
             xc = xc - image.shape[1]/2
             yc = yc - image.shape[0]/2
-            #print('data:', xc, yc, w, h, radian)
             ell_co = self.geo.convert_ellipse_to_general(xc,yc,w,h,radian)
-            #print('ell_co:', ell_co)
             vertex = [0,0,-self.focal_length]
             unprojected = self.geo.unproject_gaze(vertex, ell_co, self.pupil_radius)
-            #print("unprojected_pos:", unprojected[0], "\nunprojected_neg:", unprojected[1])
-            #print('---------------\n')
             unprojected = self.__normalize_and_to_real(unprojected)
+            # print('unprojected:', 'gaze_pos:', unprojected[0],'\n',
+            #         'gaze_neg:', unprojected[1],'\n',
+            #         'pupil3D_pos:', unprojected[2],'\n',
+            #         'pupil3D_neg:', unprojected[3], '\n-------------')
             self.__update_current_state(unprojected, [xc,yc])
         else:
             self.__update_current_state(None, None)
@@ -102,8 +101,11 @@ class EyeFitter():
                            self.data['gaze_neg'][:,0:2]))
             samples_to_fit = np.ceil(a.shape[0]/6).astype(np.int)
             #THIS SHOULD BE THREADED - HEAVY!
-            self.proj_eyeball_center = self.geo.fit_ransac(a,n,
+            eyeball_center = self.geo.fit_ransac(a,n,
                                 max_iters, samples_to_fit, min_distance)
+            if eyeball_center is not None:
+                self.proj_eyeball_center = eyeball_center
+                print('eyeball:', self.proj_eyeball_center)
         if len(self.data['ell_center']) >= self.max_fit:
             self.__dump_samples()
         
@@ -126,8 +128,8 @@ class EyeFitter():
                 positions = [self.data['pupil3D_pos'][i,:].reshape(3,1),
                             self.data['pupil3D_neg'][i,:].reshape(3,1)]
                 gaze, position = self.select_pupil(gazes,positions,eyeball_cam)
-                sel_gazes, sel_positions = self.__stack_nx1_to_mxn(gazes,
-                            positions, gaze, position, [3,3])
+                sel_gazes, sel_positions = self.__stack_nx1_to_mxn(sel_gazes,
+                           sel_positions, gaze, position, [3,3])
             for i in range(sel_gazes.shape[0]):
                 gaze = sel_gazes[i,:].reshape(1,3)
                 position = sel_positions[i,:].reshape(1,3)
@@ -169,7 +171,28 @@ class EyeFitter():
                 new_rad_min, new_rad_max = self.pupil_radius, self.pupil_radius
                 consistence = False
             return [new_pos_min, new_pos_max],[new_gaze_min, new_gaze_max],\
-                        [new_rad_min, new_rad_max], consistence            
+                        [new_rad_min, new_rad_max], consistence  
+
+    def draw_vectors(self, ellipse, img):
+        '''
+        3.b. Draw normal vectors from pupil
+        '''
+        ((xc,yc), (w,h), radian) = ellipse 
+        p_list, n_list, _, consistence = self.gen_consistent_pupil()
+        p1, n1     = p_list[0], n_list[0]
+        px, py, pz = p1[0,0], p1[1,0], p1[2,0]
+        #gaze_angle = self.geo.convert_vec2angle31(n1)
+        #positions  = (px, py, pz, xc, yc)
+        ell_center = np.array((xc, yc))
+        proj_eye   = self.geo.reproject(self.eyeball)
+        proj_eye += np.array([img.shape[:2]]).T.reshape(-1,1)/2
+        # frame, shape, ellipse, ellipse_center_np, projected_eye_center, n1=gaze_vec
+
+        cv2.ellipse(img, ellipse, (0,255,0))
+        print('ellcenter:', ell_center,'n1:', n1[:2]*50, '\n_------')
+        cv2.line(img, ell_center, n1[:2]*50, (0,0,255))
+
+
 
 
     def select_pupil(self, gazes, positions, globe_center):
@@ -225,7 +248,6 @@ class EyeFitter():
                 new_stacked_list.append(stacked_array)
         else:
             print("Data error")
-        print("new_stacked_list: ", new_stacked_list)
         return new_stacked_list
 
     

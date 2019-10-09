@@ -3,6 +3,7 @@ import numpy as np
 import img_processor as imp
 import time
 import sys
+import ellipse as ell
 
 class EyeImageProcessor(imp.ImageProcessor):
 
@@ -28,7 +29,7 @@ class EyeImageProcessor(imp.ImageProcessor):
                 if pupil is not None:
                     p = pupil[0]
                     p = (p[0]+x+3, p[1]+y+3)
-                    size = max(pupil[1])
+                    size = max(pupil[1])*2
                     self.__draw_tracking_info(p, size, img)
                     #return img, np.array([p[0]/width, p[1]/height, 
                     #                    time.monotonic()], dtype='float32')
@@ -80,6 +81,15 @@ class EyeImageProcessor(imp.ImageProcessor):
         return edges
 
 
+    def __fit_ellipse(self, crop, cnt):
+        empty_box = np.zeros(crop.shape)
+        cv2.drawContours(empty_box, cnt, -1, 255, 2)
+        points = np.where(empty_box == 255)
+        vertices = np.array([points[0], points[1]]).T
+        ellipse = ell.Ellipse([vertices[:,1], vertices[:,0]])
+        return ellipse.get_parameters()
+        
+
     def __find_contours(self, bbox, frame):
         x,y,w,h = bbox
         crop = frame[y+3:y+h-3, x+3:x+w-3]
@@ -89,7 +99,7 @@ class EyeImageProcessor(imp.ImageProcessor):
         filtered = cv2.bilateralFilter(cropgray, 7, 20, 20)
         adjusted = self.__adjust_histogram(filtered)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
-        upper, thresh = cv2.threshold(adjusted, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        upper, thresh = cv2.threshold(adjusted,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         lower = 0.5*upper
         edges  = cv2.Canny(adjusted, lower, upper)
         edges  = self.__remove_glint(filtered, edges)
@@ -101,7 +111,7 @@ class EyeImageProcessor(imp.ImageProcessor):
             biggest = max(cnts, key=lambda x: x[0])[1]
             hull = cv2.convexHull(biggest)
             if len(hull) >= 5:
-                ellipse = cv2.fitEllipseDirect(hull)
+                ellipse = self.__fit_ellipse(cropgray, hull)
                 painted = cv2.cvtColor(cropgray, cv2.COLOR_GRAY2BGR)
                 frame[y+3:y+h-3, x+3:x+w-3] = painted
                 if ellipse is not None:
