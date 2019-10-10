@@ -3,6 +3,7 @@ import cv2
 import unprojection
 import intersection
 import geometry
+from threading import Thread
 
 """
 Python code based on the one provided by Yiu Yuk Hoi, Seyed-Ahmad Ahmadi, and Moustafa Aboulatta
@@ -13,17 +14,18 @@ Python code based on the one provided by Yiu Yuk Hoi, Seyed-Ahmad Ahmadi, and Mo
 class EyeFitter():
 
     def __init__(self, focal_length, image_shape, sensor, eye_z=50, 
-                 min_fit=30, max_fit=120):
+                 min_fit=60, max_fit=120):
         self.min_fit = min_fit
         self.max_fit = max_fit
         self.mm2px_scaling = None
         self.sensor_size = sensor
         self.update_mm2px_scaling(image_shape)
-        self.focal_length = focal_length * self.mm2px_scaling
-        self.pupil_radius = 2 * self.mm2px_scaling
+        self.focal_length = focal_length * self.mm2px_scaling #* 0.5
+        self.pupil_radius = 2 * self.mm2px_scaling #* 0.5
         self.eye_z = eye_z * self.mm2px_scaling
         self.aver_eye_radius = None
         self.eyeball = None
+        self.proj_eyeball_center = None
         self.geo = geometry.Geometry(self.focal_length, self.eye_z)
         self.curr_state = {
             "gaze_pos": None,
@@ -57,16 +59,19 @@ class EyeFitter():
         '''
         if ellipse is not None:
             ((xc,yc), (w,h), radian) = ellipse
-            xc = xc - image.shape[1]/2
-            yc = yc - image.shape[0]/2
-            ell_co = self.geo.convert_ellipse_to_general(xc,yc,w,h,radian)
+            xcc, ycc = xc.copy(), yc.copy()
+            xcc = xcc - image.shape[1]/2
+            ycc = ycc - image.shape[0]/2
+            ell_co = self.geo.convert_ellipse_to_general(xcc,ycc,w,h,radian)
             vertex = [0,0,-self.focal_length]
-            unprojected = self.geo.unproject_gaze(vertex, ell_co, self.pupil_radius)
+            #unprojected = self.geo.unproject_gaze(vertex, ell_co, self.pupil_radius)
+            #print('data:', vertex, ell_co, self.pupil_radius)
+            unprojected = unprojection.unprojectGazePositions(vertex, ell_co, self.pupil_radius)
             unprojected = self.__normalize_and_to_real(unprojected)
-            # print('unprojected:', 'gaze_pos:', unprojected[0],'\n',
-            #         'gaze_neg:', unprojected[1],'\n',
-            #         'pupil3D_pos:', unprojected[2],'\n',
-            #         'pupil3D_neg:', unprojected[3], '\n-------------')
+            #print('gaze_pos:', unprojected[0][0], unprojected[0][1],unprojected[0][2], '\n',
+            #      'gaze_neg:', unprojected[1][0], unprojected[1][1],unprojected[1][2],'\n---')
+            #print('pupil3D_pos:', unprojected[2],'\n',
+            #      'pupil3D_neg:', unprojected[3], '\n-------------')
             self.__update_current_state(unprojected, [xc,yc])
         else:
             self.__update_current_state(None, None)
@@ -89,25 +94,25 @@ class EyeFitter():
                 self.curr_state['ell_center'].reshape(1,2)))
 
 
+    #THIS MUST BE THREADED!
     def fit_projected_centers(self, max_iters=1000, min_distance=2000):
         '''
-        3.a. Finds a model with intersection between ellipse coordinate
-             center (a) and orientation (n)
+        3.a. Find the eyeball center in camera space using a batch with
+             ellipse center (a) and normal orientation (n)
         '''
-        if len(self.data['ell_center']) % self.min_fit == 0:
-            a = np.vstack((self.data['ell_center'], 
-                           self.data['ell_center']))
-            n = np.vstack((self.data['gaze_pos'][:,0:2],
-                           self.data['gaze_neg'][:,0:2]))
-            samples_to_fit = np.ceil(a.shape[0]/6).astype(np.int)
-            #THIS SHOULD BE THREADED - HEAVY!
-            eyeball_center = self.geo.fit_ransac(a,n,
-                                max_iters, samples_to_fit, min_distance)
-            if eyeball_center is not None:
-                self.proj_eyeball_center = eyeball_center
-                print('eyeball:', self.proj_eyeball_center)
-        if len(self.data['ell_center']) >= self.max_fit:
-            self.__dump_samples()
+        #if len(self.data['ell_center']) % self.min_fit == 0:
+        a = np.vstack((self.data['ell_center'], 
+                        self.data['ell_center']))
+        n = np.vstack((self.data['gaze_pos'][:,0:2],
+                        self.data['gaze_neg'][:,0:2]))
+        samples_to_fit = np.ceil(a.shape[0]/6).astype(np.int)
+        eyeball_center = self.geo.fit_ransac(a,n,
+                            max_iters, samples_to_fit, min_distance)
+        if eyeball_center is not None:
+            self.proj_eyeball_center = eyeball_center
+            print('Found eyeball center:', self.proj_eyeball_center)
+        # if len(self.data['ell_center']) >= self.max_fit:
+        #     self.__dump_samples()
         
 
     def estimate_eye_sphere(self, image):
@@ -140,6 +145,7 @@ class EyeFitter():
                 rad_counter.append(radius)
                 self.aver_eye_radius = np.mean(rad_counter)
                 self.eyeball = eyeball_cam
+                print('eye center:', self.eyeball, 'aver:', self.aver_eye_radius)
                 return self.aver_eye_radius, rad_counter
 
          
@@ -178,19 +184,21 @@ class EyeFitter():
         3.b. Draw normal vectors from pupil
         '''
         ((xc,yc), (w,h), radian) = ellipse 
+        ellipse = ((xc, yc), (w, h), np.rad2deg(radian))
         p_list, n_list, _, consistence = self.gen_consistent_pupil()
         p1, n1     = p_list[0], n_list[0]
         px, py, pz = p1[0,0], p1[1,0], p1[2,0]
+        #print("N1:", n1[0], n1[1], n1[2])
         #gaze_angle = self.geo.convert_vec2angle31(n1)
         #positions  = (px, py, pz, xc, yc)
-        ell_center = np.array((xc, yc))
+        ell_center = ((int(xc), int(yc)))
         proj_eye   = self.geo.reproject(self.eyeball)
-        proj_eye += np.array([img.shape[:2]]).T.reshape(-1,1)/2
+        proj_eye  += np.array([img.shape[:2]]).T.reshape(-1,1)/2
+        dest       = ((int(xc+n1[0]*50), int(yc+n1[1]*50)))
         # frame, shape, ellipse, ellipse_center_np, projected_eye_center, n1=gaze_vec
 
         cv2.ellipse(img, ellipse, (0,255,0))
-        print('ellcenter:', ell_center,'n1:', n1[:2]*50, '\n_------')
-        cv2.line(img, ell_center, n1[:2]*50, (0,0,255))
+        cv2.line(img, ell_center, dest, (0,0,255))
 
 
 

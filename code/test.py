@@ -7,6 +7,7 @@ import eye_img_processor as eip
 from multiprocessing import Process, Pipe
 import eyefitter as ef
 import geometry as geo
+from threading import Thread
 
 if sys.argv[1] == "--uvc":
     dev_list = uvc.device_list()
@@ -92,13 +93,13 @@ if sys.argv[1] == "--eye":
 
 
 if sys.argv[1] == '--3D':
-    #cap = cv2.VideoCapture('pupil1.mkv')
-    cap = cv2.VideoCapture('pupil1.mkv')
+    cap = cv2.VideoCapture('pupil.mp4')
+    #cap = cv2.VideoCapture('demo.mp4')
     eyeobj = eip.EyeImageProcessor(0,0,0,0,0,0)
     sensor_size = (3.6, 4.8) #mm
     focal_length = 6         #mm
     fitter = ef.EyeFitter(focal_length, (480,640), sensor_size)
-    #counter = 0
+    counter = 0
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -107,17 +108,22 @@ if sys.argv[1] == '--3D':
             #print('ELLIPSE:', ellipse)
             if ellipse is not None:
                 (center, (w,h), radian) = ellipse
-                #counter += 1
+                counter += 1
                 fitter.unproject_ellipse(ellipse, img)
                 fitter.add_to_fitting()
-                fitter.fit_projected_centers()
+                if counter == 180:
+                    fitter.fit_projected_centers()
                 fitter.estimate_eye_sphere(img)
                 if fitter.eyeball is not None:
                     fitter.draw_vectors(ellipse, img)
 
                 
             cv2.imshow('test', img)
-            cv2.waitKey(0)
+            if cv2.waitKey(5) & 0xFF == ord('q'):
+                break
+
+    
+
 
 
 

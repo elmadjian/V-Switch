@@ -127,7 +127,7 @@ class Geometry():
         return p
 
 
-    def convert_vec2angle31(n1):
+    def convert_vec2angle31(self, n1):
         """
         Inputs:
             n1 = numpy array with shape (3,1)
