@@ -26,6 +26,7 @@ class EyeFitter():
         self.aver_eye_radius = None
         self.eyeball = None
         self.proj_eyeball_center = None
+        self.pol = 1
         self.geo = geometry.Geometry(self.focal_length, self.eye_z)
         self.curr_state = {
             "gaze_pos": None,
@@ -59,19 +60,14 @@ class EyeFitter():
         '''
         if ellipse is not None:
             ((xc,yc), (w,h), radian) = ellipse
+            #print('ellipse:', ellipse)
             xcc, ycc = xc.copy(), yc.copy()
             xcc = xcc - image.shape[1]/2
             ycc = ycc - image.shape[0]/2
             ell_co = self.geo.convert_ellipse_to_general(xcc,ycc,w,h,radian)
             vertex = [0,0,-self.focal_length]
-            #unprojected = self.geo.unproject_gaze(vertex, ell_co, self.pupil_radius)
-            #print('data:', vertex, ell_co, self.pupil_radius)
-            unprojected = unprojection.unprojectGazePositions(vertex, ell_co, self.pupil_radius)
+            unprojected = self.geo.unproject_gaze(vertex, ell_co, self.pupil_radius)
             unprojected = self.__normalize_and_to_real(unprojected)
-            #print('gaze_pos:', unprojected[0][0], unprojected[0][1],unprojected[0][2], '\n',
-            #      'gaze_neg:', unprojected[1][0], unprojected[1][1],unprojected[1][2],'\n---')
-            #print('pupil3D_pos:', unprojected[2],'\n',
-            #      'pupil3D_neg:', unprojected[3], '\n-------------')
             self.__update_current_state(unprojected, [xc,yc])
         else:
             self.__update_current_state(None, None)
@@ -184,21 +180,34 @@ class EyeFitter():
         3.b. Draw normal vectors from pupil
         '''
         ((xc,yc), (w,h), radian) = ellipse 
-        ellipse = ((xc, yc), (w, h), np.rad2deg(radian))
-        p_list, n_list, _, consistence = self.gen_consistent_pupil()
-        p1, n1     = p_list[0], n_list[0]
-        px, py, pz = p1[0,0], p1[1,0], p1[2,0]
+        ellipse = ((xc, yc), (w*2, h*2), np.rad2deg(radian))
+        # p_list, n_list, _, consistence = self.gen_consistent_pupil()
+        # p1, n1     = p_list[0], n_list[0]
+        #px, py, pz = p1[0,0], p1[1,0], p1[2,0]
         #print("N1:", n1[0], n1[1], n1[2])
         #gaze_angle = self.geo.convert_vec2angle31(n1)
         #positions  = (px, py, pz, xc, yc)
-        ell_center = ((int(xc), int(yc)))
-        proj_eye   = self.geo.reproject(self.eyeball)
-        proj_eye  += np.array([img.shape[:2]]).T.reshape(-1,1)/2
-        dest       = ((int(xc+n1[0]*50), int(yc+n1[1]*50)))
+        pos = self.curr_state['gaze_pos']
+        neg = self.curr_state['gaze_neg']
+        ell_center = (int(xc), int(yc))
+       # proj_eye   = self.geo.reproject(self.eyeball)
+       # proj_eye  += np.array([img.shape[:2]]).T.reshape(-1,1)/2
+       # proj_eye   = (int(proj_eye[0]), int(proj_eye[1]))
+        dest_pos    = (int(xc+pos[0]*50), int(yc+pos[1]*50))
+        dest_neg    = (int(xc+neg[0]*50), int(yc+neg[1]*50))
         # frame, shape, ellipse, ellipse_center_np, projected_eye_center, n1=gaze_vec
 
         cv2.ellipse(img, ellipse, (0,255,0))
-        cv2.line(img, ell_center, dest, (0,0,255))
+        #cv2.line(img, proj_eye, ell_center, (255,100,0))
+        cv2.line(img, ell_center, dest_pos, (0,0,255))
+        cv2.line(img, ell_center, dest_neg, (255,100,0))
+        # if self.eyeball is not None:
+        #     print('entrei')
+        #     gazes = [self.curr_state['gaze_pos'], self.curr_state['gaze_neg']]
+        #     posis = [self.curr_state['pupil3D_pos'],self.curr_state['pupil3D_neg']]
+        #     gaze, position = self.select_pupil(gazes, posis, self.eyeball)
+        #     dest_pup    = (int(xc+gaze[0]*100), int(yc+gaze[1]*100))
+        #     cv2.line(img, ell_center, dest_pup, (150,120,70))
 
 
 
@@ -218,16 +227,40 @@ class EyeFitter():
 
     def __update_current_state(self, unprojected_data, center):
         if unprojected_data is not None:
-            norm_pos, norm_neg, tc_pos, tc_neg = unprojected_data
-            self.curr_state['gaze_pos'] = norm_pos
-            self.curr_state['gaze_neg'] = norm_neg
+            #norm_pos, norm_neg, tc_pos, tc_neg = unprojected_data
+            # print('POS:', norm_pos[0], norm_pos[1], norm_pos[2])
+            # print('NEG:', norm_neg[0], norm_neg[1], norm_neg[2])
+            pos,neg,tc_pos,tc_neg = self.__check_z_consistency(unprojected_data)
+            self.curr_state['gaze_pos'] = pos
+            self.curr_state['gaze_neg'] = neg
             self.curr_state['pupil3D_pos'] = tc_pos
             self.curr_state['pupil3D_neg'] = tc_neg
             self.curr_state['ell_center'] = np.array(center).reshape(2,1)
+            cp = self.curr_state['gaze_pos']
+            cn = self.curr_state['gaze_neg']
+            print('C_P:', cp[0], cp[1], cp[2])
+            print('C_N:', cn[0], cn[1], cn[2])
+            print('---------------')
         else:
             for key in self.curr_state.keys():
-                self.curr_state[key] = None            
+                self.curr_state[key] = None 
 
+    def __check_z_consistency(self, unprojected_data):
+        pos, neg, tc_pos, tc_neg = unprojected_data
+        if pos[2] < 0 and neg[2] < 0:
+            return -neg, -pos, -tc_neg, -tc_pos
+        return pos, neg, tc_pos, tc_neg
+        # if self.curr_state['gaze_pos'] is not None:
+        #     abs_pos  = np.abs(self.curr_state['gaze_pos'])
+        #     diff_pos = np.sum(np.abs(abs_pos - np.abs(pos)))
+        #     diff_neg = np.sum(np.abs(abs_pos - np.abs(neg)))
+        #     print('diff_pos:', diff_pos, 'diff_neg:', diff_neg)
+        #     if diff_neg < diff_pos and self.pol > 0:
+        #         self.pol = -1
+        #         print('-1!')
+        #     elif diff_neg > diff_pos and self.pol < 0:
+        #         self.pol = 1
+        #         print('+1!')
 
     def __normalize_and_to_real(self, unprojected_data):
         norm_pos, norm_neg, tc_pos, tc_neg = unprojected_data

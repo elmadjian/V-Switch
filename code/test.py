@@ -93,7 +93,8 @@ if sys.argv[1] == "--eye":
 
 
 if sys.argv[1] == '--3D':
-    cap = cv2.VideoCapture('pupil.mp4')
+    #cap = cv2.VideoCapture('pupil.mp4')
+    cap = cv2.VideoCapture('pupil2.mkv')
     #cap = cv2.VideoCapture('demo.mp4')
     eyeobj = eip.EyeImageProcessor(0,0,0,0,0,0)
     sensor_size = (3.6, 4.8) #mm
@@ -111,15 +112,15 @@ if sys.argv[1] == '--3D':
                 counter += 1
                 fitter.unproject_ellipse(ellipse, img)
                 fitter.add_to_fitting()
-                if counter == 180:
+                if counter % 100 == 0:
                     fitter.fit_projected_centers()
                 fitter.estimate_eye_sphere(img)
-                if fitter.eyeball is not None:
-                    fitter.draw_vectors(ellipse, img)
+                # if fitter.eyeball is not None:
+                fitter.draw_vectors(ellipse, img)
 
                 
             cv2.imshow('test', img)
-            if cv2.waitKey(5) & 0xFF == ord('q'):
+            if cv2.waitKey(0) & 0xFF == ord('q'):
                 break
 
     
