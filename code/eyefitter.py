@@ -26,7 +26,7 @@ class EyeFitter():
         self.aver_eye_radius = None
         self.eyeball = None
         self.proj_eyeball_center = None
-        self.pol = 1
+        self.pol = True
         self.geo = geometry.Geometry(self.focal_length, self.eye_z)
         self.curr_state = {
             "gaze_pos": None,
@@ -227,20 +227,14 @@ class EyeFitter():
 
     def __update_current_state(self, unprojected_data, center):
         if unprojected_data is not None:
-            #norm_pos, norm_neg, tc_pos, tc_neg = unprojected_data
-            # print('POS:', norm_pos[0], norm_pos[1], norm_pos[2])
-            # print('NEG:', norm_neg[0], norm_neg[1], norm_neg[2])
-            pos,neg,tc_pos,tc_neg = self.__check_z_consistency(unprojected_data)
+            data = self.__check_z_consistency(unprojected_data)
+            data = self.__check_polarity_consistency(data)
+            pos,neg,tc_pos,tc_neg = data
             self.curr_state['gaze_pos'] = pos
             self.curr_state['gaze_neg'] = neg
             self.curr_state['pupil3D_pos'] = tc_pos
             self.curr_state['pupil3D_neg'] = tc_neg
             self.curr_state['ell_center'] = np.array(center).reshape(2,1)
-            cp = self.curr_state['gaze_pos']
-            cn = self.curr_state['gaze_neg']
-            print('C_P:', cp[0], cp[1], cp[2])
-            print('C_N:', cn[0], cn[1], cn[2])
-            print('---------------')
         else:
             for key in self.curr_state.keys():
                 self.curr_state[key] = None 
@@ -248,19 +242,18 @@ class EyeFitter():
     def __check_z_consistency(self, unprojected_data):
         pos, neg, tc_pos, tc_neg = unprojected_data
         if pos[2] < 0 and neg[2] < 0:
-            return -neg, -pos, -tc_neg, -tc_pos
-        return pos, neg, tc_pos, tc_neg
-        # if self.curr_state['gaze_pos'] is not None:
-        #     abs_pos  = np.abs(self.curr_state['gaze_pos'])
-        #     diff_pos = np.sum(np.abs(abs_pos - np.abs(pos)))
-        #     diff_neg = np.sum(np.abs(abs_pos - np.abs(neg)))
-        #     print('diff_pos:', diff_pos, 'diff_neg:', diff_neg)
-        #     if diff_neg < diff_pos and self.pol > 0:
-        #         self.pol = -1
-        #         print('-1!')
-        #     elif diff_neg > diff_pos and self.pol < 0:
-        #         self.pol = 1
-        #         print('+1!')
+            return [-neg, -pos, -tc_neg, -tc_pos]
+        return [pos, neg, tc_pos, tc_neg]
+
+    def __check_polarity_consistency(self, unprojected_data):
+        pos, neg, tc_pos, tc_neg = unprojected_data
+        if self.curr_state['gaze_pos'] is not None:
+            abs_pos  = np.abs(self.curr_state['gaze_pos'])
+            diff_pos = np.sum(np.abs(abs_pos - np.abs(pos)))
+            diff_neg = np.sum(np.abs(abs_pos - np.abs(neg)))
+            if diff_neg < diff_pos:
+                return [neg, pos, tc_neg, tc_pos]
+        return unprojected_data
 
     def __normalize_and_to_real(self, unprojected_data):
         norm_pos, norm_neg, tc_pos, tc_neg = unprojected_data
