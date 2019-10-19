@@ -109,12 +109,13 @@ if sys.argv[1] == '--3D':
             #print('ELLIPSE:', ellipse)
             if ellipse is not None:
                 (center, (w,h), radian) = ellipse
+                print('ellipse:', ellipse)
                 counter += 1
                 fitter.unproject_ellipse(ellipse, img)
-                fitter.add_to_fitting()
-                if counter % 100 == 0:
-                    fitter.fit_projected_centers()
-                fitter.estimate_eye_sphere(img)
+                # fitter.add_to_fitting()
+                # if counter % 100 == 0:
+                #     fitter.fit_projected_centers()
+                # fitter.estimate_eye_sphere(img)
                 # if fitter.eyeball is not None:
                 fitter.draw_vectors(ellipse, img)
 

@@ -26,7 +26,6 @@ class EyeFitter():
         self.aver_eye_radius = None
         self.eyeball = None
         self.proj_eyeball_center = None
-        self.pol = True
         self.geo = geometry.Geometry(self.focal_length, self.eye_z)
         self.curr_state = {
             "gaze_pos": None,

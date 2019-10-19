@@ -13,6 +13,7 @@ class EyeImageProcessor(imp.ImageProcessor):
         self.bbox = None
         self.tracking = False
         self.lost_tracking = 0
+        self.buffer = []
         
 
     def process(self, img):
@@ -30,13 +31,16 @@ class EyeImageProcessor(imp.ImageProcessor):
                     p = pupil[0]
                     p = (p[0]+x+3, p[1]+y+3)
                     size = max(pupil[1])*2
-                    self.__draw_tracking_info(p, size, img)
-                    #return img, np.array([p[0]/width, p[1]/height, 
-                    #                    time.monotonic()], dtype='float32')
-                    #DEBUG
-                    pipu = (p, pupil[1], pupil[2])
-                    return img, pipu
+                    self.bbox = self.__get_bbox(p, size, img)
+                    if self.__is_consistent(pupil[1], width, 0.025):
+                        self.__draw_tracking_info(p, img)
+                        #return img, np.array([p[0]/width, p[1]/height, 
+                        #                    time.monotonic()], dtype='float32')
+                        #DEBUG
+                        pipu = (p, pupil[1], pupil[2])
+                        return img, pipu
                 else:
+                    self.buffer = []
                     self.lost_tracking += 1
                     if self.lost_tracking > 20:
                         self.tracking = False
@@ -46,10 +50,24 @@ class EyeImageProcessor(imp.ImageProcessor):
         return img, None
 
 
-    def __draw_tracking_info(self, p, size, img):
+    def __is_consistent(self, axes, width, thresh):
+        axes_np = np.sort(np.array(axes)/width)
+        if len(self.buffer) < 3:
+            self.buffer.append(axes_np)
+        else:
+            dist = 0
+            for ax in self.buffer:
+                dist += np.linalg.norm(ax - axes_np)
+            if dist > thresh:
+                return False
+            self.buffer.pop(0)
+            self.buffer.append(axes_np)
+        return True
+
+
+    def __draw_tracking_info(self, p, img):
         cv2.drawMarker(img, (int(p[0]), int(p[1])), (0,255,0),\
                     cv2.MARKER_CROSS, 12, 1)
-        self.bbox = self.__get_bbox(p, size, img)
         cv2.rectangle(img, self.bbox, (255,120,120), 2, 1)
 
 
