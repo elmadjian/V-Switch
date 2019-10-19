@@ -248,12 +248,13 @@ class EyeFitter():
     def __check_polarity_consistency(self, unprojected_data):
         pos, neg, tc_pos, tc_neg = unprojected_data
         if self.curr_state['gaze_pos'] is not None:
-            abs_pos  = np.abs(self.curr_state['gaze_pos'])
-            diff_pos = np.sum(np.abs(abs_pos - np.abs(pos)))
-            diff_neg = np.sum(np.abs(abs_pos - np.abs(neg)))
+            curr_pos = self.curr_state['gaze_pos']
+            diff_pos = np.sum(np.abs(curr_pos - pos))
+            diff_neg = np.sum(np.abs(curr_pos - neg))
             if diff_neg < diff_pos:
                 return [neg, pos, tc_neg, tc_pos]
         return unprojected_data
+
 
     def __normalize_and_to_real(self, unprojected_data):
         norm_pos, norm_neg, tc_pos, tc_neg = unprojected_data
