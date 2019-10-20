@@ -20,7 +20,7 @@ if __name__=='__main__':
     engine = QQmlApplicationEngine()
     
     videoio   = videoio_uvc.VideoIO_UVC()
-    cameras   = videoio.get_cameras()
+    #cameras   = videoio.get_cameras()
     calib_ctl = calibration.Calibrator(3, 3, 60, 6)
     calib_hmd = calibration_hmd.HMDCalibrator(3, 3, 40, 4) 
     vgc_ctl   = vergence.VergenceCtl(3, 40, 4)
@@ -34,7 +34,7 @@ if __name__=='__main__':
     calib_hmd.set_vergence_control(vgc_ctl)
 
     engine.rootContext().setContextProperty("camManager", videoio)
-    engine.rootContext().setContextProperty("cameraSources", cameras)
+   # engine.rootContext().setContextProperty("cameraSources", cameras)
     engine.rootContext().setContextProperty("sceneCam", scene_cam)
     engine.rootContext().setContextProperty("leftEyeCam", le_cam)
     engine.rootContext().setContextProperty("rightEyeCam", re_cam)

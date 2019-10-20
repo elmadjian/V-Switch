@@ -23,8 +23,8 @@ class VergenceCtl(QObject):
 
     def get_plane_data(self, plane):
         t = time.time()
-        while (len(self.plane_data[plane]) < self.samples) and 
-              (time.time()-t < self.timeout):
+        while len(self.plane_data[plane]) < self.samples and\
+             time.time()-t < self.timeout:
             le = self.leye.get_processed_data()
             re = self.reye.get_processed_data()
             dist = np.linalg.norm(le[:2] - re[:2])

@@ -34,11 +34,11 @@ class EyeImageProcessor(imp.ImageProcessor):
                     self.bbox = self.__get_bbox(p, size, img)
                     if self.__is_consistent(pupil[1], width, 0.025):
                         self.__draw_tracking_info(p, img)
-                        #return img, np.array([p[0]/width, p[1]/height, 
-                        #                    time.monotonic()], dtype='float32')
+                        return img, np.array([p[0]/width, p[1]/height, 
+                                           time.monotonic()], dtype='float32')
                         #DEBUG
-                        pipu = (p, pupil[1], pupil[2])
-                        return img, pipu
+                        # pipu = (p, pupil[1], pupil[2])
+                        # return img, pipu
                 else:
                     self.buffer = []
                     self.lost_tracking += 1
@@ -51,6 +51,10 @@ class EyeImageProcessor(imp.ImageProcessor):
 
 
     def __is_consistent(self, axes, width, thresh):
+        '''
+        The higher the threshold the higher the number of
+        potential false positives
+        '''
         axes_np = np.sort(np.array(axes)/width)
         if len(self.buffer) < 3:
             self.buffer.append(axes_np)

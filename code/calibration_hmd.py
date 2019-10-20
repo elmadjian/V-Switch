@@ -200,6 +200,8 @@ class HMDCalibrator(QObject):
                 plane_calibrator = Thread(target=self.vergence.get_plane_data, args=(i,))
                 plane_calibrator.start()
                 plane_calibrator.join()
+            except Exception as e:
+                print('Could not send plane id')
         self.socket.sendto('F'.encode(), (self.ip, self.port))
 
 

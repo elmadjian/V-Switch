@@ -1,7 +1,5 @@
 import numpy as np
 import cv2
-import unprojection
-import intersection
 import geometry
 from threading import Thread
 

@@ -1,5 +1,11 @@
 import numpy as np 
 
+"""
+Python code based on the one provided by Yiu Yuk Hoi, Seyed-Ahmad Ahmadi, and Moustafa Aboulatta
+(https://github.com/pydsgz/DeepVOG)
+
+"""
+
 class Geometry():
 
     def __init__(self, focal_length, eye_z):

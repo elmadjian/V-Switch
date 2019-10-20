@@ -1,7 +1,7 @@
 import subprocess
 import re
 import uvc
-from PySide2.QtCore import QObject, Signal, Slot
+from PySide2.QtCore import QObject, Signal, Slot, Property
 
 class VideoIO_UVC(QObject):
 
@@ -21,8 +21,12 @@ class VideoIO_UVC(QObject):
             self.cameras[i] = name
 
 
-    def get_cameras(self):
-        return ["{}: {}".format(i, self.cameras[i]) for i in self.cameras.keys()]
+    @Property('QVariantList')
+    def camera_list(self):
+        self.read_inputs()
+        cameras = ["{}: {}".format(i+2,self.cameras[i]) for i in self.cameras.keys()]
+        opts = ['0: No feed', '1: File...']
+        return opts + cameras
 
 
     def get_camera_name(self, source):
@@ -41,6 +45,10 @@ class VideoIO_UVC(QObject):
         self.leye.stop()
         self.reye.stop()
         print(">>> Finished!")
+
+    # @Slot()
+    # def load_video(self, cam_id, filename):
+
 
 
     @Slot(str, int)

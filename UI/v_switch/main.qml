@@ -59,11 +59,19 @@ Window {
             x: 493
             y: -12
             height: 28
-            model: cameraSources
+            model: camManager.camera_list
             onActivated:  {
-                camManager.set_camera_source(sceneTitle.text, index);
-                activate_config(sceneDisabledOverlay, prefSceneImg);
-                enable_calibration();
+                if (textAt(index) === "1: File...") {
+                    console.log("no file");
+                }
+                else if (textAt(index) === "0: No feed") {
+                    console.log("no video");
+                }
+                else {
+                    camManager.set_camera_source(sceneTitle.text, index);
+                    activate_config(sceneDisabledOverlay, prefSceneImg);
+                    enable_calibration();
+                }
             }
         }
 
@@ -152,12 +160,12 @@ Window {
 
         ComboBox {
             id: leftEyeBox
-            currentIndex: 1
+            currentIndex: 0
             z: 1
             x: 141
             y: -12
             height: 28
-            model: cameraSources
+            model: camManager.camera_list
             onActivated:  {
                 camManager.set_camera_source(leftEyeTitle.text, index);
                 activate_config(leftEyeDisabledOverlay, prefLeftEyeImg);
@@ -210,11 +218,12 @@ Window {
 
         ComboBox {
             id: rightEyeBox
+            currentIndex: 0
             z: 1
             x: 141
             y: -12
             height: 28
-            model: cameraSources
+            model: camManager.camera_list
             onActivated:  {
                 camManager.set_camera_source(rightEyeTitle.text, index);
                 activate_config(rightEyeDisabledOverlay, prefRightEyeImg);
@@ -299,7 +308,7 @@ Window {
         id: calibrationSettings
         x: 30
         y: 16
-        width: 315
+        width: 415
         height: 110
         label: Text {
             color:"gray"
@@ -405,7 +414,7 @@ Window {
             }
         }
         ColumnLayout {
-            x: 220
+            x: 228
             y:0
             Layout.fillHeight: false
             Layout.fillWidth: false
@@ -419,6 +428,31 @@ Window {
             }
             Switch {
                 id: switchStore
+                width: 60
+                height: 40
+                checked: false
+                font.pointSize: 8
+                onToggled: {
+                    console.log(position);
+                }
+            }
+        }
+
+        ColumnLayout {
+            x: 312
+            y:0
+            Layout.fillHeight: false
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+            Text {
+                id: calibration3DLabel
+                text: qsTr("3D Model")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Switch {
+                id: switch3DModel
                 width: 60
                 height: 40
                 checked: false
