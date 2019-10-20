@@ -3,6 +3,7 @@ import QtQuick.Window 2.3
 import QtQuick.Controls 2.2
 import QtQuick.Controls.Universal 2.2
 import QtGraphicalEffects 1.0
+import QtQuick.Dialogs 1.2
 //import CVStuff 1.0
 //import CVStuff2 1.0
 import QtQuick.Layouts 1.0
@@ -21,15 +22,6 @@ Window {
         console.log("closing window");
         camManager.stop_cameras();
     }
-
-//    Timer {
-//        interval: 33
-//        running: true
-//        repeat: true
-//        onTriggered: {
-//            sceneImage.counter = !sceneImage.counter;
-//        }
-//    }
 
 
     /*
@@ -51,6 +43,7 @@ Window {
             text: "Scene Camera"
             font.weight: Font.Light
         }
+        property bool video: false
 
         ComboBox {
             id: sceneBox
@@ -61,17 +54,36 @@ Window {
             height: 28
             model: camManager.camera_list
             onActivated:  {
-                if (textAt(index) === "1: File...") {
-                    console.log("no file");
+                if (textAt(index) === "File...") {
+                    sceneFileDialog.visible = true;
                 }
-                else if (textAt(index) === "0: No feed") {
-                    console.log("no video");
+                else if (textAt(index) === "No feed") {
+                    sceneImage.source = "../imgs/novideo.png";
                 }
                 else {
-                    camManager.set_camera_source(sceneTitle.text, index);
+                    sceneGroup.video = false;
+                    camManager.set_camera_source(sceneTitle.text, textAt(index));
                     activate_config(sceneDisabledOverlay, prefSceneImg);
                     enable_calibration();
                 }
+            }
+        }
+
+        FileDialog {
+            id: sceneFileDialog
+            title: "Please, select a scene video file"
+            folder: shortcuts.home
+            visible: false
+            nameFilters: ["Video files (*.avi, *.mkv, *.mpeg, *.mp4)", "All files (*)"]
+            onAccepted: {
+                var file = sceneFileDialog.fileUrl.toString();
+                var suffix = file.substring(file.indexOf("/")+2);
+                camManager.load_video(sceneTitle.text, suffix);
+                sceneGroup.video = true;
+                playImg.enabled = true;
+            }
+            onRejected: {
+                sceneBox.currentIndex = 0;
             }
         }
 
@@ -157,6 +169,7 @@ Window {
             text: "Left Eye Camera"
             font.weight: Font.Light
         }
+        property bool video: false
 
         ComboBox {
             id: leftEyeBox
@@ -167,9 +180,36 @@ Window {
             height: 28
             model: camManager.camera_list
             onActivated:  {
-                camManager.set_camera_source(leftEyeTitle.text, index);
-                activate_config(leftEyeDisabledOverlay, prefLeftEyeImg);
-                enable_calibration();
+                if (textAt(index) === "File...") {
+                    leftEyeFileDialog.visible = true;
+                }
+                else if (textAt(index) === "No feed") {
+                    leyeImage.source = "../imgs/novideo.png";
+                }
+                else {
+                    leftEyeGroup.video = false;
+                    camManager.set_camera_source(leftEyeTitle.text, textAt(index));
+                    activate_config(leftEyeDisabledOverlay, prefLeftEyeImg);
+                    enable_calibration();
+                }
+            }
+        }
+
+        FileDialog {
+            id: leftEyeFileDialog
+            title: "Please, select a scene video file"
+            folder: shortcuts.home
+            visible: false
+            nameFilters: ["Video files (*.avi, *.mkv, *.mpeg, *.mp4)", "All files (*)"]
+            onAccepted: {
+                var file = leftEyeFileDialog.fileUrl.toString();
+                var suffix = file.substring(file.indexOf("/")+2);
+                camManager.load_video(leftEyeTitle.text, suffix);
+                leftEyeGroup.video = true;
+                playImg.enabled = true;
+            }
+            onRejected: {
+                leftEyeBox.currentIndex = 0;
             }
         }
 
@@ -215,6 +255,7 @@ Window {
             text: "Right Eye Camera"
             font.weight: Font.Light
         }
+         property bool video: false
 
         ComboBox {
             id: rightEyeBox
@@ -225,11 +266,39 @@ Window {
             height: 28
             model: camManager.camera_list
             onActivated:  {
-                camManager.set_camera_source(rightEyeTitle.text, index);
-                activate_config(rightEyeDisabledOverlay, prefRightEyeImg);
-                enable_calibration();
+                if (textAt(index) === "File...") {
+                    rightEyeFileDialog.visible = true;
+                }
+                else if (textAt(index) === "No feed") {
+                    reyeImage.source = "../imgs/novideo.png";
+                }
+                else {
+                    rightEyeGroup.video = false;
+                    camManager.set_camera_source(rightEyeTitle.text, textAt(index));
+                    activate_config(rightEyeDisabledOverlay, prefRightEyeImg);
+                    enable_calibration();
+                }
             }
         }
+
+        FileDialog {
+            id: rightEyeFileDialog
+            title: "Please, select a scene video file"
+            folder: shortcuts.home
+            visible: false
+            nameFilters: ["Video files (*.avi, *.mkv, *.mpeg, *.mp4)", "All files (*)"]
+            onAccepted: {
+                var file = rightEyeFileDialog.fileUrl.toString();
+                var suffix = file.substring(file.indexOf("/")+2);
+                camManager.load_video(rightEyeTitle.text, suffix);
+                rightEyeGroup.video = true;
+                playImg.enabled = true;
+            }
+            onRejected: {
+                rightEyeBox.currentIndex = 0;
+            }
+        }
+
         Image {
             id: reyeImage
             property bool counter: false
@@ -483,6 +552,108 @@ Window {
     }
 
 
+    /*
+    PLAYBACK CONTOL
+    ------------------ */
+    GroupBox {
+        id: playbackSettings
+        x: 460
+        y: 16
+        width: 110
+        height: 110
+        label: Text {
+            color:"gray"
+            text:"Playback"
+        }
+
+        ColumnLayout {
+            y:0
+            Layout.fillHeight: false
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+            Text {
+                id: playLabel
+                text: qsTr("Play")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Image {
+                id: playImg
+                sourceSize.width: 50
+                sourceSize.height: 50
+                fillMode: Image.PreserveAspectFit
+                Layout.preferredHeight: 50
+                Layout.preferredWidth: 50
+                source: "../imgs/play.png"
+                enabled: false
+                z:1
+                states: [
+                    State {
+                        name: "stalled"
+                        PropertyChanges {
+                            target: playImg
+                            source: "../imgs/play.png"
+                        }
+                    },
+                    State {
+                        name: "playing"
+                        PropertyChanges {
+                            target: playImg
+                            source: "../imgs/play.png"
+                        }
+                    },
+                    State {
+                        name: "paused"
+                        PropertyChanges {
+                            target: playImg
+                            source: "../imgs/pause.png"
+                        }
+                    }
+                ]
+                Component.onCompleted: state = "playing";
+
+                ColorOverlay {
+                    id: playDisabledOverlay
+                    anchors.fill: playImg
+                    source: playImg
+                    color: "#555555"
+                    opacity: 1
+                }
+
+                ColorOverlay {
+                    id: playOverlay
+                    anchors.fill: playImg
+                    source: playImg
+                    color: "white"
+                    opacity: 0
+                }
+
+                MouseArea {
+                    id: playBtn
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    anchors.fill: parent
+                    onEntered: {
+                        playOverlay.opacity = 1
+                    }
+                    onExited: {
+                        playOverlay.opacity = 0
+                    }
+                    onClicked: {
+                        if (playImg.state == "stalled" || playImg.state == "paused") {
+                            camManager.play_cams(sceneGroup.video, leftEyeGroup.video, rightEyeGroup.video);
+                            playImg.state = "playing";
+                        }
+                        else if (playImg.state == "playing") {
+                            camManager.play_cams(sceneGroup.video, leftEyeGroup.video, rightEyeGroup.video);
+                            playImg.state = "paused";
+                        }
+                    }
+                }
+            }
+        }
+    }
 
 
 

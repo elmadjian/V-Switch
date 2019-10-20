@@ -24,8 +24,8 @@ class VideoIO_UVC(QObject):
     @Property('QVariantList')
     def camera_list(self):
         self.read_inputs()
-        cameras = ["{}: {}".format(i+2,self.cameras[i]) for i in self.cameras.keys()]
-        opts = ['0: No feed', '1: File...']
+        cameras = ["{}: {}".format(i,self.cameras[i]) for i in self.cameras.keys()]
+        opts = ['No feed', 'File...']
         return opts + cameras
 
 
@@ -46,13 +46,34 @@ class VideoIO_UVC(QObject):
         self.reye.stop()
         print(">>> Finished!")
 
-    # @Slot()
-    # def load_video(self, cam_id, filename):
+    @Slot(bool, bool, bool)
+    def play_cams(self, scene_t, leye_t, reye_t):
+        self.scene.play(scene_t)
+        self.leye.play(leye_t)
+        self.reye.play(reye_t)
+
+    @Slot()
+    def pause_cams(self, scene_t, leye_t, reye_t):
+        self.scene.pause(scene_t)
+        self.leye.pause(leye_t)
+        self.reye.pause(reye_t)
+
+    @Slot(str, str)
+    def load_video(self, cam_id, filename):
+        if cam_id.startswith("Scene"):
+            self.scene.stop()
+            self.scene.set_video_file(filename)
+        elif cam_id.startswith("Left"):
+            self.leye.stop()
+            self.leye.set_video_file(filename)
+        else:
+            self.reye.stop()
+            self.reye.set_video_file(filename)
 
 
-
-    @Slot(str, int)
-    def set_camera_source(self, cam_id, source):
+    @Slot(str, str)
+    def set_camera_source(self, cam_id, cam_name):
+        source = int(cam_name.split(':')[0])
         if cam_id.startswith("Scene"):
             self.__change_cameras(self.scene, self.leye, self.reye, source)
         elif cam_id.startswith("Left"):

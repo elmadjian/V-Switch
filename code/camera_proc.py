@@ -67,8 +67,14 @@ class Camera(QQuickImageProvider, QObject):
     def init_process(self, source, pipe, array, pos, mode, cap): #abstract
         return 
 
+    def init_vid_process(self, source, pipe, array, pos, mode, cap): #abstract
+        return
+
     def join_process(self): #abstract
         return
+
+    def join_vid_process(self): # abstract
+        return 
 
     def stop(self):
         if self.capturing.value:
@@ -77,6 +83,17 @@ class Camera(QQuickImageProvider, QObject):
             if self.cam_process.is_alive():
                 self.cam_process.terminate()
             self.cam_thread.join(1)
+
+    def play(self, is_video):
+        if is_video:
+            if not self.capturing.value:
+                self.play_video_file()
+            else:
+                self.pipe.send("play")
+
+    def pause(self, is_video):
+        if is_video:
+            self.pipe.send("pause")
 
     def get_source(self):
         return self.source
@@ -97,6 +114,31 @@ class Camera(QQuickImageProvider, QObject):
                           self.shared_pos, self.mode, self.capturing)
         self.cam_thread = Thread(target=self.thread_loop, args=())
         self.cam_thread.start()
+
+    def set_video_file(self, filename):
+        cap = cv2.VideoCapture(filename)
+        w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        f = cap.get(cv2.CAP_PROP_FPS)
+        self.source = filename
+        self.mode = (int(w),int(h),int(f)) 
+        self.modes = {}
+        self.shared_array = self.create_shared_array(self.mode)
+        ret, frame = cap.read()
+        if ret:
+            qimage = self.to_QPixmap(frame)
+            if qimage is not None:
+                self.__image = qimage
+                self.update_image.emit()
+        cap.release()
+
+    def play_video_file(self):
+        self.capturing.value = 1
+        self.init_vid_process(self.source, self.child, self.shared_array, 
+                    self.shared_pos, self.mode, self.capturing)
+        self.cam_thread = Thread(target=self.thread_loop, args=())
+        self.cam_thread.start()
+
 
     def __set_fps_modes(self):
         self.fps_res, self.modes = {}, {}

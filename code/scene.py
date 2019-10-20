@@ -14,16 +14,26 @@ class SceneCamera(camera.Camera):
         super().__init__()
         self.mode = mode
         self.cam_process = None
+        self.vid_process = None
         self.shared_array = self.create_shared_array(mode)
         self.shared_pos = self.create_shared_pos()
 
     def init_process(self, source, pipe, array, pos, mode, cap):
         self.cam_process = SceneImageProcessor(source, mode, pipe, 
                                                array, pos, cap)
-        self.cam_process.start()    
+        self.cam_process.start()  
+
+    def init_vid_process(self, source, pipe, array, pos, mode, cap):
+        self.cam_process = SceneImageProcessor(source, mode, pipe,
+                                             array, pos, cap)
+        self.vid_process = Process(target=self.cam_process.run_vid, args=())
+        self.vid_process.start()    
 
     def join_process(self):
         self.cam_process.join(1)
+
+    def join_vid_process(self):
+        self.vid_process.join(1)
 
     def create_shared_array(self, mode):
         w = mode[0]
