@@ -37,6 +37,9 @@ class EyeCamera(camera.Camera):
     def join_vid_process(self):
         self.vid_process.join(1)
 
+    def toggle_3D(self):
+        self.pipe.send("mode_3D")
+
     def create_shared_array(self, mode):
         w = mode[0]
         h = mode[1]

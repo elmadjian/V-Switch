@@ -59,13 +59,13 @@ class ImageProcessor(Process):
     def run_vid(self):
         self.capturing.value = 1
         cap = cv2.VideoCapture(self.source)
-        gamma, color = 1, True
+        gamma, color, delay, mode_3D = 1, True, 1/self.mode[2], False
         while cap.isOpened():
             ret, frame = cap.read()
             if ret:
                 img = self.__adjust_gamma(frame, gamma)
                 img = self.__cvtBlackWhite(img, color)
-                img, pos = self.process(img)
+                img, pos = self.process(img, mode_3D)
                 if img is not None:
                     shared_img = self.__get_shared_np_array(img)
                     shared_pos = np.frombuffer(self.shared_pos,
@@ -73,6 +73,7 @@ class ImageProcessor(Process):
                     np.copyto(shared_img, img)
                     if pos is not None:
                         np.copyto(shared_pos, pos)
+                time.sleep(delay)
             if self.pipe.poll():
                 msg = self.pipe.recv()
                 if msg == "stop":
@@ -81,6 +82,8 @@ class ImageProcessor(Process):
                 elif msg == "pause":
                     while msg != "play":
                         msg = self.pipe.recv()
+                elif msg == "mode_3D":
+                    mode_3D = not mode_3D
                 elif msg == "gamma":
                     gamma = self.pipe.recv()
                 elif msg == "color":
@@ -97,7 +100,7 @@ class ImageProcessor(Process):
         cap.frame_mode = self.mode
         cap.bandwidth_factor = 0.9
         attempt, attempts = 0, 6
-        gamma, color = 1, True
+        gamma, color, mode_3D = 1, True, False
         while attempt < attempts:     
             try:
                 frame    = cap.get_frame(1.5)
@@ -121,6 +124,8 @@ class ImageProcessor(Process):
                 if msg == "stop":
                     cap.stop_stream()
                     break
+                elif msg == "mode_3D":
+                    mode_3D = not mode_3D
                 elif msg == "gamma":
                     gamma = self.pipe.recv()
                 elif msg == "color":

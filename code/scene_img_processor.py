@@ -9,7 +9,7 @@ class SceneImageProcessor(imp.ImageProcessor):
         super().__init__(source, mode, pipe, array, pos, cap)
         
 
-    def process(self, img):
+    def process(self, img, mode_3D=False):
         height, width = img.shape[0], img.shape[1]
         dict4 = cv2.aruco.DICT_4X4_50
         aruco_dict = cv2.aruco.getPredefinedDictionary(dict4)

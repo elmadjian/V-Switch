@@ -20,7 +20,10 @@ Window {
     // @disable-check M16
     onClosing: {
         console.log("closing window");
-        camManager.stop_cameras();
+        if (sceneGroup.video || leftEyeGroup.video || rightEyeGroup.video)
+            camManager.stop_cameras(true);
+        else
+            camManager.stop_cameras();
     }
 
 
@@ -507,6 +510,8 @@ Window {
             }
         }
 
+        //3D MANAGEMENT
+        //------------
         ColumnLayout {
             x: 312
             y:0
@@ -526,8 +531,8 @@ Window {
                 height: 40
                 checked: false
                 font.pointSize: 8
-                onToggled: {
-                    console.log(position);
+                onCheckedChanged: {
+                    camManager.toggle_3D();
                 }
             }
         }
@@ -611,7 +616,7 @@ Window {
                         }
                     }
                 ]
-                Component.onCompleted: state = "playing";
+                Component.onCompleted: state = "stalled";
 
                 ColorOverlay {
                     id: playDisabledOverlay
@@ -646,7 +651,7 @@ Window {
                             playImg.state = "playing";
                         }
                         else if (playImg.state == "playing") {
-                            camManager.play_cams(sceneGroup.video, leftEyeGroup.video, rightEyeGroup.video);
+                            camManager.pause_cams(sceneGroup.video, leftEyeGroup.video, rightEyeGroup.video);
                             playImg.state = "paused";
                         }
                     }

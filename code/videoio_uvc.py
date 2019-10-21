@@ -39,11 +39,16 @@ class VideoIO_UVC(QObject):
         self.reye  = reye
 
     @Slot()
-    def stop_cameras(self):
-        print(">>> Closing cameras...")
-        self.scene.stop()
-        self.leye.stop()
-        self.reye.stop()
+    def toggle_3D(self):
+        self.leye.toggle_3D()
+        self.reye.toggle_3D()
+
+    @Slot(bool)
+    def stop_cameras(self, video_file=False):
+        print(">>> Closing video feed...")
+        self.scene.stop(video_file)
+        self.leye.stop(video_file)
+        self.reye.stop(video_file)
         print(">>> Finished!")
 
     @Slot(bool, bool, bool)
@@ -52,7 +57,7 @@ class VideoIO_UVC(QObject):
         self.leye.play(leye_t)
         self.reye.play(reye_t)
 
-    @Slot()
+    @Slot(bool, bool, bool)
     def pause_cams(self, scene_t, leye_t, reye_t):
         self.scene.pause(scene_t)
         self.leye.pause(leye_t)
@@ -61,13 +66,13 @@ class VideoIO_UVC(QObject):
     @Slot(str, str)
     def load_video(self, cam_id, filename):
         if cam_id.startswith("Scene"):
-            self.scene.stop()
+            self.scene.stop(video_file=True)
             self.scene.set_video_file(filename)
         elif cam_id.startswith("Left"):
-            self.leye.stop()
+            self.leye.stop(video_file=True)
             self.leye.set_video_file(filename)
         else:
-            self.reye.stop()
+            self.reye.stop(video_file=True)
             self.reye.set_video_file(filename)
 
 

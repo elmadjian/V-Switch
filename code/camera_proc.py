@@ -30,7 +30,9 @@ class Camera(QQuickImageProvider, QObject):
         self.cap = None
         self.pipe, self.child = Pipe()
         self.cam_process = None
+        self.vid_process = None
         self.cam_thread = None
+        self.paused = False
 
     def thread_loop(self):
         while self.capturing.value:
@@ -76,12 +78,19 @@ class Camera(QQuickImageProvider, QObject):
     def join_vid_process(self): # abstract
         return 
 
-    def stop(self):
+    def stop(self, video_file=False):
         if self.capturing.value:
+            if self.paused:
+                self.pipe.send("play")
             self.pipe.send("stop")
-            self.join_process()
-            if self.cam_process.is_alive():
-                self.cam_process.terminate()
+            if video_file:
+                self.join_vid_process()
+                if self.vid_process.is_alive():
+                    self.vid_process.terminate()
+            else:
+                self.join_process()
+                if self.cam_process.is_alive():
+                    self.cam_process.terminate()
             self.cam_thread.join(1)
 
     def play(self, is_video):
@@ -90,10 +99,12 @@ class Camera(QQuickImageProvider, QObject):
                 self.play_video_file()
             else:
                 self.pipe.send("play")
+                self.paused = False
 
     def pause(self, is_video):
         if is_video:
             self.pipe.send("pause")
+            self.paused = True
 
     def get_source(self):
         return self.source

@@ -13,3 +13,4 @@
 * criar um método *load_video* em video_uvc.py. Esse método recebe um arquivo de vídeo e define o source da camera em questão (scene, left or right).
 * criar um método *set_video_file* em camera_proc.py. Esse método é uma cópia de *set_source*, mas adaptado para um arquivo de vídeo.
 * adaptar o método *run* de img_processor.py. Se o source for uma string com o nome do arquivo, então run deve carregá-lo usando opencv. 
+

@@ -4,6 +4,7 @@ import img_processor as imp
 import time
 import sys
 import ellipse as ell
+import eyefitter as ef
 
 class EyeImageProcessor(imp.ImageProcessor):
 
@@ -15,8 +16,14 @@ class EyeImageProcessor(imp.ImageProcessor):
         self.lost_tracking = 0
         self.buffer = []
         
+        #3D
+        sensor_size = (3.6, 4.8)
+        focal_length = 6
+        res = (mode[1], mode[0])
+        self.fitter = ef.EyeFitter(focal_length, res, sensor_size)
+        
 
-    def process(self, img):
+    def process(self, img, mode_3D=False):
         if img is None:
             return None, None
         height, width = img.shape[0], img.shape[1]
@@ -28,17 +35,21 @@ class EyeImageProcessor(imp.ImageProcessor):
             try:
                 pupil = self.__find_contours(self.bbox, img)
                 if pupil is not None:
-                    p = pupil[0]
-                    p = (p[0]+x+3, p[1]+y+3)
-                    size = max(pupil[1])*2
-                    self.bbox = self.__get_bbox(p, size, img)
-                    if self.__is_consistent(pupil[1], width, 0.025):
-                        self.__draw_tracking_info(p, img)
-                        return img, np.array([p[0]/width, p[1]/height, 
+                    c, axes, rad = pupil
+                    c = (c[0]+x+3, c[1]+y+3)
+                    size = max(axes)*2
+                    self.bbox = self.__get_bbox(c, size, img)
+                    if self.__is_consistent(axes, width, 0.025):
+                        self.__draw_tracking_info(c, img)
+                        if mode_3D:
+                            self.fitter.unproject_ellipse([c,axes,rad],img)
+                            self.fitter.draw_vectors([c,axes,rad], img)
+                            ppos = self.fitter.curr_state['gaze_pos']
+                            pneg = self.fitter.curr_state['gaze_neg']
+                            return img, np.array([ppos, pneg,
+                                        time.monotonic()], dtype='float32')
+                        return img, np.array([c[0]/width, c[1]/height, 
                                            time.monotonic()], dtype='float32')
-                        #DEBUG
-                        # pipu = (p, pupil[1], pupil[2])
-                        # return img, pipu
                 else:
                     self.buffer = []
                     self.lost_tracking += 1

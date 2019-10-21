@@ -194,10 +194,10 @@ class EyeFitter():
         dest_neg    = (int(xc+neg[0]*50), int(yc+neg[1]*50))
         # frame, shape, ellipse, ellipse_center_np, projected_eye_center, n1=gaze_vec
 
-        cv2.ellipse(img, ellipse, (0,255,0))
+        cv2.ellipse(img, ellipse, (0,255,0), thickness=2)
         #cv2.line(img, proj_eye, ell_center, (255,100,0))
-        cv2.line(img, ell_center, dest_pos, (0,0,255))
-        cv2.line(img, ell_center, dest_neg, (255,100,0))
+        cv2.line(img, ell_center, dest_pos, (0,0,255), 2)
+        cv2.line(img, ell_center, dest_neg, (255,100,0), 2)
         # if self.eyeball is not None:
         #     print('entrei')
         #     gazes = [self.curr_state['gaze_pos'], self.curr_state['gaze_neg']]
