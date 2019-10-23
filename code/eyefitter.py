@@ -40,7 +40,7 @@ class EyeFitter():
             "ell_center": np.empty((0,2), float)
         }
 
-    
+   
     def update_mm2px_scaling(self, image_shape):
         '''
         0.

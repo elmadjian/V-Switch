@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import time
+import os
 from PySide2.QtCore import QObject, Signal, Slot, Property
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process import kernels
@@ -19,8 +20,8 @@ class Calibrator(QObject):
         QObject.__init__(self)
         self.ntargets  = v_targets * h_targets
         self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.l_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.r_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
+        self.l_centers = {i:np.empty((0,6), float) for i in range(self.ntargets)}
+        self.r_centers = {i:np.empty((0,6), float) for i in range(self.ntargets)}
         self.l_regressor = None
         self.r_regressor = None
         self.target_list = self.__generate_target_list(v_targets, h_targets)
@@ -29,6 +30,7 @@ class Calibrator(QObject):
         self.samples = samples_per_tgt
         self.timeout = timeout
         self.collector = None
+        self.mode_3D = False
 
     def set_sources(self, scene, leye, reye):
         self.scene = scene
@@ -55,25 +57,30 @@ class Calibrator(QObject):
         '''
         idx = self.current_target
         t = time.time()
+
         while (len(self.targets[idx]) < self.samples) and (time.time()-t < self.timeout):
             sc = self.scene.get_processed_data() 
             le = self.leye.get_processed_data()
             re = self.reye.get_processed_data()
-            if self.__check_data_and_timestamp(sc, le, re, 1/minfreq):
+            if self.__check_data_n_timestamp(sc, le, re, 1/minfreq):
                 self.__add_data(sc, le, re, idx)
             time.sleep(1/maxfreq)
         self.move_on.emit()
-        print("number of samples collected: {}".format(len(self.targets[idx])))
+        print("number of samples collected: t->{}, l->{}, r->{}".format(
+            len(self.targets[idx]), len(self.l_centers[idx]),
+            len(self.r_centers[idx])))
 
 
     def __add_data(self, sc, le, re, idx):
-        scd = np.array([sc[0], sc[1]], dtype='float')
+        scd = np.array(self.target_list[idx])
+        if self.scene.is_cam_active():
+            scd = np.array([sc[0], sc[1]], dtype='float')
         self.targets[idx] = np.vstack((self.targets[idx], scd))
         if self.leye.is_cam_active():
-            led = np.array([le[0], le[1]], dtype='float')
+            led = np.array([le[0],le[1],le[2],le[3],le[4],le[5]])
             self.l_centers[idx] = np.vstack((self.l_centers[idx], led))
         if self.reye.is_cam_active():
-            red = np.array([re[0], re[1]], dtype='float')
+            red = np.array([re[0],re[1],re[2],le[3],le[4],le[5]])
             self.r_centers[idx] = np.vstack((self.r_centers[idx], red))
 
 
@@ -81,30 +88,48 @@ class Calibrator(QObject):
         return self.targets.keys()
 
 
-    def __check_data_and_timestamp(self, sc, le, re, thresh):
+    def __check_data_n_timestamp(self, sc, le, re, thresh):
         if le is None and self.leye.is_cam_active():
             return False
         if re is None and self.reye.is_cam_active():
             return False
+        if not self.scene.is_cam_active():
+            return True
+        sc_t, le_t, re_t = sc[2], le[2], re[2]
+        if self.mode_3D:
+            le_t, re_t = le[6], re[6]
         if sc is not None:
             if le is not None and re is not None:
-                if abs(sc[2] - le[2]) < thresh:
-                    if abs(sc[2] - re[2]) < thresh:
+                if abs(sc_t - le_t) < thresh:
+                    if abs(sc_t - re_t) < thresh:
                         return True
             if le is not None and re is None:
-                if abs(sc[2] - le[2]) < thresh:
+                if abs(sc_t - le_t) < thresh:
                     return True
             if le is None and re is not None:
-                if abs(sc[2] - re[2]) < thresh:
+                if abs(sc_t - re_t) < thresh:
                     return True
         return False
 
-    
+   
     def __dict_to_list(self, dic):
         new_list = np.empty((dic[0].shape), float)
         for t in dic.keys():
             new_list = np.vstack((new_list, dic[t]))
         return new_list
+
+    
+    def store_data(self):
+        path = os.getcwd() + "/data/user_" + uid + "/"
+        if os.path.exists(path):
+
+
+    def __check_or_create_path(self, uid):
+        path = os.getcwd() + "/data/user_" + str(uid) + "/"
+        while os.path.exists(path):
+            uid += 1
+            path = os.getcwd() + "/data/user_" + str(uid) + "/"
+            
 
     
     @Property('QVariantList')
@@ -119,8 +144,8 @@ class Calibrator(QObject):
     def start_calibration(self):
         print('reseting calibration')
         self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.l_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.r_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
+        self.l_centers = {i:np.empty((0,6), float) for i in range(self.ntargets)}
+        self.r_centers = {i:np.empty((0,6), float) for i in range(self.ntargets)}
         self.l_regressor = None
         self.r_regressor = None
         self.current_target = -1
@@ -130,10 +155,6 @@ class Calibrator(QObject):
         if self.collector is not None:
             self.collector.join()
         self.current_target += 1
-
-    @Slot()
-    def store_data_trigger(self):
-        print("storing data")
 
     @Slot(int, int)
     def collect_data(self, minfq, maxfq):
@@ -176,6 +197,10 @@ class Calibrator(QObject):
                 re_coord = self.r_regressor.predict(input_data)[0]
                 data[2], data[3] = float(re_coord[0]), float(re_coord[1])
         return data
+
+    @Slot()
+    def set_mode_3D(self):
+        self.mode_3D = not self.mode_3D
 
 
     def __get_clf(self):

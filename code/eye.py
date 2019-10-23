@@ -46,7 +46,7 @@ class EyeCamera(camera.Camera):
         return Array(ctypes.c_uint8, h*w*3, lock=False)
 
     def create_shared_pos(self):
-        return Array(ctypes.c_float, 3, lock=False)
+        return Array(ctypes.c_float, 7, lock=False)
 
 
 

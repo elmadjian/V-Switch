@@ -44,20 +44,19 @@ class EyeImageProcessor(imp.ImageProcessor):
                         if mode_3D:
                             self.fitter.unproject_ellipse([c,axes,rad],img)
                             self.fitter.draw_vectors([c,axes,rad], img)
-                            ppos = self.fitter.curr_state['gaze_pos']
-                            pneg = self.fitter.curr_state['gaze_neg']
-                            return img, np.array([ppos, pneg,
-                                        time.monotonic()], dtype='float32')
+                            ppos = self.fitter.curr_state['gaze_pos'].flatten()
+                            pneg = self.fitter.curr_state['gaze_neg'].flatten()
+                            return img, np.hstack((ppos,pneg,time.monotonic()))
                         return img, np.array([c[0]/width, c[1]/height, 
-                                           time.monotonic()], dtype='float32')
+                                    time.monotonic(),0,0,0,0], dtype='float32')
                 else:
                     self.buffer = []
                     self.lost_tracking += 1
                     if self.lost_tracking > 20:
                         self.tracking = False
                         self.lost_tracking = 0
-            except:
-                pass
+            except Exception as e:
+                print('Error:', e)
         return img, None
 
 
