@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import time
 import os
+import data_storage as ds
 from PySide2.QtCore import QObject, Signal, Slot, Property
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process import kernels
@@ -18,13 +19,11 @@ class Calibrator(QObject):
         frequency: value of the tracker's frequency in Hz
         '''
         QObject.__init__(self)
-        self.ntargets  = v_targets * h_targets
-        self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.l_centers = {i:np.empty((0,6), float) for i in range(self.ntargets)}
-        self.r_centers = {i:np.empty((0,6), float) for i in range(self.ntargets)}
+        ntargets  = v_targets * h_targets
+        self.target_list = self.__generate_target_list(v_targets, h_targets)
+        self.storer = ds.Storer(ntargets, self.target_list)
         self.l_regressor = None
         self.r_regressor = None
-        self.target_list = self.__generate_target_list(v_targets, h_targets)
         self.current_target = -1
         self.scene, self.leye, self.reye = None, None, None
         self.samples = samples_per_tgt
@@ -36,6 +35,7 @@ class Calibrator(QObject):
         self.scene = scene
         self.leye  = leye
         self.reye  = reye
+        self.storer.set_sources(scene, leye, reye)
 
     def __generate_target_list(self, v, h):
         target_list = []
@@ -47,7 +47,6 @@ class Calibrator(QObject):
         rnd.shuffle(target_list)
         return target_list
 
-
     def __get_target_data(self, maxfreq, minfreq):
         '''
         scene: sceneCamera object
@@ -57,79 +56,17 @@ class Calibrator(QObject):
         '''
         idx = self.current_target
         t = time.time()
+        tgt = self.storer.targets
 
-        while (len(self.targets[idx]) < self.samples) and (time.time()-t < self.timeout):
-            sc = self.scene.get_processed_data() 
-            le = self.leye.get_processed_data()
-            re = self.reye.get_processed_data()
-            if self.__check_data_n_timestamp(sc, le, re, 1/minfreq):
-                self.__add_data(sc, le, re, idx)
+        while (len(tgt[idx]) < self.samples) and (time.time()-t < self.timeout):
+            self.storer.collect_data(idx, self.mode_3d, minfreq)
+            tgt = self.storer.targets
             time.sleep(1/maxfreq)
         self.move_on.emit()
         print("number of samples collected: t->{}, l->{}, r->{}".format(
-            len(self.targets[idx]), len(self.l_centers[idx]),
-            len(self.r_centers[idx])))
-
-
-    def __add_data(self, sc, le, re, idx):
-        scd = np.array(self.target_list[idx])
-        if self.scene.is_cam_active():
-            scd = np.array([sc[0], sc[1]], dtype='float')
-        self.targets[idx] = np.vstack((self.targets[idx], scd))
-        if self.leye.is_cam_active():
-            led = np.array([le[0],le[1],le[2],le[3],le[4],le[5]])
-            self.l_centers[idx] = np.vstack((self.l_centers[idx], led))
-        if self.reye.is_cam_active():
-            red = np.array([re[0],re[1],re[2],le[3],le[4],le[5]])
-            self.r_centers[idx] = np.vstack((self.r_centers[idx], red))
-
-
-    def get_keys(self):
-        return self.targets.keys()
-
-
-    def __check_data_n_timestamp(self, sc, le, re, thresh):
-        if le is None and self.leye.is_cam_active():
-            return False
-        if re is None and self.reye.is_cam_active():
-            return False
-        if not self.scene.is_cam_active():
-            return True
-        sc_t, le_t, re_t = sc[2], le[2], re[2]
-        if self.mode_3D:
-            le_t, re_t = le[6], re[6]
-        if sc is not None:
-            if le is not None and re is not None:
-                if abs(sc_t - le_t) < thresh:
-                    if abs(sc_t - re_t) < thresh:
-                        return True
-            if le is not None and re is None:
-                if abs(sc_t - le_t) < thresh:
-                    return True
-            if le is None and re is not None:
-                if abs(sc_t - re_t) < thresh:
-                    return True
-        return False
-
-   
-    def __dict_to_list(self, dic):
-        new_list = np.empty((dic[0].shape), float)
-        for t in dic.keys():
-            new_list = np.vstack((new_list, dic[t]))
-        return new_list
-
-    
-    def store_data(self):
-        path = os.getcwd() + "/data/user_" + uid + "/"
-        if os.path.exists(path):
-
-
-    def __check_or_create_path(self, uid):
-        path = os.getcwd() + "/data/user_" + str(uid) + "/"
-        while os.path.exists(path):
-            uid += 1
-            path = os.getcwd() + "/data/user_" + str(uid) + "/"
-            
+            len(self.storer.targets[idx]), 
+            len(self.storer.l_centers[idx]),
+            len(self.storer.r_centers[idx])))
 
     
     @Property('QVariantList')
@@ -143,9 +80,7 @@ class Calibrator(QObject):
     @Slot()
     def start_calibration(self):
         print('reseting calibration')
-        self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.l_centers = {i:np.empty((0,6), float) for i in range(self.ntargets)}
-        self.r_centers = {i:np.empty((0,6), float) for i in range(self.ntargets)}
+        self.storer.initialize_storage()
         self.l_regressor = None
         self.r_regressor = None
         self.current_target = -1
@@ -169,13 +104,13 @@ class Calibrator(QObject):
         '''
         clf_l = self.__get_clf()
         clf_r = self.__get_clf()                                  
-        targets = self.__dict_to_list(self.targets)
+        targets = self.storer.get_targets_list()
         if self.leye.is_cam_active():                                       
-            l_centers = self.__dict_to_list(self.l_centers)
+            l_centers = self.storer.get_l_centers_list()
             clf_l.fit(l_centers, targets)
             self.l_regressor = clf_l
         if self.reye.is_cam_active():
-            r_centers = self.__dict_to_list(self.r_centers)
+            r_centers = self.storer.get_r_centers_list()
             clf_r.fit(r_centers, targets)
             self.r_regressor = clf_r
         print("Gaze estimation finished")

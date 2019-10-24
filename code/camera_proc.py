@@ -19,6 +19,7 @@ class Camera(QQuickImageProvider, QObject):
         QQuickImageProvider.__init__(self, QQuickImageProvider.Pixmap)
         QObject.__init__(self)
         self.__image = self.to_QPixmap(cv2.imread("../UI/test.jpg"))
+        self.__np_img = None
         self.capturing = Value('i', 0)
         self.dev_list = uvc.device_list()
         self.fps_res = {}
@@ -39,6 +40,7 @@ class Camera(QQuickImageProvider, QObject):
             time.sleep(0.005)
             try:
                 img = self.__get_shared_np_array()
+                self.__np_img = img
                 qimage = self.to_QPixmap(img)
                 if qimage is not None:
                     self.__image = qimage
@@ -61,6 +63,9 @@ class Camera(QQuickImageProvider, QObject):
 
     def requestPixmap(self, id, size, requestImage):
         return self.__image
+
+    def get_np_image(self):
+        return self.__np_img
 
     def get_processed_data(self):
         nparray = np.frombuffer(self.shared_pos, dtype=ctypes.c_float)
