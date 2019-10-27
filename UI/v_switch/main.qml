@@ -533,6 +533,8 @@ Window {
                 font.pointSize: 8
                 onCheckedChanged: {
                     camManager.toggle_3D();
+                    calibControl.toggle_3D();
+                    calibHMD.toggle_3D();
                 }
             }
         }

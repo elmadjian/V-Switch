@@ -94,9 +94,21 @@ class Storer():
         return self.__dict_to_list(self.r_centers)
 
     
-    def store_data(self):
-        path = os.getcwd() + "/data/user_" + uid + "/"
-        if os.path.exists(path):
+    def store_data(self, coords):
+        path = self.__check_or_create_path(1)
+        for k in self.targets.keys():
+            c1, c2 = coords[k]
+            prefix = str(c1) + "_" + str(c2) + "_"
+            print(">>> Saving imgs...")
+            np.savez_compressed(path+prefix+ "img_scene", self.t_imgs[k])
+            np.savez_compressed(path+prefix+ "img_leye", self.l_imgs[k])
+            np.savez_compressed(path+prefix+ "img_reye", self.r_imgs[k])
+            print(">>> Saving data...")
+            np.savez_compressed(path+prefix+ "tgt", self.targets[k])
+            if len(self.l_centers[k]) > 0:
+                np.savez_compressed(path+prefix+"leye", self.l_centers[k])
+            if len(self.r_centers[k]) > 0:
+                np.savez_compressed(path+prefix+"reye", self.r_centers[k])
 
 
     def __check_or_create_path(self, uid):
@@ -104,3 +116,5 @@ class Storer():
         while os.path.exists(path):
             uid += 1
             path = os.getcwd() + "/data/user_" + str(uid) + "/"
+        os.makedirs(path)
+        return path

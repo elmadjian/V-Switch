@@ -35,6 +35,7 @@ class HMDCalibrator(QObject):
         self.predictor = None
         self.stream = False
         self.vergence = None
+        self.mode_3D = False
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ip, self.port = self.load_network_options()
 
@@ -279,6 +280,10 @@ class HMDCalibrator(QObject):
                 self.start_calibration()
         except Exception:
             self.conn_status.emit(False)
+
+    @Slot()
+    def toggle_3D(self):
+        self.mode_3D = not self.mode_3D
 
                 
 

@@ -134,7 +134,7 @@ class Calibrator(QObject):
         return data
 
     @Slot()
-    def set_mode_3D(self):
+    def toggle_3D(self):
         self.mode_3D = not self.mode_3D
 
 
