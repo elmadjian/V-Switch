@@ -88,28 +88,35 @@ class Storer():
     def get_targets_list(self):
         return self.__dict_to_list(self.targets)
 
-    def get_l_centers_list(self):
-        return self.__dict_to_list(self.l_centers)
+    def get_l_centers_list(self, mode_3D):
+        data = self.__dict_to_list(self.l_centers)
+        if not mode_3D:
+            data = data[:,:2]
+        return data
 
-    def get_r_centers_list(self):
-        return self.__dict_to_list(self.r_centers)
+    def get_r_centers_list(self,mode_3D):
+        data = self.__dict_to_list(self.r_centers)
+        if not mode_3D:
+            data = data[:,:2]
+        return data
 
     
     def store_data(self):
         path = self.__check_or_create_path(1)
         for k in self.targets.keys():
+            perc = int(k/len(self.targets.keys()) * 100)
+            print(">>> {}%...".format(perc), end="\r", flush=True)
             c1, c2 = self.target_list[k]
             prefix = str(c1) + "_" + str(c2) + "_"
-            print(">>> Saving imgs...")
-            np.savez_compressed(path+prefix+ "img_scene", self.t_imgs[k])
-            np.savez_compressed(path+prefix+ "img_leye", self.l_imgs[k])
-            np.savez_compressed(path+prefix+ "img_reye", self.r_imgs[k])
-            print(">>> Saving data...")
+            # np.savez_compressed(path+prefix+ "img_scene", self.t_imgs[k])
+            # np.savez_compressed(path+prefix+ "img_leye", self.l_imgs[k])
+            # np.savez_compressed(path+prefix+ "img_reye", self.r_imgs[k])
             np.savez_compressed(path+prefix+ "tgt", self.targets[k])
             if len(self.l_centers[k]) > 0:
                 np.savez_compressed(path+prefix+"leye", self.l_centers[k])
             if len(self.r_centers[k]) > 0:
                 np.savez_compressed(path+prefix+"reye", self.r_centers[k])
+        print("")
 
 
     def __check_or_create_path(self, uid):
