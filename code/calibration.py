@@ -21,7 +21,7 @@ class Calibrator(QObject):
         QObject.__init__(self)
         ntargets  = v_targets * h_targets
         self.target_list = self.__generate_target_list(v_targets, h_targets)
-        self.storer = ds.Storer(ntargets, self.target_list)
+        self.storer = ds.Storer(ntargets)
         self.l_regressor = None
         self.r_regressor = None
         self.current_target = -1
@@ -136,6 +136,12 @@ class Calibrator(QObject):
     @Slot()
     def toggle_3D(self):
         self.mode_3D = not self.mode_3D
+
+    @Slot()
+    def store_data(self):
+        print(">>> Storing data, please wait...")
+        self.storer.store_data(self.target_list)
+        print(">>> Completed.")
 
 
     def __get_clf(self):

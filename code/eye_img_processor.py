@@ -39,7 +39,7 @@ class EyeImageProcessor(imp.ImageProcessor):
                     c = (c[0]+x+3, c[1]+y+3)
                     size = max(axes)*2
                     self.bbox = self.__get_bbox(c, size, img)
-                    if self.__is_consistent(axes, width, 0.025):
+                    if self.__is_consistent(axes, width, 0.050):
                         self.__draw_tracking_info(c, img)
                         if mode_3D:
                             self.fitter.unproject_ellipse([c,axes,rad],img)
@@ -73,6 +73,7 @@ class EyeImageProcessor(imp.ImageProcessor):
             for ax in self.buffer:
                 dist += np.linalg.norm(ax - axes_np)
             if dist > thresh:
+                self.buffer.pop(0)
                 return False
             self.buffer.pop(0)
             self.buffer.append(axes_np)

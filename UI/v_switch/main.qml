@@ -20,10 +20,11 @@ Window {
     // @disable-check M16
     onClosing: {
         console.log("closing window");
-        if (sceneGroup.video || leftEyeGroup.video || rightEyeGroup.video)
+        if (sceneGroup.video || leftEyeGroup.video || rightEyeGroup.video) {
             camManager.stop_cameras(true);
-        else
-            camManager.stop_cameras();
+        } else {
+            camManager.stop_cameras(false);
+        }
     }
 
 
@@ -61,6 +62,9 @@ Window {
                     sceneFileDialog.visible = true;
                 }
                 else if (textAt(index) === "No feed") {
+                    sceneGroup.video?
+                        camManager.stop_scene_cam(true) :
+                        camManager.stop_scene_cam(false);
                     sceneImage.source = "../imgs/novideo.png";
                 }
                 else {
@@ -187,6 +191,9 @@ Window {
                     leftEyeFileDialog.visible = true;
                 }
                 else if (textAt(index) === "No feed") {
+                    leftEyeGroup.video?
+                        camManager.stop_leye_cam(true):
+                        camManager.stop_leye_cam(false);
                     leyeImage.source = "../imgs/novideo.png";
                 }
                 else {
@@ -273,6 +280,9 @@ Window {
                     rightEyeFileDialog.visible = true;
                 }
                 else if (textAt(index) === "No feed") {
+                    rightEyeGroup.video?
+                        camManager.stop_reye_cam(true):
+                        camManager.stop_reye_cam(false);
                     reyeImage.source = "../imgs/novideo.png";
                 }
                 else {

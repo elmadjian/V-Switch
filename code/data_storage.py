@@ -8,7 +8,7 @@ class Storer():
         self.targets, self.l_centers, self.r_centers = None, None, None
         self.t_imgs, self.l_imgs, self.r_imgs = None, None, None
         self.initialize_storage()
-        self.scene, self.leye, self.reye = None, None, none
+        self.scene, self.leye, self.reye = None, None, None
    
     def initialize_storage(self):
         self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}

@@ -10,7 +10,7 @@ import ctypes
 
 class SceneCamera(camera.Camera):
 
-    def __init__(self, mode=(1024,768,30)):
+    def __init__(self, mode=(800,600,30)):
         super().__init__()
         self.mode = mode
         self.cam_process = None

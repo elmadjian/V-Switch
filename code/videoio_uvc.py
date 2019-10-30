@@ -44,7 +44,19 @@ class VideoIO_UVC(QObject):
         self.reye.toggle_3D()
 
     @Slot(bool)
-    def stop_cameras(self, video_file=False):
+    def stop_scene_cam(self, video_file):
+        self.scene.stop(video_file)
+
+    @Slot(bool)
+    def stop_leye_cam(self, video_file):
+        self.leye.stop(video_file)
+
+    @Slot(bool)
+    def stop_reye_cam(self, video_file):
+        self.reye_stop(video_file)
+
+    @Slot(bool)
+    def stop_cameras(self, video_file):
         print(">>> Closing video feed...")
         self.scene.stop(video_file)
         self.leye.stop(video_file)

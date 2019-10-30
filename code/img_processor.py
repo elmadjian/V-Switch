@@ -106,7 +106,7 @@ class ImageProcessor(Process):
                 frame    = cap.get_frame(1.5)
                 img      = self.__adjust_gamma(frame.bgr, gamma)
                 img      = self.__cvtBlackWhite(img, color)
-                img, pos = self.process(img)                
+                img, pos = self.process(img, mode_3D)                
                 if img is not None:
                     attempt = 0
                     shared_img = self.__get_shared_np_array(img)
