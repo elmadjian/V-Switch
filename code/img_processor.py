@@ -44,7 +44,7 @@ class ImageProcessor(Process):
         cap2 = uvc.Capture(dev_list[self.source]['uid'])
         print("Trying mode:", mode)
         cap2.frame_mode = mode
-        cap2.bandwidth_factor = 0.9
+        cap2.bandwidth_factor = 1.3
         return cap2
 
     def __setup_eye_cam(self, cap):
@@ -98,7 +98,7 @@ class ImageProcessor(Process):
         cap = uvc.Capture(dev_list[self.source]['uid'])
         self.__setup_eye_cam(cap)
         cap.frame_mode = self.mode
-        cap.bandwidth_factor = 0.9
+        #cap.bandwidth_factor = 1.3
         attempt, attempts = 0, 6
         gamma, color, mode_3D = 1, True, False
         while attempt < attempts:     
@@ -116,7 +116,7 @@ class ImageProcessor(Process):
                     if pos is not None:
                         np.copyto(shared_pos, pos)
             except Exception as e:
-                print(e)
+                print("error:", e)
                 cap = self.__reset_mode(cap)
                 attempt += 1           
             if self.pipe.poll():

@@ -58,6 +58,7 @@ Window {
             height: 28
             model: camManager.camera_list
             onActivated:  {
+                model = camManager.camera_list;
                 if (textAt(index) === "File...") {
                     sceneFileDialog.visible = true;
                 }
