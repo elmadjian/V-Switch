@@ -3,8 +3,9 @@ import os
 
 class Storer():
 
-    def __init__(self, ntargets):
+    def __init__(self, ntargets, target_list):
         self.ntargets = ntargets
+        self.target_list = target_list
         self.targets, self.l_centers, self.r_centers = None, None, None
         self.t_imgs, self.l_imgs, self.r_imgs = None, None, None
         self.initialize_storage()
@@ -38,7 +39,7 @@ class Storer():
         scd = np.array(self.target_list[idx])
         if self.scene.is_cam_active():
             scd = np.array([sc[0], sc[1]], dtype='float')
-            self.targets[idx] = np.vstack((self.targets[idx], scd))
+        self.targets[idx] = np.vstack((self.targets[idx], scd))
         if self.leye.is_cam_active():
             led = np.array([le[0],le[1],le[2],le[3],le[4],le[5]])
             self.l_centers[idx] = np.vstack((self.l_centers[idx], led))
@@ -94,10 +95,10 @@ class Storer():
         return self.__dict_to_list(self.r_centers)
 
     
-    def store_data(self, coords):
+    def store_data(self):
         path = self.__check_or_create_path(1)
         for k in self.targets.keys():
-            c1, c2 = coords[k]
+            c1, c2 = self.target_list[k]
             prefix = str(c1) + "_" + str(c2) + "_"
             print(">>> Saving imgs...")
             np.savez_compressed(path+prefix+ "img_scene", self.t_imgs[k])

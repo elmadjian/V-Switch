@@ -21,7 +21,7 @@ class Calibrator(QObject):
         QObject.__init__(self)
         ntargets  = v_targets * h_targets
         self.target_list = self.__generate_target_list(v_targets, h_targets)
-        self.storer = ds.Storer(ntargets)
+        self.storer = ds.Storer(ntargets, self.target_list)
         self.l_regressor = None
         self.r_regressor = None
         self.current_target = -1
@@ -59,7 +59,7 @@ class Calibrator(QObject):
         tgt = self.storer.targets
 
         while (len(tgt[idx]) < self.samples) and (time.time()-t < self.timeout):
-            self.storer.collect_data(idx, self.mode_3d, minfreq)
+            self.storer.collect_data(idx, self.mode_3D, minfreq)
             tgt = self.storer.targets
             time.sleep(1/maxfreq)
         self.move_on.emit()
@@ -140,7 +140,7 @@ class Calibrator(QObject):
     @Slot()
     def store_data(self):
         print(">>> Storing data, please wait...")
-        self.storer.store_data(self.target_list)
+        self.storer.store_data()
         print(">>> Completed.")
 
 
