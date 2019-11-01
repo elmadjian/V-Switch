@@ -131,7 +131,7 @@ class Calibrator(QObject):
                 input_data = re[:2].reshape(1,-1)
                 re_coord = self.r_regressor.predict(input_data)[0]
                 data[2], data[3] = float(re_coord[0]), float(re_coord[1])
-        print("prediction:", data)
+        #print("prediction:", data)
         return data
 
     @Slot()

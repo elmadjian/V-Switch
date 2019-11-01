@@ -40,6 +40,7 @@ class Storer():
         if self.scene.is_cam_active():
             scd = np.array([sc[0], sc[1]], dtype='float')
         self.targets[idx] = np.vstack((self.targets[idx], scd))
+        print('targets:', self.targets[idx])
         if self.leye.is_cam_active():
             led = np.array([le[0],le[1],le[2],le[3],le[4],le[5]])
             self.l_centers[idx] = np.vstack((self.l_centers[idx], led))
