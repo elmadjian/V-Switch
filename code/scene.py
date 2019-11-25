@@ -4,7 +4,7 @@ import time
 import sys
 import camera_proc as camera
 from scene_img_processor import SceneImageProcessor
-from multiprocessing import Array
+from multiprocessing import Array, Process
 import ctypes
 
 
