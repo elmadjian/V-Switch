@@ -227,6 +227,9 @@ class EyeFitter():
             data = self.__check_z_consistency(unprojected_data)
             data = self.__check_polarity_consistency(data)
             pos,neg,tc_pos,tc_neg = data
+            print('pos:{: .3f} {: .3f} {: .3f}'.format(pos[0][0], pos[1][0], pos[2][0]))
+            print('neg:{: .3f} {: .3f} {: .3f}'.format(neg[0][0], neg[1][0], neg[2][0]))
+            print('-----------')
             self.curr_state['gaze_pos'] = pos
             self.curr_state['gaze_neg'] = neg
             self.curr_state['pupil3D_pos'] = tc_pos
