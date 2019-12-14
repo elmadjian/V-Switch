@@ -20,6 +20,8 @@ Window {
     // @disable-check M16
     onClosing: {
         console.log("closing window");
+        calibControl.save_session();
+        //calibHMD.save_session();
         if (sceneGroup.video || leftEyeGroup.video || rightEyeGroup.video) {
             camManager.stop_cameras(true);
         } else {
@@ -515,8 +517,8 @@ Window {
                 height: 40
                 checked: false
                 font.pointSize: 8
-                onToggled: {
-                    console.log(position);
+                onCheckedChanged: {
+                    calibControl.toggle_storage();
                 }
             }
         }

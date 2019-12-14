@@ -2,12 +2,19 @@ import numpy as np
 import os
 
 class Storer():
+    '''
+    Important:
+    ---------
+    -> 2D: x, y, time, 0, 0, 0, 0
+    -> 3D: x_p, y_p, z_p, x_n, y_n, z_n, time
+    '''
 
     def __init__(self, ntargets, target_list):
         self.ntargets = ntargets
         self.target_list = target_list
         self.targets, self.l_centers, self.r_centers = None, None, None
         self.t_imgs, self.l_imgs, self.r_imgs = None, None, None
+        self.l_sess, self.r_sess, self.l_raw, self.r_raw = [],[],[],[]
         self.initialize_storage()
         self.scene, self.leye, self.reye = None, None, None
    
@@ -101,9 +108,15 @@ class Storer():
             data = data[:,:2]
         return data
 
+    def append_session_data(self, l_gaze, r_gaze, l_raw, r_raw):
+        self.l_sess.append(l_gaze)
+        self.r_sess.append(r_gaze)
+        self.l_raw.append(l_raw)
+        self.r_raw.append(r_raw)
+
     
-    def store_data(self):
-        path = self.__check_or_create_path(1)
+    def store_calibration(self):
+        path = self.__check_or_create_path(1, 'calibration')
         for k in self.targets.keys():
             perc = int(k/len(self.targets.keys()) * 100)
             print(">>> {}%...".format(perc), end="\r", flush=True)
@@ -119,11 +132,21 @@ class Storer():
                 np.savez_compressed(path+prefix+"reye", self.r_centers[k])
         print("")
 
+    def store_session(self):
+        if len(self.l_sess) > 0:        
+            print(">>> Saving session...")
+            path = self.__check_or_create_path(1, 'session')
+            np.savez_compressed(path+'_left_gaze', self.l_sess)
+            np.savez_compressed(path+'_right_gaze', self.r_sess)
+            np.savez_compressed(path+'_left_eye', self.l_raw)
+            np.savez_compressed(path+'_right_eye', self.r_raw)
+            print('>>> Session saved.')
 
-    def __check_or_create_path(self, uid):
-        path = os.getcwd() + "/data/user_" + str(uid) + "/"
+
+    def __check_or_create_path(self, uid, kind):
+        path = os.getcwd() + "/data/user_" + str(uid) + "/"+kind
         while os.path.exists(path):
             uid += 1
-            path = os.getcwd() + "/data/user_" + str(uid) + "/"
+            path = os.getcwd() + "/data/user_"+str(uid)+"/"+kind
         os.makedirs(path)
         return path

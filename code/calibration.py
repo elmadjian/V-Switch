@@ -30,6 +30,7 @@ class Calibrator(QObject):
         self.timeout = timeout
         self.collector = None
         self.mode_3D = False
+        self.storage = False
 
     def set_sources(self, scene, leye, reye):
         self.scene = scene
@@ -114,35 +115,48 @@ class Calibrator(QObject):
             clf_r.fit(r_centers, targets)
             self.r_regressor = clf_r
         print("Gaze estimation finished")
+        if self.storage:
+            print(">>> Storing data, please wait...")
+            self.storer.store_calibration()
+            print(">>> Completed.")
 
 
     @Property('QVariantList')
     def predict(self):
         data = [-1,-1,-1,-1]
+        pred = [-1,-1,-1,-1]
         if self.l_regressor:
             le = self.leye.get_processed_data()
             if le is not None:
                 input_data = le[:2].reshape(1,-1)
                 le_coord = self.l_regressor.predict(input_data)[0]
-                data[0], data[1] = float(le_coord[0]), float(le_coord[1])
+                data[0], data[1] = input_data
+                pred[0], pred[1] = float(le_coord[0]), float(le_coord[1])
         if self.r_regressor:
             re = self.reye.get_processed_data()
             if re is not None:
                 input_data = re[:2].reshape(1,-1)
                 re_coord = self.r_regressor.predict(input_data)[0]
-                data[2], data[3] = float(re_coord[0]), float(re_coord[1])
-        #print("prediction:", data)
+                data[2], data[3] = input_data
+                pred[2], pred[3] = float(re_coord[0]), float(re_coord[1])
+        if self.storage:
+            l_gz, r_gz   = pred[:2], pred[2:]
+            l_raw, r_raw = data[:2], data[2:]
+            self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
         return data
+
 
     @Slot()
     def toggle_3D(self):
         self.mode_3D = not self.mode_3D
 
     @Slot()
-    def store_data(self):
-        print(">>> Storing data, please wait...")
-        self.storer.store_data()
-        print(">>> Completed.")
+    def toggle_storage(self):
+        self.storage = not self.storage
+
+    @Slot()
+    def save_session(self):
+        self.storer.store_session()
 
 
     def __get_clf(self):
