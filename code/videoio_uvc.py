@@ -97,6 +97,11 @@ class VideoIO_UVC(QObject):
             self.__change_cameras(self.leye, self.scene, self.reye, source)
         else:
             self.__change_cameras(self.reye, self.scene, self.leye, source)
+
+    @Slot()
+    def save_session_config(self):
+        print('>>> Saving session configuration...')
+        
         
 
     def __change_cameras(self, cam1, cam2, cam3, source):

@@ -47,7 +47,7 @@ class Storer():
         if self.scene.is_cam_active():
             scd = np.array([sc[0], sc[1]], dtype='float')
         self.targets[idx] = np.vstack((self.targets[idx], scd))
-        print('targets:', self.targets[idx])
+        #print('targets:', self.targets[idx])
         if self.leye.is_cam_active():
             led = np.array([le[0],le[1],le[2],le[3],le[4],le[5]])
             self.l_centers[idx] = np.vstack((self.l_centers[idx], led))
@@ -99,13 +99,13 @@ class Storer():
     def get_l_centers_list(self, mode_3D):
         data = self.__dict_to_list(self.l_centers)
         if not mode_3D:
-            data = data[:,:2]
+            data = np.array(data[:,:2])
         return data
 
     def get_r_centers_list(self,mode_3D):
         data = self.__dict_to_list(self.r_centers)
         if not mode_3D:
-            data = data[:,:2]
+            data = np.array(data[:,:2])
         return data
 
     def append_session_data(self, l_gaze, r_gaze, l_raw, r_raw):
