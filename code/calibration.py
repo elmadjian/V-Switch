@@ -106,15 +106,17 @@ class Calibrator(QObject):
         clf_l = self.__get_clf()
         clf_r = self.__get_clf()                                  
         targets = self.storer.get_targets_list()
-        print('targets:', targets)
+        print('targets (minmax):', np.min(targets), np.max(targets))
+        print('target shape:', targets.shape)
         if self.leye.is_cam_active():                                       
             l_centers = self.storer.get_l_centers_list(self.mode_3D)
-            print('l_centers:', l_centers)
+            print('l_centers (minmax):', np.min(l_centers), np.max(l_centers))
+            print('l_centers shape:', l_centers.shape)
             clf_l.fit(l_centers, targets)
             self.l_regressor = clf_l
         if self.reye.is_cam_active():
             r_centers = self.storer.get_r_centers_list(self.mode_3D)
-            print('r_centers:', r_centers)
+            #print('r_centers:', r_centers)
             clf_r.fit(r_centers, targets)
             self.r_regressor = clf_r
         print("Gaze estimation finished")

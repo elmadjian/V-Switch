@@ -121,7 +121,7 @@ Window {
                     var gazePoints = calibControl.predict;
                     //@disable-check M126
                     if (gazePoints[0] != -1.0 || gazePoints[2] != -1.0) {
-                        console.log('GP: ' + gazePoints[0] +' '+ gazePoints[1] + ' '+ gazePoints[2] + ' ' + gazePoints[3]);
+                        //console.log('GP: ' + gazePoints[0] +' '+ gazePoints[1] + ' '+ gazePoints[2] + ' ' + gazePoints[3]);
                         leyePrediction.x = gazePoints[0] * sceneImage.width - leyePrediction.width/2;
                         leyePrediction.y = gazePoints[1] * sceneImage.height - leyePrediction.width/2;
                         reyePrediction.x = gazePoints[2] * sceneImage.width - reyePrediction.width/2;

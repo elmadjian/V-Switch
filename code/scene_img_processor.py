@@ -14,11 +14,13 @@ class SceneImageProcessor(imp.ImageProcessor):
         dict4 = cv2.aruco.DICT_4X4_50
         aruco_dict = cv2.aruco.getPredefinedDictionary(dict4)
         corners, ids,_ = cv2.aruco.detectMarkers(img, aruco_dict)
-        target_pos,_ = None, False
+        target_pos = None
         if ids is not None:
             cv2.aruco.drawDetectedMarkers(img, corners, ids)
             mean = np.mean(corners[0][0], axis=0)
             x = mean[0]/width
             y = mean[1]/height
-            target_pos = np.array([x, y, time.monotonic()], float)
+            print('x:', x, 'y:', y)
+            target_pos = np.array([x,y,time.monotonic(),0,0,0,0], 
+                                                 dtype='float32')
         return img, target_pos
