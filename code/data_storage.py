@@ -46,6 +46,9 @@ class Storer():
         scd = np.array(self.target_list[idx])
         if self.scene.is_cam_active():
             scd = np.array([sc[0], sc[1]], dtype='float')
+            print('scd interno:', scd)
+        # else:
+        #     print('scd externo:', scd)
         self.targets[idx] = np.vstack((self.targets[idx], scd))
         #print('targets:', self.targets[idx])
         if self.leye.is_cam_active():

@@ -20,7 +20,5 @@ class SceneImageProcessor(imp.ImageProcessor):
             mean = np.mean(corners[0][0], axis=0)
             x = mean[0]/width
             y = mean[1]/height
-            print('x:', x, 'y:', y)
-            target_pos = np.array([x,y,time.monotonic(),0,0,0,0], 
-                                                 dtype='float32')
+            target_pos = np.array([x,y,time.monotonic()],dtype='float32')
         return img, target_pos
