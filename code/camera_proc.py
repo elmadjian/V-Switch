@@ -10,16 +10,18 @@ from multiprocessing import Process, Pipe, Value, Condition, Array
 import sys
 import traceback
 import ctypes
+import os
 
 class Camera(QQuickImageProvider, QObject):
 
     update_image = Signal()
 
-    def __init__(self):
+    def __init__(self, name=None):
         QQuickImageProvider.__init__(self, QQuickImageProvider.Pixmap)
         QObject.__init__(self)
         self.__image = self.to_QPixmap(cv2.imread("../UI/test.jpg"))
         self.__np_img = None
+        self.name = name
         self.capturing = Value('i', 0)
         self.dev_list = uvc.device_list()
         self.fps_res = {}
@@ -34,6 +36,8 @@ class Camera(QQuickImageProvider, QObject):
         self.vid_process = None
         self.cam_thread = None
         self.paused = False
+        self.gamma = 1.0
+        self.color = True
 
     def thread_loop(self):
         while self.capturing.value:
@@ -124,12 +128,15 @@ class Camera(QQuickImageProvider, QObject):
         print('setting camera source to', source)
         self.source = source
         self.__set_fps_modes()
+        self.load_state()
         self.shared_array = self.create_shared_array(self.mode)
         self.capturing.value = 1
         self.init_process(source, self.child, self.shared_array, 
                           self.shared_pos, self.mode, self.capturing)
         self.cam_thread = Thread(target=self.thread_loop, args=())
+        self.save_state()
         self.cam_thread.start()
+        
 
     def set_video_file(self, filename):
         cap = cv2.VideoCapture(filename)
@@ -216,15 +223,18 @@ class Camera(QQuickImageProvider, QObject):
         self.init_process(self.source, self.child, self.shared_array, 
                           self.shared_pos, self.mode, self.capturing)
         self.cam_thread = Thread(target=self.thread_loop, args=())
+        self.save_state()
         self.cam_thread.start()
 
     @Slot(float)
     def set_gamma(self, value):
+        self.gamma = value
         self.pipe.send("gamma")
         self.pipe.send(value)
 
     @Slot(float)
     def set_color(self, value):
+        self.color = value
         self.pipe.send("color")
         self.pipe.send(bool(value))
 
@@ -236,6 +246,22 @@ class Camera(QQuickImageProvider, QObject):
             qimg = QImage(rgbimg.data, w, h, QImage.Format_RGB888)
             pixmap = QPixmap.fromImage(qimg)
             return pixmap
+
+    def save_state(self):
+        with open('config/'+self.name+'config.txt', 'w') as f:
+            data =  str(self.mode[0]) + ':'
+            data += str(self.mode[1]) + ':'
+            data += str(self.mode[2]) #+ ':'
+            #data += str(self.gamma)   + ':'
+            #data += str(int(self.color)) 
+            f.write(data)
+
+    def load_state(self):
+        if os.path.isfile('config/'+self.name+'config.txt'):
+            with open('config/'+self.name+'config.txt', 'r') as f:
+                d = f.readline().split(':')
+                self.mode = (int(d[0]), int(d[1]), int(d[2]))
+
     
 
 

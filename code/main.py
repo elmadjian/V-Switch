@@ -25,9 +25,9 @@ if __name__=='__main__':
     calib_hmd = calibration_hmd.HMDCalibrator(3, 3, 40, 4) 
     vgc_ctl   = vergence.VergenceCtl(3, 40, 4)
 
-    scene_cam = scene.SceneCamera()
-    le_cam    = eye.EyeCamera()
-    re_cam    = eye.EyeCamera()
+    scene_cam = scene.SceneCamera('scene')
+    le_cam    = eye.EyeCamera('left')
+    re_cam    = eye.EyeCamera('right')
     videoio.set_active_cameras(scene_cam, le_cam, re_cam)
     calib_ctl.set_sources(scene_cam, le_cam, re_cam)
     calib_hmd.set_sources(le_cam, re_cam)

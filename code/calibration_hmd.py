@@ -55,8 +55,8 @@ class HMDCalibrator(QObject):
 
     def load_network_options(self):
         ip, port = "", ""
-        if os.path.isfile('hmd_config.txt'):
-            with open('hmd_config.txt', 'r') as hmd_config:
+        if os.path.isfile('config/hmd_config.txt'):
+            with open('config/hmd_config.txt', 'r') as hmd_config:
                 data = hmd_config.readline()
                 ip, port = data.split(':')
         return ip, int(port)
