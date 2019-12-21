@@ -122,7 +122,7 @@ class ImageProcessor(Process):
             if self.pipe.poll():
                 msg = self.pipe.recv()
                 if msg == "stop":
-                    cap.stop_stream()
+                    #cap.stop_stream() --> UVC bug on multiprocessing
                     break
                 elif msg == "mode_3D":
                     mode_3D = not mode_3D
@@ -130,7 +130,7 @@ class ImageProcessor(Process):
                     gamma = self.pipe.recv()
                 elif msg == "color":
                     color = self.pipe.recv()
-        cap.close()
+        #cap.close() --> uvc bug on multiprocessing
         self.capturing.value = 0
         print("camera", self.source, "closed")
 

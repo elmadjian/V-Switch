@@ -30,10 +30,10 @@ class SceneCamera(camera.Camera):
         self.vid_process.start()    
 
     def join_process(self):
-        self.cam_process.join(1)
+        self.cam_process.join(10)
 
     def join_vid_process(self):
-        self.vid_process.join(1)
+        self.vid_process.join(3)
 
     def create_shared_array(self, mode):
         w = mode[0]

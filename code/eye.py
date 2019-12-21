@@ -32,10 +32,10 @@ class EyeCamera(camera.Camera):
         self.vid_process.start()        
 
     def join_process(self):
-        self.cam_process.join(1)
+        self.cam_process.join(10)
 
     def join_vid_process(self):
-        self.vid_process.join(1)
+        self.vid_process.join(3)
 
     def toggle_3D(self):
         self.pipe.send("mode_3D")
