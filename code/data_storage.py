@@ -1,5 +1,6 @@
 import numpy as np 
 import os
+import time
 
 class Storer():
     '''
@@ -32,10 +33,12 @@ class Storer():
         self.reye  = reye
 
     def collect_data(self, idx, mode3D, minfreq):
-        sc = self.scene.get_processed_data() 
+        sc, sc_img = None, None
+        if self.scene is not None:
+            sc = self.scene.get_processed_data() 
+            sc_img = self.scene.get_np_image()
         le = self.leye.get_processed_data()
         re = self.reye.get_processed_data()
-        sc_img = self.scene.get_np_image()
         le_img = self.leye.get_np_image()
         re_img = self.reye.get_np_image()
         if self.__check_data_n_timestamp(sc, le, re, mode3D, 1/minfreq):
@@ -44,10 +47,9 @@ class Storer():
     
     def __add_data(self, sc, le, re, idx):
         scd = np.array(self.target_list[idx])
-        if self.scene.is_cam_active():
+        if sc is not None and self.scene.is_cam_active():
             scd = np.array([sc[0], sc[1]], dtype='float')
         self.targets[idx] = np.vstack((self.targets[idx], scd))
-        #print('targets:', self.targets[idx])
         if self.leye.is_cam_active():
             led = np.array([le[0],le[1],le[2],le[3],le[4],le[5]])
             self.l_centers[idx] = np.vstack((self.l_centers[idx], led))
@@ -56,7 +58,7 @@ class Storer():
             self.r_centers[idx] = np.vstack((self.r_centers[idx], red))
 
     def __add_imgs(self, sc, le, re, idx):
-        if self.scene.is_cam_active():
+        if sc is not None and self.scene.is_cam_active():
             self.t_imgs[idx].append(sc)
         if self.leye.is_cam_active():
             self.l_imgs[idx].append(le)
@@ -69,7 +71,7 @@ class Storer():
             return False
         if re is None and self.reye.is_cam_active():
             return False
-        if not self.scene.is_cam_active():
+        if sc is None:
             return True
         sc_t, le_t, re_t = sc[2], le[2], re[2]
         if mode3D:
@@ -116,7 +118,8 @@ class Storer():
 
     
     def store_calibration(self):
-        path = self.__check_or_create_path(1, 'calibration')
+        print(">>> Storing calibration data, please wait...")
+        path = self.__check_or_create_path('calibration')
         for k in self.targets.keys():
             perc = int(k/len(self.targets.keys()) * 100)
             print(">>> {}%...".format(perc), end="\r", flush=True)
@@ -130,12 +133,12 @@ class Storer():
                 np.savez_compressed(path+prefix+"leye", self.l_centers[k])
             if len(self.r_centers[k]) > 0:
                 np.savez_compressed(path+prefix+"reye", self.r_centers[k])
-        print("")
+        print(">>> Calibration data saved.")
 
     def store_session(self):
         if len(self.l_sess) > 0:        
             print(">>> Saving session...")
-            path = self.__check_or_create_path(1, 'session')
+            path = self.__check_or_create_path('session')
             np.savez_compressed(path+'_left_gaze', self.l_sess)
             np.savez_compressed(path+'_right_gaze', self.r_sess)
             np.savez_compressed(path+'_left_eye', self.l_raw)
@@ -143,10 +146,15 @@ class Storer():
             print('>>> Session saved.')
 
 
-    def __check_or_create_path(self, uid, kind):
-        path = os.getcwd() + "/data/user_" + str(uid) + "/"+kind
+    def __check_or_create_path(self, spec):
+        '''
+        spec -> type of data to save: 'session' or 'calibration'
+        '''
+        uid = time.ctime()
+        path = os.getcwd() + "/data/user_" + uid + "/"+spec
         while os.path.exists(path):
-            uid += 1
-            path = os.getcwd() + "/data/user_"+str(uid)+"/"+kind
+            time.sleep(1)
+            uid = time.ctime()
+            path = os.getcwd() + "/data/user_"+ uid +"/"+spec
         os.makedirs(path)
         return path

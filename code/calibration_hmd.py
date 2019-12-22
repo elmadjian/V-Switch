@@ -21,13 +21,11 @@ class HMDCalibrator(QObject):
         frequency: value of the tracker's frequency in Hz
         '''
         QObject.__init__(self)
-        self.ntargets  = v_targets * h_targets
-        self.targets   = {i:np.empty((0,2), 'float32') for i in range(self.ntargets)}
-        self.l_centers = {i:np.empty((0,2), 'float32') for i in range(self.ntargets)}
-        self.r_centers = {i:np.empty((0,2), 'float32') for i in range(self.ntargets)}
+        ntargets  = v_targets * h_targets
+        self.target_list = self.__generate_target_list(v_targets, h_targets)
+        self.storer = ds.Storer(ntargets, self.target_list)
         self.l_regressor = None
         self.r_regressor = None
-        self.target_list = self.__generate_target_list(v_targets, h_targets)
         self.current_target = -1
         self.leye, self.reye = None, None
         self.samples = samples_per_tgt
@@ -37,18 +35,15 @@ class HMDCalibrator(QObject):
         self.stream = False
         self.vergence = None
         self.mode_3D = False
+        self.storage = False
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ip, self.port = self.load_network_options()
 
-        #used to avoid scikit-learn issues
-        self.tg_list = np.empty((0,2), dtype='float32')
-        self.le_list = np.empty((0,2), dtype='float32')
-        self.re_list = np.empty((0,2), dtype='float32')
-        
 
     def set_sources(self, leye, reye):
         self.leye = leye
         self.reye = reye
+        self.storer.set_sources(None, leye, reye)
 
     def set_vergence_control(self, vergence):
         self.vergence = vergence
@@ -82,52 +77,16 @@ class HMDCalibrator(QObject):
         '''
         idx = self.current_target
         t = time.time()
-        while (len(self.targets[idx]) < self.samples) and (time.time()-t < self.timeout):
-            le = self.leye.get_processed_data()
-            re = self.reye.get_processed_data()
-            if self.__check_data_and_timestamp(le, re, 1/minfreq):
-                self.__add_data(le, re, idx)
+        tgt = self.storer.targets
+
+        while (len(tgt[idx]) < self.samples) and (time.time()-t < self.timeout):
+            self.storer.collect_data(idx, self.mode_3D, minfreq)
+            tgt = self.storer.targets
             time.sleep(1/maxfreq)
         self.move_on.emit()
-        print("number of samples collected: {}".format(len(self.targets[idx])))
-
-
-    def __add_data(self, le, re, idx):
-        tgt = self.target_list[self.current_target]
-        self.targets[idx] = np.vstack((self.targets[idx], tgt))
-        self.tg_list = np.vstack((self.tg_list, tgt))
-        if self.leye.is_cam_active():
-            self.l_centers[idx] = np.vstack((self.l_centers[idx], le[:2]))
-            self.le_list = np.vstack((self.le_list, le[:2]))
-        if self.reye.is_cam_active():
-            self.r_centers[idx] = np.vstack((self.r_centers[idx], re[:2]))
-            self.re_list = np.vstack((self.re_list, re[:2]))
-        
-
-    def get_keys(self):
-        return self.targets.keys()
-
-
-    def __check_data_and_timestamp(self, le, re, thresh):
-        if le is None and self.leye.is_cam_active():
-            return False
-        if re is None and self.reye.is_cam_active():
-            return False
-        if le is not None and re is not None:
-            if abs(le[2] - re[2]) < thresh:
-                return True
-            if le is not None and re is None:
-                return True
-            if le is None and re is not None:
-                return True
-        return False
-
-    
-    def __dict_to_list(self, dic):
-        new_list = np.empty((dic[0].shape), np.float32)
-        for t in dic.keys():
-            new_list = np.vstack((new_list, dic[t]))
-        return new_list
+        print("number of samples collected: l->{}, r->{}".format(
+            len(self.storer.l_centers[idx]),
+            len(self.sotrer.r_centers[idx])))
 
     
     @Property('QVariantList')
@@ -140,9 +99,7 @@ class HMDCalibrator(QObject):
 
     def start_calibration(self):
         print('reseting calibration')
-        self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.l_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.r_centers = {i:np.empty((0,2), float) for i in range(self.ntargets)}
+        self.storer.initialize_storage()
         self.l_regressor = None
         self.r_regressor = None
         if self.predictor is not None:
@@ -162,9 +119,6 @@ class HMDCalibrator(QObject):
         msg = 'N:' + str(tgt[0]) + ':' + str(tgt[1])
         self.socket.sendto(msg.encode(), (self.ip, self.port))
 
-    @Slot()
-    def store_data_trigger(self):
-        print("storing data")
 
     @Slot(int, int)
     def collect_data(self, minfq, maxfq):
@@ -180,14 +134,19 @@ class HMDCalibrator(QObject):
         future predictions. Based on Gaussian Processes regression.
         '''
         clf_l = self.__get_clf()
-        clf_r = self.__get_clf()                                 
-        if self.leye.is_cam_active():                
-            clf_l.fit(self.le_list, self.tg_list)
+        clf_r = self.__get_clf()        
+        targets = self.storer.get_targets_list()                         
+        if self.leye.is_cam_active():           
+            l_centers = self.storer.get_l_centers_list(self.mode_3D)     
+            clf_l.fit(l_centers, targets)
             self.l_regressor = clf_l
         if self.reye.is_cam_active():
-            clf_r.fit(self.re_list, self.tg_list)
+            r_centers = self.storer.get_r_centers_list(self.mode_3D)
+            clf_r.fit(r_centers, targets)
             self.r_regressor = clf_r
         print("Gaze estimation finished")
+        if self.storage:
+            self.storer.store_calibration()
         if self.l_regressor is not None or self.r_regressor is not None:
             self.stream = True
             self.predictor = Thread(target=self.predict, args=())
@@ -229,20 +188,27 @@ class HMDCalibrator(QObject):
 
     def __predict(self):
         data = [-9,-9,-9,-9]
+        pred = [-9,-9,-9,-9]
         if self.l_regressor:
             le = self.leye.get_processed_data()
             if le is not None:
                 input_data = le[:2].reshape(1,-1)
                 le_coord = self.l_regressor.predict(input_data)[0]
-                data[0], data[1] = float(le_coord[0]), float(le_coord[1])
+                data[0], data[1] = input_data[0]
+                pred[0], pred[1] = float(le_coord[0]), float(le_coord[1])
         if self.r_regressor:
             re = self.reye.get_processed_data()
             if re is not None:
                 input_data = re[:2].reshape(1,-1)
                 re_coord = self.r_regressor.predict(input_data)[0]
-                data[2], data[3] = float(re_coord[0]), float(re_coord[1])
-        self.vergence.update(data)
-        return data
+                data[2], data[3] = input_data[0]
+                pred[2], pred[3] = float(re_coord[0]), float(re_coord[1])
+        self.vergence.update(pred)
+        if self.storage:
+            l_gz, r_gz   = pred[:2], pred[2:]
+            l_raw, r_raw = data[:2], data[2:]
+            self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
+        return pred
 
 
     def __get_clf(self):
@@ -285,6 +251,15 @@ class HMDCalibrator(QObject):
     @Slot()
     def toggle_3D(self):
         self.mode_3D = not self.mode_3D
+
+    @Slot()
+    def toggle_storage(self):
+        self.storage = not self.storage
+
+    @Slot()
+    def save_session(self):
+        if self.storage:
+            self.storer.store_session()
 
                 
 
