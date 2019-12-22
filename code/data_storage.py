@@ -10,17 +10,20 @@ class Storer():
     -> 3D: x_p, y_p, z_p, x_n, y_n, z_n, time
     '''
 
-    def __init__(self, ntargets, target_list):
+    def __init__(self, ntargets, target_list, hmd=False):
         self.ntargets = ntargets
         self.target_list = target_list
         self.targets, self.l_centers, self.r_centers = None, None, None
         self.t_imgs, self.l_imgs, self.r_imgs = None, None, None
         self.l_sess, self.r_sess, self.l_raw, self.r_raw = [],[],[],[]
+        self.hmd = hmd
         self.initialize_storage()
         self.scene, self.leye, self.reye = None, None, None
    
     def initialize_storage(self):
-        self.targets   = {i:np.empty((0,2), dtype='float32') for i in range(self.ntargets)}
+        self.targets = {i:np.empty((0,2), dtype='float32') for i in range(self.ntargets)}
+        if self.hmd:
+            self.targets = {i:np.empty((0,3), dtype='float32') for i in range(self.ntargets)}
         self.l_centers = {i:np.empty((0,6), dtype='float32') for i in range(self.ntargets)}
         self.r_centers = {i:np.empty((0,6), dtype='float32') for i in range(self.ntargets)}
         self.t_imgs = {i:[] for i in range(self.ntargets)}
@@ -48,7 +51,7 @@ class Storer():
     def __add_data(self, sc, le, re, idx):
         scd = np.array(self.target_list[idx])
         if sc is not None and self.scene.is_cam_active():
-            scd = np.array([sc[0], sc[1]], dtype='float')
+            scd = np.array([sc[0], sc[1]], dtype='float32')
         self.targets[idx] = np.vstack((self.targets[idx], scd))
         if self.leye.is_cam_active():
             led = np.array([le[0],le[1],le[2],le[3],le[4],le[5]])

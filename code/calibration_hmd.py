@@ -21,9 +21,9 @@ class HMDCalibrator(QObject):
         frequency: value of the tracker's frequency in Hz
         '''
         QObject.__init__(self)
-        ntargets  = v_targets * h_targets
+        ntargets  = v_targets * h_targets + 1
         self.target_list = self.__generate_target_list(v_targets, h_targets)
-        self.storer = ds.Storer(ntargets, self.target_list)
+        self.storer = ds.Storer(ntargets, self.target_list, hmd=True)
         self.l_regressor = None
         self.r_regressor = None
         self.current_target = -1
@@ -61,10 +61,12 @@ class HMDCalibrator(QObject):
         target_list = []
         for y in np.linspace(0,1, v):
             for x in np.linspace(0,1, h):
-                target_list.append(np.array([x,y], dtype=np.float32))
+                target_list.append(np.array([x,y,1], dtype=np.float32))
         seed = np.random.randint(0,99)
         rnd  = np.random.RandomState(seed)
         rnd.shuffle(target_list)
+        #DEBUG
+        target_list.append(np.array([0.5,0.2,0.7], dtype=np.float32))
         return target_list
 
 
@@ -86,7 +88,7 @@ class HMDCalibrator(QObject):
         self.move_on.emit()
         print("number of samples collected: l->{}, r->{}".format(
             len(self.storer.l_centers[idx]),
-            len(self.sotrer.r_centers[idx])))
+            len(self.storer.r_centers[idx])))
 
     
     @Property('QVariantList')
@@ -116,7 +118,7 @@ class HMDCalibrator(QObject):
             self.socket.sendto("F".encode(), (self.ip, self.port))
             return
         tgt = self.target_list[self.current_target]
-        msg = 'N:' + str(tgt[0]) + ':' + str(tgt[1])
+        msg = 'N:' + str(tgt[0]) + ':' + str(tgt[1]) + ':' + str(tgt[2])
         self.socket.sendto(msg.encode(), (self.ip, self.port))
 
 
@@ -157,12 +159,12 @@ class HMDCalibrator(QObject):
         for i in range(self.vergence.planes):
             try:
                 msg = 'P:' + str(i)
-                self.socket.sento(msg.encode(), (self.ip, self.port))
+                self.socket.sendto(msg.encode(), (self.ip, self.port))
                 plane_calibrator = Thread(target=self.vergence.get_plane_data, args=(i,))
                 plane_calibrator.start()
                 plane_calibrator.join()
             except Exception as e:
-                print('Could not send plane id')
+                print('Could not send plane id:', e)
         self.socket.sendto('F'.encode(), (self.ip, self.port))
 
 
@@ -173,11 +175,11 @@ class HMDCalibrator(QObject):
                 demand = self.socket.recv(1024).decode()
                 if demand.startswith('G'):
                     data = self.__predict()
-                    x1, y1 = data[0], data[1]
-                    x2, y2 = data[2], data[3]
-                    x1, y1 = '{:.8f}'.format(x1), '{:.8f}'.format(y1)
-                    x2, y2 = '{:.8f}'.format(x2), '{:.8f}'.format(y2)
-                    msg = 'G:'+x1+':'+y1+':'+x2+':'+y2
+                    x1, y1, z1 = data[0], data[1], data[2]
+                    x2, y2, z2 = data[3], data[4], data[5]
+                    x1, y1, z1 = '{:.8f}'.format(x1), '{:.8f}'.format(y1), '{:.8f}'.format(z1)
+                    x2, y2, z2 = '{:.8f}'.format(x2), '{:.8f}'.format(y2), '{:.8f}'.format(z2)
+                    msg = 'G:'+x1+':'+y1+':'+z1+':'+x2+':'+y2+':'+z2
                     self.socket.sendto(msg.encode(), (self.ip, self.port))
             except Exception as e:
                 print("no request from HMD...", e)
@@ -188,24 +190,24 @@ class HMDCalibrator(QObject):
 
     def __predict(self):
         data = [-9,-9,-9,-9]
-        pred = [-9,-9,-9,-9]
+        pred = [-9,-9,-9,-9,-9,-9]
         if self.l_regressor:
             le = self.leye.get_processed_data()
             if le is not None:
                 input_data = le[:2].reshape(1,-1)
-                le_coord = self.l_regressor.predict(input_data)[0]
+                le_c = self.l_regressor.predict(input_data)[0]
                 data[0], data[1] = input_data[0]
-                pred[0], pred[1] = float(le_coord[0]), float(le_coord[1])
+                pred[0], pred[1], pred[2] = float(le_c[0]), float(le_c[1]), float(le_c[2])
         if self.r_regressor:
             re = self.reye.get_processed_data()
             if re is not None:
                 input_data = re[:2].reshape(1,-1)
-                re_coord = self.r_regressor.predict(input_data)[0]
+                re_c = self.r_regressor.predict(input_data)[0]
                 data[2], data[3] = input_data[0]
-                pred[2], pred[3] = float(re_coord[0]), float(re_coord[1])
+                pred[3], pred[4], pred[5] = float(re_c[0]), float(re_c[1]), float(re_c[2])
         self.vergence.update(pred)
         if self.storage:
-            l_gz, r_gz   = pred[:2], pred[2:]
+            l_gz, r_gz   = pred[:3], pred[3:]
             l_raw, r_raw = data[:2], data[2:]
             self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
         return pred
@@ -231,7 +233,7 @@ class HMDCalibrator(QObject):
     @Slot(str, str)
     def update_network(self, ip, port):
         self.ip, self.port = ip, int(port)
-        with open('hmd_config.txt', 'w') as hmd_config:
+        with open('config/hmd_config.txt', 'w') as hmd_config:
             text = ip + ':' + port
             hmd_config.write(text)
 
