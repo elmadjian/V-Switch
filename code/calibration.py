@@ -106,6 +106,8 @@ class Calibrator(QObject):
         clf_l = self.__get_clf()
         clf_r = self.__get_clf()                                  
         targets = self.storer.get_targets_list()
+        # for t in targets:
+        #     print(t)
         print('targets (minmax):', np.min(targets), np.max(targets))
         print('target shape:', targets.shape)
         if self.leye.is_cam_active():                                       

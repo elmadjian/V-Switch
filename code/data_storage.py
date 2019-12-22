@@ -19,9 +19,9 @@ class Storer():
         self.scene, self.leye, self.reye = None, None, None
    
     def initialize_storage(self):
-        self.targets   = {i:np.empty((0,2), float) for i in range(self.ntargets)}
-        self.l_centers = {i:np.empty((0,6), float) for i in range(self.ntargets)}
-        self.r_centers = {i:np.empty((0,6), float) for i in range(self.ntargets)}
+        self.targets   = {i:np.empty((0,2), dtype='float32') for i in range(self.ntargets)}
+        self.l_centers = {i:np.empty((0,6), dtype='float32') for i in range(self.ntargets)}
+        self.r_centers = {i:np.empty((0,6), dtype='float32') for i in range(self.ntargets)}
         self.t_imgs = {i:[] for i in range(self.ntargets)}
         self.l_imgs = {i:[] for i in range(self.ntargets)}
         self.r_imgs = {i:[] for i in range(self.ntargets)}
@@ -46,9 +46,6 @@ class Storer():
         scd = np.array(self.target_list[idx])
         if self.scene.is_cam_active():
             scd = np.array([sc[0], sc[1]], dtype='float')
-            print('scd interno:', scd)
-        # else:
-        #     print('scd externo:', scd)
         self.targets[idx] = np.vstack((self.targets[idx], scd))
         #print('targets:', self.targets[idx])
         if self.leye.is_cam_active():
@@ -91,7 +88,7 @@ class Storer():
         return False
 
     def __dict_to_list(self, dic):
-        new_list = np.empty((dic[0].shape), float)
+        new_list = np.empty((0,dic[0].shape[1]), dtype='float32')
         for t in dic.keys():
             new_list = np.vstack((new_list, dic[t]))
         return new_list

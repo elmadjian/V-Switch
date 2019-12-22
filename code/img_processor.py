@@ -121,7 +121,7 @@ class ImageProcessor(Process):
                 attempt += 1           
             if self.pipe.poll():
                 msg = self.pipe.recv()
-                if msg == "stop":
+                if msg == "stop": 
                     #cap.stop_stream() --> UVC bug on multiprocessing
                     break
                 elif msg == "mode_3D":
