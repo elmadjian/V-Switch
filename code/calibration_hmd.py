@@ -15,14 +15,14 @@ class HMDCalibrator(QObject):
     move_on = Signal()
     conn_status = Signal(bool)
 
-    def __init__(self, v_targets, h_targets, samples_per_tgt, timeout):
+    def __init__(self, v_targets, h_targets, d_targets, samples_per_tgt, timeout):
         '''
         ntargets: number of targets that are going to be shown for calibration
         frequency: value of the tracker's frequency in Hz
         '''
         QObject.__init__(self)
-        ntargets  = v_targets * h_targets + 1
-        self.target_list = self.__generate_target_list(v_targets, h_targets)
+        ntargets  = v_targets * h_targets + d_targets
+        self.target_list = self.__generate_target_list(v_targets, h_targets, d_targets)
         self.storer = ds.Storer(ntargets, self.target_list, hmd=True)
         self.l_regressor = None
         self.r_regressor = None
@@ -57,7 +57,7 @@ class HMDCalibrator(QObject):
         return ip, int(port)
     
 
-    def __generate_target_list(self, v, h):
+    def __generate_target_list(self, v, h, d):
         target_list = []
         for y in np.linspace(0,1, v):
             for x in np.linspace(0,1, h):
@@ -66,7 +66,8 @@ class HMDCalibrator(QObject):
         rnd  = np.random.RandomState(seed)
         rnd.shuffle(target_list)
         #DEBUG
-        target_list.append(np.array([0.5,0.2,0.7], dtype=np.float32))
+        #for x in np.linspace(0.3, 0.7, d):
+        target_list.append(np.array([0.5,0.4,0.6], dtype=np.float32))
         return target_list
 
 
@@ -211,6 +212,7 @@ class HMDCalibrator(QObject):
             l_raw, r_raw = data[:2], data[2:]
             self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
         return pred
+
 
 
     def __get_clf(self):

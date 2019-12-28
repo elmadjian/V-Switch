@@ -39,7 +39,7 @@ class ImageProcessor(Process):
         print("resetting...")
         mode = cap.frame_mode
         cap.close()
-        time.sleep(0.03)
+        time.sleep(0.5)
         dev_list = uvc.device_list()
         cap2 = uvc.Capture(dev_list[self.source]['uid'])
         print("Trying mode:", mode)
@@ -103,10 +103,10 @@ class ImageProcessor(Process):
         gamma, color, mode_3D = 1, True, False
         while attempt < attempts:     
             try:
-                frame    = cap.get_frame(1.5)
+                frame    = cap.get_frame(2.0)
                 img      = self.__adjust_gamma(frame.bgr, gamma)
                 img      = self.__cvtBlackWhite(img, color)
-                img, pos = self.process(img, mode_3D)                
+                img, pos = self.process(img, mode_3D)               
                 if img is not None:
                     attempt = 0
                     shared_img = self.__get_shared_np_array(img)

@@ -11,10 +11,13 @@ from threading import Thread
 
 if sys.argv[1] == "--uvc":
     dev_list = uvc.device_list()
+    print('devices found:')
+    for d in dev_list:
+        print('>>>', d)
     cap = uvc.Capture(dev_list[0]['uid'])
-    #cap2 = uvc.Capture(dev_list[2]['uid'])
+    # #cap2 = uvc.Capture(dev_list[2]['uid'])
     print(sorted(cap.avaible_modes))
-    #cap.bandwidth_factor = 1.3
+    # #cap.bandwidth_factor = 1.3
     while True:
         frame = cap.get_frame()
         print("current mode:", cap.frame_mode)
