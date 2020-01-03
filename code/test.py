@@ -8,6 +8,9 @@ from multiprocessing import Process, Pipe
 import eyefitter as ef
 import geometry as geo
 from threading import Thread
+import os
+import socket
+import time
 
 if sys.argv[1] == "--uvc":
     dev_list = uvc.device_list()
@@ -113,6 +116,47 @@ if sys.argv[1] == '--3D':
             cv2.imshow('test', img)
             if cv2.waitKey(0) & 0xFF == ord('q'):
                 break
+
+
+if sys.argv[1] == '--simulate_HMD':
+    ip, port = "127.0.0.1", 50022
+    # if os.path.isfile('config/hmd_config.txt'):
+    #     with open('config/hmd_config.txt', 'r') as hmd_config:
+    #         data = hmd_config.readline()
+    #         ip, port = data.split(':')
+    #         port = int(port)
+    socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    target_list = []
+    for y in np.linspace(0,1, 3):
+        for x in np.linspace(0,1, 3):
+            target_list.append(np.array([x,y,1], dtype=np.float32))
+    seed = np.random.randint(0,99)
+    rnd  = np.random.RandomState(seed)
+    rnd.shuffle(target_list)
+    target_list.append(np.array([0.5,0.4,0.6], dtype=np.float32))
+    print('-- Connecting...')
+    socket.sendto('C'.encode(), (ip,port))
+    try:
+        response = socket.recv(1024).decode()
+        if response:
+            print('-- Connected!')
+        else:
+            print('-- Remote host not found.')
+            sys.exit()
+    except Exception:
+        print('-- Error trying to connect.')
+        sys.exit()
+    time.sleep(1)
+    for t in target_list:
+        msg = 'N:' + str(t[0])+':'+str(t[1])+':'+ str(t[2])
+        socket.sendto(msg.encode(), (ip,port))
+        print('-- Next target...')
+        time.sleep(1)
+        socket.sendto('R'.encode(), (ip,port))
+        print('-- Recording target...')
+        time.sleep(1)
+    socket.sendto('F'.encode(), (ip,port))
+    print('-- End calibration...')
 
     
 
