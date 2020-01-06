@@ -126,6 +126,7 @@ if sys.argv[1] == '--simulate_HMD':
     #         ip, port = data.split(':')
     #         port = int(port)
     socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    socket.bind((ip, 50021))
     target_list = []
     for y in np.linspace(0,1, 3):
         for x in np.linspace(0,1, 3):
@@ -146,17 +147,50 @@ if sys.argv[1] == '--simulate_HMD':
     except Exception:
         print('-- Error trying to connect.')
         sys.exit()
-    time.sleep(1)
+    time.sleep(0.5)
     for t in target_list:
         msg = 'N:' + str(t[0])+':'+str(t[1])+':'+ str(t[2])
         socket.sendto(msg.encode(), (ip,port))
         print('-- Next target...')
-        time.sleep(1)
+        time.sleep(0.25)
         socket.sendto('R'.encode(), (ip,port))
         print('-- Recording target...')
-        time.sleep(1)
+        time.sleep(0.25)
     socket.sendto('F'.encode(), (ip,port))
     print('-- End calibration...')
+    y = np.linspace(0.46, 0.54, 25)
+    x_l = np.linspace(0.45, 0.495, 25)
+    x_r = np.linspace(0.505, 0.55, 25) 
+    count = 0
+    port = 50023
+    # socket.sendto('F'.encode(), (ip,port))
+    # try:
+    #     response = socket.recv(1024).decode()
+    #     if response:
+    #         print('-- Connected!')
+    #     else:
+    #         print('-- Remote host not found.')
+    #         sys.exit()
+    # except Exception:
+    #     print('-- Error trying to connect.')
+    #     sys.exit()
+    while True:
+        try:
+            demand = socket.recv(1024).decode()
+            if demand.startswith('G'):
+                y1 = np.random.choice(y)
+                y2 = np.random.choice(y)
+                x1 = np.random.choice(x_l)
+                x2 = np.random.choice(x_r)
+                x1, y1, z1 = '{:.8f}'.format(x1),'{:.8f}'.format(y1),'{:.8f}'.format(1.0)
+                x2, y2, z2 = '{:.8f}'.format(x2),'{:.8f}'.format(y2),'{:.8f}'.format(1.0)
+                msg = 'G:'+x1+':'+y1+':'+z1+':'+x2+':'+y2+':'+z2
+                socket.sendto(msg.encode(), (ip,port))
+        except Exception as e:
+            print("no request from HMD...", e)
+            count += 1
+            if count > 3:
+                break
 
     
 

@@ -37,6 +37,7 @@ class HMDCalibrator(QObject):
         self.mode_3D = False
         self.storage = False
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.bind(("127.0.0.1", 50021))
         self.ip, self.port = self.load_network_options()
 
 
