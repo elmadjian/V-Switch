@@ -98,7 +98,6 @@ class ImageProcessor(Process):
         cap = uvc.Capture(dev_list[self.source]['uid'])
         self.__setup_eye_cam(cap)
         cap.frame_mode = self.mode
-        #cap.bandwidth_factor = 1.3
         attempt, attempts = 0, 6
         gamma, color, mode_3D = 1, True, False
         while attempt < attempts:     
@@ -122,7 +121,6 @@ class ImageProcessor(Process):
             if self.pipe.poll():
                 msg = self.pipe.recv()
                 if msg == "stop": 
-                    #cap.stop_stream() --> UVC bug on multiprocessing
                     break
                 elif msg == "mode_3D":
                     mode_3D = not mode_3D
@@ -130,7 +128,6 @@ class ImageProcessor(Process):
                     gamma = self.pipe.recv()
                 elif msg == "color":
                     color = self.pipe.recv()
-        #cap.close() --> uvc bug on multiprocessing
         self.capturing.value = 0
         print("camera", self.source, "closed")
 

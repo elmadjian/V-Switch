@@ -6,6 +6,7 @@ import camera_proc as camera
 from scene_img_processor import SceneImageProcessor
 from multiprocessing import Array, Process
 import ctypes
+import uvc
 
 
 class SceneCamera(camera.Camera):
@@ -19,11 +20,13 @@ class SceneCamera(camera.Camera):
         self.shared_pos = self.create_shared_pos()
 
     def init_process(self, source, pipe, array, pos, mode, cap):
+        mode = self.check_mode_availability(source, mode)
         self.cam_process = SceneImageProcessor(source, mode, pipe, 
                                                array, pos, cap)
         self.cam_process.start()  
 
     def init_vid_process(self, source, pipe, array, pos, mode, cap):
+        mode = self.check_mode_availability(source, mode)
         self.cam_process = SceneImageProcessor(source, mode, pipe,
                                              array, pos, cap)
         self.vid_process = Process(target=self.cam_process.run_vid, args=())
@@ -42,6 +45,17 @@ class SceneCamera(camera.Camera):
 
     def create_shared_pos(self):
         return Array(ctypes.c_float, 3, lock=False)
+
+    def check_mode_availability(self, source, mode):
+        dev_list = uvc.device_list()
+        cap = uvc.Capture(dev_list[source]['uid'])
+        # m = (mode[1], mode[0], mode[2])
+        if mode not in cap.avaible_modes:
+            m = cap.avaible_modes[0]
+            mode = (m[1], m[0], m[2])
+            self.shared_array = self.create_shared_array(mode)
+            self.mode = mode
+        return mode
         
 
 

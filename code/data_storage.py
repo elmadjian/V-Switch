@@ -154,10 +154,10 @@ class Storer():
         spec -> type of data to save: 'session' or 'calibration'
         '''
         uid = time.ctime()
-        path = os.getcwd() + "/data/user_" + uid + "/"+spec
+        path = os.getcwd() + "/data/"+uid+"/"+spec
         while os.path.exists(path):
             time.sleep(1)
             uid = time.ctime()
-            path = os.getcwd() + "/data/user_"+ uid +"/"+spec
+            path = os.getcwd() + "/data/"+uid+"/"+spec
         os.makedirs(path)
         return path
