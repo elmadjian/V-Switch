@@ -21,7 +21,7 @@ class HMDCalibrator(QObject):
         frequency: value of the tracker's frequency in Hz
         '''
         QObject.__init__(self)
-        ntargets  = v_targets * h_targets + d_targets
+        ntargets  = v_targets * h_targets# + d_targets
         self.target_list = self.__generate_target_list(v_targets, h_targets, d_targets)
         self.storer = ds.Storer(ntargets, self.target_list, hmd=True)
         self.l_regressor = None
@@ -60,15 +60,26 @@ class HMDCalibrator(QObject):
 
     def __generate_target_list(self, v, h, d):
         target_list = []
-        for y in np.linspace(0,1, v):
-            for x in np.linspace(0,1, h):
+        for y in np.linspace(-1,1, v):
+            for x in np.linspace(-1,1, h):
                 target_list.append(np.array([x,y,1], dtype=np.float32))
         seed = np.random.randint(0,99)
         rnd  = np.random.RandomState(seed)
         rnd.shuffle(target_list)
         #DEBUG
         #for x in np.linspace(0.3, 0.7, d):
-        target_list.append(np.array([0.5,0.4,0.6], dtype=np.float32))
+        # target_list.append(np.array([0.5,0.4,0.6], dtype=np.float32))
+        return target_list
+
+    def __generate_depth_list(self, rows, planes):
+        target_list = []
+        for p in np.linspace(0.2,1, planes):
+            d = 1.0/p 
+            for x in np.linspace(-1,1, rows):
+                target_list.append(np.array([x/d,0,p], dtype=np.float))
+        seed = np.random.randint(0,99)
+        rnd  = np.random.RandomState(seed)
+        rnd.shuffle(target_list)
         return target_list
 
 
@@ -157,7 +168,7 @@ class HMDCalibrator(QObject):
             self.predictor.start()
 
     @Slot()
-    def calibrate_planes(self):
+    def calibrate_depth(self):
         for i in range(self.vergence.planes):
             try:
                 msg = 'P:' + str(i)
