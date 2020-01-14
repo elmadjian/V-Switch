@@ -15,15 +15,16 @@ class HMDCalibrator(QObject):
     move_on = Signal()
     conn_status = Signal(bool)
 
-    def __init__(self, v_targets, h_targets, d_targets, samples_per_tgt, timeout):
+    def __init__(self, v_targets, h_targets, samples_per_tgt, timeout):
         '''
         ntargets: number of targets that are going to be shown for calibration
         frequency: value of the tracker's frequency in Hz
         '''
         QObject.__init__(self)
         ntargets  = v_targets * h_targets# + d_targets
-        self.target_list = self.__generate_target_list(v_targets, h_targets, d_targets)
-        self.storer = ds.Storer(ntargets, self.target_list, hmd=True)
+        self.target_list = self.__generate_target_list(v_targets, h_targets)
+        self.depth_list  = self.__generate_depth_list(3, 3)
+        self.storer = ds.Storer(ntargets, self.target_list, self.depth_list, True)
         self.l_regressor = None
         self.r_regressor = None
         self.current_target = -1
@@ -58,7 +59,7 @@ class HMDCalibrator(QObject):
         return ip, int(port)
     
 
-    def __generate_target_list(self, v, h, d):
+    def __generate_target_list(self, v, h):
         target_list = []
         for y in np.linspace(-1,1, v):
             for x in np.linspace(-1,1, h):
@@ -103,17 +104,38 @@ class HMDCalibrator(QObject):
             len(self.storer.l_centers[idx]),
             len(self.storer.r_centers[idx])))
 
+
+    def __get_depth_data(self, maxfreq, minfreq):
+        idx = self.current_target
+        t = time.time()
+        tgt = self.storer.depth_t
+        while (len(tgt[idx]) < self.samples) and (time.time()-t < self.timeout):
+            theta = 0
+            ro = 0
+            self.storer.collect_depth_data(idx,theta,ro,self.mode3D,minfreq)
+            tgt = self.storer.depth_t
+            time.sleep(1/maxfreq)
+        self.move_on.emit()
+        print("number of samples collected: {}".format(
+            len(self.storer.theta_ro[idx])))
+    
     
     @Property('QVariantList')
     def target(self):
         if self.current_target >= len(self.target_list):
             return [-9,-9]
         tgt = self.target_list[self.current_target]
-        converted = [float(tgt[0]), float(tgt[1])]
-        return converted
+        return [float(tgt[0]), float(tgt[1])]
+
+    @Property('QVariantList')
+    def depth_target(self):
+        if self.current_target >= len(self.depth_list):
+            return [-9,-9]
+        tgt = self.depth_list[self.current_target]
+        return [float(tgt[0]), float(tgt[1])]
 
     def start_calibration(self):
-        print('reseting calibration')
+        print('resetting calibration')
         self.storer.initialize_storage()
         self.l_regressor = None
         self.r_regressor = None
@@ -122,24 +144,50 @@ class HMDCalibrator(QObject):
             self.predictor.join()
         self.current_target = -1
 
+    def start_depth_calibration(self):
+        print('starting depth calibration')
+        self.storer.initialize_depth_storage()
+        self.current_target = -1
+        
+
     @Slot()
     def next_target(self):
         if self.collector is not None:
             self.collector.join()
         self.current_target += 1
         if self.current_target >= len(self.target_list):
-            self.socket.sendto("F".encode(), (self.ip, self.port))
+            #self.socket.sendto("F".encode(), (self.ip, self.port))
+            self.socket.sendto("D".encode(), (self.ip, self.port))
             return
         tgt = self.target_list[self.current_target]
         msg = 'N:' + str(tgt[0]) + ':' + str(tgt[1]) + ':' + str(tgt[2])
         self.socket.sendto(msg.encode(), (self.ip, self.port))
 
+    @Slot()
+    def next_depth_target(self):
+        if self.collector is not None:
+            self.collector.join()
+        self.current_target += 1
+        if self.current_target >= len(self.depth_list):
+            self.socket.sendto("F".encode(), (self.ip, self.port))
+            return
+        tgt = self.depth_list[self.current_target]
+        msg = 'N:' + str(tgt[0]) + ':' + str(tgt[1]) + ':' + str(tgt[2])
+        self.socket.sendto(msg.encode(), (self.ip, self.port))
+   
 
     @Slot(int, int)
     def collect_data(self, minfq, maxfq):
         msg = 'R'.encode()
         self.socket.sendto(msg, (self.ip, self.port))
         self.collector = Thread(target=self.__get_target_data, args=(minfq,maxfq,))
+        self.collector.start()
+
+    @Slot(int, int)
+    def collect_depth_data(self, minfq, maxfq):
+        msg = 'R'.encode()
+        self.socket.sendto(msg, (self.ip, self.port))
+        self.collector = Thread(target=self.__get_depth_data, args=(minfq,maxfq,))
         self.collector.start()
 
     @Slot()
@@ -167,18 +215,18 @@ class HMDCalibrator(QObject):
             self.predictor = Thread(target=self.predict, args=())
             self.predictor.start()
 
-    @Slot()
-    def calibrate_depth(self):
-        for i in range(self.vergence.planes):
-            try:
-                msg = 'P:' + str(i)
-                self.socket.sendto(msg.encode(), (self.ip, self.port))
-                plane_calibrator = Thread(target=self.vergence.get_plane_data, args=(i,))
-                plane_calibrator.start()
-                plane_calibrator.join()
-            except Exception as e:
-                print('Could not send plane id:', e)
-        self.socket.sendto('F'.encode(), (self.ip, self.port))
+    # @Slot()
+    # def calibrate_depth(self):
+    #     for i in range(self.vergence.planes):
+    #         try:
+    #             msg = 'P:' + str(i)
+    #             self.socket.sendto(msg.encode(), (self.ip, self.port))
+    #             plane_calibrator = Thread(target=self.vergence.get_plane_data, args=(i,))
+    #             plane_calibrator.start()
+    #             plane_calibrator.join()
+    #         except Exception as e:
+    #             print('Could not send plane id:', e)
+    #     self.socket.sendto('F'.encode(), (self.ip, self.port))
 
 
     def predict(self):

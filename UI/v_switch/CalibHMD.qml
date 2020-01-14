@@ -23,8 +23,7 @@ Item {
     }
 
     onMoveOn: {
-        recording = false;
-        nextStep();
+        checkStateAndNextStep();
     }
 
     onConnStatus: {
@@ -40,7 +39,9 @@ Item {
         calibHMDText.state = "connecting";
     }
 
-    function nextStep() {
+    //Calibration routine for a 2D procedure
+    //--------------------------------------
+    function nextCalibStep() {
         if (calibHMDText.state == "success") {
             calibHMDText.state = "calibrating";
             stalling = true;
@@ -59,7 +60,8 @@ Item {
             if (target[0] === -9 && target[1] === -9) {
                 console.log("calibration ended");
                 calibHMD.perform_estimation();
-                reset();
+                calibHMDText.state = "calib_finished";
+                //reset();
             }
             stalling = false;
 
@@ -73,6 +75,53 @@ Item {
             var max_freq  = Math.max(freq_leye, freq_reye);
             var min_freq  = Math.min(freq_leye, freq_reye);
             calibHMD.collect_data(min_freq, max_freq);
+        }
+    }
+
+    // Calibration routine for gaze depth estimation
+    //----------------------------------------------
+    function nextDepthStep() {
+        if (calibHMDText.state == "calib_finished") {
+            calibHMDText.state = "depth_calib";
+            calibHMD.start_depth_calibration();
+            stalling = true;
+        }
+        if (stalling) {
+            if (recording) {
+                console.log("Wait, recording data...");
+                return
+            }
+            calibHMD.next_depth_target();
+            var target = calibHMD.depth_target;
+
+            //calibration ended
+            if (target[0] === -9 && target[1] === -9) {
+                console.log("calibration ended");
+                calibHMD.perform_estimation();
+                reset();
+            }
+            stalling = false;
+        }
+        //record data
+        else {
+            stalling = true;
+            recording = true;
+            var freq_leye = leftEyeCam.current_fps;
+            var freq_reye = rightEyeCam.current_fps;
+            var max_freq  = Math.max(freq_leye, freq_reye);
+            var min_freq  = Math.min(freq_leye, freq_reye);
+            calibHMD.collect_data(min_freq, max_freq);
+        }
+    }
+
+    function checkStateAndNextStep() {
+        if (calibHMDText.state == "success" || 
+        calibHMDText.state == "calibrating") {
+            nextCalibStep();
+        }
+        else if (calibHMDText.state == "calib_finished" ||
+        calibHMDText.state == "depth_calib") {
+            nextDepthStep();
         }
     }
 
@@ -156,7 +205,7 @@ Item {
                         target: calibHMDText
                         text: qsTr("HMD found!\n"+
                                    "Press SPACE or DOUBLE_CLICK to "+
-                                   "start recording data from target")
+                                   "start gaze calibration")
                     }
                 },
                 State {
@@ -165,6 +214,22 @@ Item {
                         target: calibHMDText
                         text: qsTr("Calibration in progress...")
 
+                    }
+                },
+                State{
+                    name: "calib_finished"
+                    PropertyChanges {
+                        target: calibHMDText
+                        text: qsTr("Gaze calibration finished!\n"+
+                                   "Press SPACE or DOUBLE_CLICK to "+
+                                   "start depth calibration")
+                    }
+                },
+                State {
+                    name: "depth_calib"
+                    PropertyChanges {
+                        target: calibHMDText
+                        text: qsTr("Calibrating gaze depth...")
                     }
                 }
             ]
@@ -177,7 +242,7 @@ Item {
         Keys.onPressed: {
             if (event.key === Qt.Key_Space) {
                 event.accepted = true;
-                nextStep();
+                checkStateAndNextStep();
             }
         }
     }
@@ -186,7 +251,7 @@ Item {
         focus: true
         anchors.fill: parent
         onDoubleClicked: {
-            nextStep();
+            checkStateAndNextStep();
         }
     }
 }

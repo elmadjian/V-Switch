@@ -10,10 +10,12 @@ class Storer():
     -> 3D: x_p, y_p, z_p, x_n, y_n, z_n, time
     '''
 
-    def __init__(self, ntargets, target_list, hmd=False):
+    def __init__(self, ntargets, target_list, depth_list, hmd=False):
         self.ntargets = ntargets
         self.target_list = target_list
+        self.depth_list = depth_list
         self.targets, self.l_centers, self.r_centers = None, None, None
+        self.depth_t, self.theta_ro = None, None
         self.t_imgs, self.l_imgs, self.r_imgs = None, None, None
         self.l_sess, self.r_sess, self.l_raw, self.r_raw = [],[],[],[]
         self.hmd = hmd
@@ -29,11 +31,22 @@ class Storer():
         self.t_imgs = {i:[] for i in range(self.ntargets)}
         self.l_imgs = {i:[] for i in range(self.ntargets)}
         self.r_imgs = {i:[] for i in range(self.ntargets)}
+    
+    def initialize_depth_storage(self):
+        self.depth_t = {i:np.empty((0,3), dtype='float32') for i in range(self.ntargets)}
+        self.theta_ro = {i:np.empty((0,2), dtype='float32') for i in range(self.ntargets)}
 
     def set_sources(self, scene, leye, reye):
         self.scene = scene
         self.leye  = leye
         self.reye  = reye
+
+    def collect_depth_data(self, idx, theta, ro, mode3D, minfreq):
+        le = self.leye.get_processed_data()
+        re = self.reye.get_processed_data()
+        if self.__check_data_n_timestamp(None, le, re, mode3D, 1/minfreq):
+            self.__add_depth_data(theta, ro, idx)
+
 
     def collect_data(self, idx, mode3D, minfreq):
         sc, sc_img = None, None
@@ -67,7 +80,13 @@ class Storer():
             self.l_imgs[idx].append(le)
         if self.reye.is_cam_active():
             self.r_imgs[idx].append(re)
-            
+
+    def __add_depth_data(self, theta, ro, idx):
+        scd = np.array(self.depth_list[idx])
+        self.depth_t[idx] = np.vstack((self.depth_t[idx], scd))
+        if self.leye.is_cam_active() and self.reye.is_cam_active():
+            t_ro = np.array([theta, ro])
+            self.theta_ro[idx] = np.vstack((self.theta_ro[idx], t_ro))
    
     def __check_data_n_timestamp(self, sc, le, re, mode3D, thresh):
         if le is None and self.leye.is_cam_active():
