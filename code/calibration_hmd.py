@@ -23,10 +23,10 @@ class HMDCalibrator(QObject):
         QObject.__init__(self)
         ntargets  = v_targets * h_targets# + d_targets
         self.target_list = self.__generate_target_list(v_targets, h_targets)
-        self.depth_list  = self.__generate_depth_list(3, 3)
-        self.storer = ds.Storer(ntargets, self.target_list, self.depth_list, True)
+        self.storer = ds.Storer(ntargets, self.target_list, True)
         self.l_regressor = None
         self.r_regressor = None
+        self.z_regressor = None
         self.current_target = -1
         self.leye, self.reye = None, None
         self.samples = samples_per_tgt
@@ -74,7 +74,7 @@ class HMDCalibrator(QObject):
 
     def __generate_depth_list(self, rows, planes):
         target_list = []
-        for p in np.linspace(0.2,1, planes):
+        for p in np.linspace(0.3,1, planes):
             d = 1.0/p 
             for x in np.linspace(-1,1, rows):
                 target_list.append(np.array([x/d,0,p], dtype=np.float))
@@ -110,15 +110,26 @@ class HMDCalibrator(QObject):
         t = time.time()
         tgt = self.storer.depth_t
         while (len(tgt[idx]) < self.samples) and (time.time()-t < self.timeout):
-            theta = 0
-            ro = 0
-            self.storer.collect_depth_data(idx,theta,ro,self.mode3D,minfreq)
+            pred = self.__predict()
+            theta, ro = self.__get_theta_ro(pred)            
+            self.storer.collect_depth_data(idx,theta,ro,self.mode_3D,minfreq)
             tgt = self.storer.depth_t
             time.sleep(1/maxfreq)
         self.move_on.emit()
         print("number of samples collected: {}".format(
             len(self.storer.theta_ro[idx])))
-    
+        print('--------------------\n\n')
+
+    def __get_theta_ro(self, prediction):
+        le_data, re_data = pred[:2], pred[3:5]
+        vec = re_data - le_data
+        print('vec:', vec)
+        ro = np.sqrt(vec[0]**2 + vec[1]**2)
+        print('ro:', ro)
+        theta = np.arctan2(vec[1], vec[0])
+        print('theta:', theta)
+        return theta, ro
+        
     
     @Property('QVariantList')
     def target(self):
@@ -144,8 +155,11 @@ class HMDCalibrator(QObject):
             self.predictor.join()
         self.current_target = -1
 
+    @Slot()
     def start_depth_calibration(self):
         print('starting depth calibration')
+        self.depth_list  = self.__generate_depth_list(3, 3)
+        self.storer.set_target_list(self.depth_list)
         self.storer.initialize_depth_storage()
         self.current_target = -1
         
@@ -210,23 +224,25 @@ class HMDCalibrator(QObject):
         print("Gaze estimation finished")
         if self.storage:
             self.storer.store_calibration()
-        if self.l_regressor is not None or self.r_regressor is not None:
+        # if self.l_regressor is not None or self.r_regressor is not None:
+        #     self.stream = True
+        #     self.predictor = Thread(target=self.predict, args=())
+        #     self.predictor.start()
+
+    @Slot()
+    def perform_depth_estimation(self):
+        clf_z = self.__get_clf()
+        targets = self.storer.get_depth_t_list()
+        theta_ro = self.storer.get_theta_ro_list()
+        clf_z.fit(theta_ro, targets)
+        self.z_regressor = clf_z
+        print("Depth estimation finished")
+        #TODO
+        #code for storage
+        if self.z_regressor is not None:
             self.stream = True
             self.predictor = Thread(target=self.predict, args=())
             self.predictor.start()
-
-    # @Slot()
-    # def calibrate_depth(self):
-    #     for i in range(self.vergence.planes):
-    #         try:
-    #             msg = 'P:' + str(i)
-    #             self.socket.sendto(msg.encode(), (self.ip, self.port))
-    #             plane_calibrator = Thread(target=self.vergence.get_plane_data, args=(i,))
-    #             plane_calibrator.start()
-    #             plane_calibrator.join()
-    #         except Exception as e:
-    #             print('Could not send plane id:', e)
-    #     self.socket.sendto('F'.encode(), (self.ip, self.port))
 
 
     def predict(self):
@@ -252,21 +268,25 @@ class HMDCalibrator(QObject):
     def __predict(self):
         data = [-9,-9,-9,-9]
         pred = [-9,-9,-9,-9,-9,-9]
-        if self.l_regressor:
+        if self.l_regressor is not None:
             le = self.leye.get_processed_data()
             if le is not None:
                 input_data = le[:2].reshape(1,-1)
                 le_c = self.l_regressor.predict(input_data)[0]
                 data[0], data[1] = input_data[0]
                 pred[0], pred[1], pred[2] = float(le_c[0]), float(le_c[1]), float(le_c[2])
-        if self.r_regressor:
+        if self.r_regressor is not None:
             re = self.reye.get_processed_data()
             if re is not None:
                 input_data = re[:2].reshape(1,-1)
                 re_c = self.r_regressor.predict(input_data)[0]
                 data[2], data[3] = input_data[0]
                 pred[3], pred[4], pred[5] = float(re_c[0]), float(re_c[1]), float(re_c[2])
-        self.vergence.update(pred)
+            if self.z_regressor is not None and self.l_regressor is not None:
+                theta, ro = self.__get_theta_ro(pred)
+                input_data = np.array([theta, ro]).reshape(1,-1)
+                z = self.z_regressor(input_data)[0]
+                pred[2], pred[5] = float(z), float(z)
         if self.storage:
             l_gz, r_gz   = pred[:3], pred[3:]
             l_raw, r_raw = data[:2], data[2:]

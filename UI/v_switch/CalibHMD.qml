@@ -23,6 +23,7 @@ Item {
     }
 
     onMoveOn: {
+        recording = false;
         checkStateAndNextStep();
     }
 
@@ -97,7 +98,7 @@ Item {
             //calibration ended
             if (target[0] === -9 && target[1] === -9) {
                 console.log("calibration ended");
-                calibHMD.perform_estimation();
+                calibHMD.perform_depth_estimation();
                 reset();
             }
             stalling = false;
@@ -110,7 +111,7 @@ Item {
             var freq_reye = rightEyeCam.current_fps;
             var max_freq  = Math.max(freq_leye, freq_reye);
             var min_freq  = Math.min(freq_leye, freq_reye);
-            calibHMD.collect_data(min_freq, max_freq);
+            calibHMD.collect_depth_data(min_freq, max_freq);
         }
     }
 

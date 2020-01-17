@@ -10,10 +10,9 @@ class Storer():
     -> 3D: x_p, y_p, z_p, x_n, y_n, z_n, time
     '''
 
-    def __init__(self, ntargets, target_list, depth_list, hmd=False):
+    def __init__(self, ntargets, target_list, hmd=False):
         self.ntargets = ntargets
         self.target_list = target_list
-        self.depth_list = depth_list
         self.targets, self.l_centers, self.r_centers = None, None, None
         self.depth_t, self.theta_ro = None, None
         self.t_imgs, self.l_imgs, self.r_imgs = None, None, None
@@ -40,6 +39,9 @@ class Storer():
         self.scene = scene
         self.leye  = leye
         self.reye  = reye
+
+    def set_target_list(self, target_list):
+        self.target_list = target_list
 
     def collect_depth_data(self, idx, theta, ro, mode3D, minfreq):
         le = self.leye.get_processed_data()
@@ -82,7 +84,7 @@ class Storer():
             self.r_imgs[idx].append(re)
 
     def __add_depth_data(self, theta, ro, idx):
-        scd = np.array(self.depth_list[idx])
+        scd = np.array(self.target_list[idx])
         self.depth_t[idx] = np.vstack((self.depth_t[idx], scd))
         if self.leye.is_cam_active() and self.reye.is_cam_active():
             t_ro = np.array([theta, ro])
@@ -119,6 +121,12 @@ class Storer():
 
     def get_targets_list(self):
         return self.__dict_to_list(self.targets)
+
+    def get_depth_t_list(self):
+        return self.__dict_to_list(self.depth_t)
+
+    def get_theta_ro_list(self):
+        return self.__dict_to_list(self.theta_ro)
 
     def get_l_centers_list(self, mode_3D):
         data = self.__dict_to_list(self.l_centers)
