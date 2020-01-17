@@ -21,7 +21,7 @@ class Calibrator(QObject):
         QObject.__init__(self)
         ntargets  = v_targets * h_targets
         self.target_list = self.__generate_target_list(v_targets, h_targets)
-        self.storer = ds.Storer(ntargets, self.target_list)
+        self.storer = ds.Storer(self.target_list)
         self.l_regressor = None
         self.r_regressor = None
         self.current_target = -1
@@ -81,7 +81,7 @@ class Calibrator(QObject):
     @Slot()
     def start_calibration(self):
         print('reseting calibration')
-        self.storer.initialize_storage()
+        self.storer.initialize_storage(len(self.target_list))
         self.l_regressor = None
         self.r_regressor = None
         self.current_target = -1

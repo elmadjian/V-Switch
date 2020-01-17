@@ -10,30 +10,30 @@ class Storer():
     -> 3D: x_p, y_p, z_p, x_n, y_n, z_n, time
     '''
 
-    def __init__(self, ntargets, target_list, hmd=False):
-        self.ntargets = ntargets
+    def __init__(self, target_list, hmd=False):
         self.target_list = target_list
         self.targets, self.l_centers, self.r_centers = None, None, None
-        self.depth_t, self.theta_ro = None, None
+        self.depth_t, self.dist = None, None#self.theta_ro = None, None
         self.t_imgs, self.l_imgs, self.r_imgs = None, None, None
         self.l_sess, self.r_sess, self.l_raw, self.r_raw = [],[],[],[]
         self.hmd = hmd
-        self.initialize_storage()
+        #self.initialize_storage()
         self.scene, self.leye, self.reye = None, None, None
    
-    def initialize_storage(self):
-        self.targets = {i:np.empty((0,2), dtype='float32') for i in range(self.ntargets)}
+    def initialize_storage(self, ntargets):
+        self.targets = {i:np.empty((0,2), dtype='float32') for i in range(ntargets)}
         if self.hmd:
-            self.targets = {i:np.empty((0,3), dtype='float32') for i in range(self.ntargets)}
-        self.l_centers = {i:np.empty((0,6), dtype='float32') for i in range(self.ntargets)}
-        self.r_centers = {i:np.empty((0,6), dtype='float32') for i in range(self.ntargets)}
-        self.t_imgs = {i:[] for i in range(self.ntargets)}
-        self.l_imgs = {i:[] for i in range(self.ntargets)}
-        self.r_imgs = {i:[] for i in range(self.ntargets)}
+            self.targets = {i:np.empty((0,3), dtype='float32') for i in range(ntargets)}
+        self.l_centers = {i:np.empty((0,6), dtype='float32') for i in range(ntargets)}
+        self.r_centers = {i:np.empty((0,6), dtype='float32') for i in range(ntargets)}
+        self.t_imgs = {i:[] for i in range(ntargets)}
+        self.l_imgs = {i:[] for i in range(ntargets)}
+        self.r_imgs = {i:[] for i in range(ntargets)}
     
-    def initialize_depth_storage(self):
-        self.depth_t = {i:np.empty((0,3), dtype='float32') for i in range(self.ntargets)}
-        self.theta_ro = {i:np.empty((0,2), dtype='float32') for i in range(self.ntargets)}
+    def initialize_depth_storage(self, ntargets):
+        self.depth_t = {i:np.empty((0,1), dtype='float32') for i in range(ntargets)}
+        #self.theta_ro = {i:np.empty((0,2), dtype='float32') for i in range(self.ntargets)}
+        self.dist = {i:np.empty((0,1), dtype='float32') for i in range(ntargets)}
 
     def set_sources(self, scene, leye, reye):
         self.scene = scene
@@ -43,11 +43,12 @@ class Storer():
     def set_target_list(self, target_list):
         self.target_list = target_list
 
-    def collect_depth_data(self, idx, theta, ro, mode3D, minfreq):
+    #def collect_depth_data(self, idx, theta, ro, mode3D, minfreq):
+    def collect_depth_data(self, idx, dist, mode3D, minfreq):
         le = self.leye.get_processed_data()
         re = self.reye.get_processed_data()
         if self.__check_data_n_timestamp(None, le, re, mode3D, 1/minfreq):
-            self.__add_depth_data(theta, ro, idx)
+            self.__add_depth_data(dist, idx)
 
 
     def collect_data(self, idx, mode3D, minfreq):
@@ -83,12 +84,14 @@ class Storer():
         if self.reye.is_cam_active():
             self.r_imgs[idx].append(re)
 
-    def __add_depth_data(self, theta, ro, idx):
-        scd = np.array(self.target_list[idx])
+    #def __add_depth_data(self, theta, ro, idx):
+    def __add_depth_data(self, dist, idx):
+        scd = np.array(self.target_list[idx][2])
         self.depth_t[idx] = np.vstack((self.depth_t[idx], scd))
         if self.leye.is_cam_active() and self.reye.is_cam_active():
-            t_ro = np.array([theta, ro])
-            self.theta_ro[idx] = np.vstack((self.theta_ro[idx], t_ro))
+            #t_ro = np.array([theta, ro])
+            d = np.array([dist])
+            self.dist[idx] = np.vstack((self.dist[idx], d))
    
     def __check_data_n_timestamp(self, sc, le, re, mode3D, thresh):
         if le is None and self.leye.is_cam_active():
@@ -125,8 +128,10 @@ class Storer():
     def get_depth_t_list(self):
         return self.__dict_to_list(self.depth_t)
 
-    def get_theta_ro_list(self):
-        return self.__dict_to_list(self.theta_ro)
+    # def get_theta_ro_list(self):
+    #     return self.__dict_to_list(self.theta_ro)
+    def get_dist_list(self):
+        return self.__dict_to_list(self.dist)
 
     def get_l_centers_list(self, mode_3D):
         data = self.__dict_to_list(self.l_centers)

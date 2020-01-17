@@ -97,7 +97,7 @@ Item {
 
             //calibration ended
             if (target[0] === -9 && target[1] === -9) {
-                console.log("calibration ended");
+                console.log("depth calibration ended");
                 calibHMD.perform_depth_estimation();
                 reset();
             }

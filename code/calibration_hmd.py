@@ -21,9 +21,8 @@ class HMDCalibrator(QObject):
         frequency: value of the tracker's frequency in Hz
         '''
         QObject.__init__(self)
-        ntargets  = v_targets * h_targets# + d_targets
         self.target_list = self.__generate_target_list(v_targets, h_targets)
-        self.storer = ds.Storer(ntargets, self.target_list, True)
+        self.storer = ds.Storer(self.target_list, True)
         self.l_regressor = None
         self.r_regressor = None
         self.z_regressor = None
@@ -37,6 +36,7 @@ class HMDCalibrator(QObject):
         self.vergence = None
         self.mode_3D = False
         self.storage = False
+        self.depth_buffer = []
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(("127.0.0.1", 50021))
         self.ip, self.port = self.load_network_options()
@@ -72,15 +72,16 @@ class HMDCalibrator(QObject):
         # target_list.append(np.array([0.5,0.4,0.6], dtype=np.float32))
         return target_list
 
-    def __generate_depth_list(self, rows, planes):
+    def __generate_depth_list(self, nz):
         target_list = []
-        for p in np.linspace(0.3,1, planes):
-            d = 1.0/p 
-            for x in np.linspace(-1,1, rows):
-                target_list.append(np.array([x/d,0,p], dtype=np.float))
-        seed = np.random.randint(0,99)
-        rnd  = np.random.RandomState(seed)
-        rnd.shuffle(target_list)
+        for p in np.linspace(0.25,1, nz):
+            target_list.append(np.array([0,0,p], dtype=np.float))
+            # d = 1.0/p 
+            # for x in np.linspace(-1,1, rows):
+            #     target_list.append(np.array([x/d,0,p], dtype=np.float))
+        # seed = np.random.randint(0,99)
+        # rnd  = np.random.RandomState(seed)
+        # rnd.shuffle(target_list)
         return target_list
 
 
@@ -111,24 +112,22 @@ class HMDCalibrator(QObject):
         tgt = self.storer.depth_t
         while (len(tgt[idx]) < self.samples) and (time.time()-t < self.timeout):
             pred = self.__predict()
-            theta, ro = self.__get_theta_ro(pred)            
-            self.storer.collect_depth_data(idx,theta,ro,self.mode_3D,minfreq)
+            #theta, ro = self.__get_theta_ro(pred)            
+            dist = self.__get_dist(pred)
+            #self.storer.collect_depth_data(idx,theta,ro,self.mode_3D,minfreq)
+            self.storer.collect_depth_data(idx, dist, self.mode_3D, minfreq)
             tgt = self.storer.depth_t
             time.sleep(1/maxfreq)
         self.move_on.emit()
         print("number of samples collected: {}".format(
             len(self.storer.theta_ro[idx])))
-        print('--------------------\n\n')
 
-    def __get_theta_ro(self, prediction):
-        le_data, re_data = pred[:2], pred[3:5]
+    def __get_dist(self, pred):
+        le_data, re_data = np.array(pred[:2]), np.array(pred[3:5])
         vec = re_data - le_data
-        print('vec:', vec)
-        ro = np.sqrt(vec[0]**2 + vec[1]**2)
-        print('ro:', ro)
-        theta = np.arctan2(vec[1], vec[0])
-        print('theta:', theta)
-        return theta, ro
+        dist = np.sqrt(vec[0]**2 + vec[1]**2)
+        #theta = np.arctan2(vec[1], vec[0])
+        return dist
         
     
     @Property('QVariantList')
@@ -143,11 +142,11 @@ class HMDCalibrator(QObject):
         if self.current_target >= len(self.depth_list):
             return [-9,-9]
         tgt = self.depth_list[self.current_target]
-        return [float(tgt[0]), float(tgt[1])]
+        return [float(tgt[0]), float(tgt[0])]
 
     def start_calibration(self):
         print('resetting calibration')
-        self.storer.initialize_storage()
+        self.storer.initialize_storage(len(self.target_list))
         self.l_regressor = None
         self.r_regressor = None
         if self.predictor is not None:
@@ -158,9 +157,9 @@ class HMDCalibrator(QObject):
     @Slot()
     def start_depth_calibration(self):
         print('starting depth calibration')
-        self.depth_list  = self.__generate_depth_list(3, 3)
+        self.depth_list  = self.__generate_depth_list(6)
         self.storer.set_target_list(self.depth_list)
-        self.storer.initialize_depth_storage()
+        self.storer.initialize_depth_storage(len(self.depth_list))
         self.current_target = -1
         
 
@@ -233,8 +232,14 @@ class HMDCalibrator(QObject):
     def perform_depth_estimation(self):
         clf_z = self.__get_clf()
         targets = self.storer.get_depth_t_list()
-        theta_ro = self.storer.get_theta_ro_list()
-        clf_z.fit(theta_ro, targets)
+        #theta_ro = self.storer.get_theta_ro_list()
+        dist = self.storer.get_dist_list()
+        clf_z.fit(dist, targets)
+        print('fitting with:')
+        for i in range(6*60):
+            if i %60 == 0:
+                print('--------------------------\n')
+            print('theta_ro:', dist[i], 'target:', targets[i])
         self.z_regressor = clf_z
         print("Depth estimation finished")
         #TODO
@@ -254,8 +259,11 @@ class HMDCalibrator(QObject):
                     data = self.__predict()
                     x1, y1, z1 = data[0], data[1], data[2]
                     x2, y2, z2 = data[3], data[4], data[5]
-                    x1, y1, z1 = '{:.8f}'.format(x1), '{:.8f}'.format(y1), '{:.8f}'.format(z1)
-                    x2, y2, z2 = '{:.8f}'.format(x2), '{:.8f}'.format(y2), '{:.8f}'.format(z2)
+                    z = self.__get_depth_val(z1)
+                    d = 1.0/z
+                    print('sending z:', z)
+                    x1, y1, z1 = '{:.8f}'.format(x1/d), '{:.8f}'.format(y1/d), '{:.8f}'.format(z)
+                    x2, y2, z2 = '{:.8f}'.format(x2/d), '{:.8f}'.format(y2/d), '{:.8f}'.format(z)
                     msg = 'G:'+x1+':'+y1+':'+z1+':'+x2+':'+y2+':'+z2
                     self.socket.sendto(msg.encode(), (self.ip, self.port))
             except Exception as e:
@@ -283,15 +291,25 @@ class HMDCalibrator(QObject):
                 data[2], data[3] = input_data[0]
                 pred[3], pred[4], pred[5] = float(re_c[0]), float(re_c[1]), float(re_c[2])
             if self.z_regressor is not None and self.l_regressor is not None:
-                theta, ro = self.__get_theta_ro(pred)
-                input_data = np.array([theta, ro]).reshape(1,-1)
-                z = self.z_regressor(input_data)[0]
-                pred[2], pred[5] = float(z), float(z)
+                #theta, ro = self.__get_theta_ro(pred)
+                dist = self.__get_dist(pred)
+                #input_data = np.array([theta, ro]).reshape(1,-1)
+                input_data = np.array([dist]).reshape(1,-1)
+                z = self.z_regressor.predict(input_data)[0]
+                pred[2], pred[5] = float(z[0]), float(z[0])
         if self.storage:
             l_gz, r_gz   = pred[:3], pred[3:]
             l_raw, r_raw = data[:2], data[2:]
             self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
         return pred
+
+    def __get_depth_val(self, curr):
+        self.depth_buffer.append(curr)
+        if len(self.depth_buffer) < 30:
+            return 1.0
+        else:
+            self.depth_buffer.pop(0)
+            return np.median(self.depth_buffer)
 
 
 
