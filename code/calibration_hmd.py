@@ -74,7 +74,7 @@ class HMDCalibrator(QObject):
 
     def __generate_depth_list(self, nz):
         target_list = []
-        for p in np.linspace(0.25,1, nz):
+        for p in np.linspace(0.15,1, nz):
             target_list.append(np.array([0,0,p], dtype=np.float))
             # d = 1.0/p 
             # for x in np.linspace(-1,1, rows):
@@ -111,22 +111,19 @@ class HMDCalibrator(QObject):
         t = time.time()
         tgt = self.storer.depth_t
         while (len(tgt[idx]) < self.samples) and (time.time()-t < self.timeout):
-            pred = self.__predict()
-            #theta, ro = self.__get_theta_ro(pred)            
+            pred = self.__predict()         
             dist = self.__get_dist(pred)
-            #self.storer.collect_depth_data(idx,theta,ro,self.mode_3D,minfreq)
             self.storer.collect_depth_data(idx, dist, self.mode_3D, minfreq)
             tgt = self.storer.depth_t
             time.sleep(1/maxfreq)
         self.move_on.emit()
         print("number of samples collected: {}".format(
-            len(self.storer.theta_ro[idx])))
+            len(self.storer.dist[idx])))
 
     def __get_dist(self, pred):
         le_data, re_data = np.array(pred[:2]), np.array(pred[3:5])
         vec = re_data - le_data
         dist = np.sqrt(vec[0]**2 + vec[1]**2)
-        #theta = np.arctan2(vec[1], vec[0])
         return dist
         
     
@@ -157,7 +154,7 @@ class HMDCalibrator(QObject):
     @Slot()
     def start_depth_calibration(self):
         print('starting depth calibration')
-        self.depth_list  = self.__generate_depth_list(6)
+        self.depth_list  = self.__generate_depth_list(5)
         self.storer.set_target_list(self.depth_list)
         self.storer.initialize_depth_storage(len(self.depth_list))
         self.current_target = -1
@@ -232,14 +229,8 @@ class HMDCalibrator(QObject):
     def perform_depth_estimation(self):
         clf_z = self.__get_clf()
         targets = self.storer.get_depth_t_list()
-        #theta_ro = self.storer.get_theta_ro_list()
         dist = self.storer.get_dist_list()
         clf_z.fit(dist, targets)
-        print('fitting with:')
-        for i in range(6*60):
-            if i %60 == 0:
-                print('--------------------------\n')
-            print('theta_ro:', dist[i], 'target:', targets[i])
         self.z_regressor = clf_z
         print("Depth estimation finished")
         #TODO
@@ -261,7 +252,7 @@ class HMDCalibrator(QObject):
                     x2, y2, z2 = data[3], data[4], data[5]
                     z = self.__get_depth_val(z1)
                     d = 1.0/z
-                    print('sending z:', z)
+                    #print('sending z:', z)
                     x1, y1, z1 = '{:.8f}'.format(x1/d), '{:.8f}'.format(y1/d), '{:.8f}'.format(z)
                     x2, y2, z2 = '{:.8f}'.format(x2/d), '{:.8f}'.format(y2/d), '{:.8f}'.format(z)
                     msg = 'G:'+x1+':'+y1+':'+z1+':'+x2+':'+y2+':'+z2
