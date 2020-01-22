@@ -67,21 +67,12 @@ class HMDCalibrator(QObject):
         seed = np.random.randint(0,99)
         rnd  = np.random.RandomState(seed)
         rnd.shuffle(target_list)
-        #DEBUG
-        #for x in np.linspace(0.3, 0.7, d):
-        # target_list.append(np.array([0.5,0.4,0.6], dtype=np.float32))
         return target_list
 
     def __generate_depth_list(self, nz):
         target_list = []
         for p in np.linspace(0.15,1, nz):
             target_list.append(np.array([0,0,p], dtype=np.float))
-            # d = 1.0/p 
-            # for x in np.linspace(-1,1, rows):
-            #     target_list.append(np.array([x/d,0,p], dtype=np.float))
-        # seed = np.random.randint(0,99)
-        # rnd  = np.random.RandomState(seed)
-        # rnd.shuffle(target_list)
         return target_list
 
 
@@ -166,7 +157,6 @@ class HMDCalibrator(QObject):
             self.collector.join()
         self.current_target += 1
         if self.current_target >= len(self.target_list):
-            #self.socket.sendto("F".encode(), (self.ip, self.port))
             self.socket.sendto("D".encode(), (self.ip, self.port))
             return
         tgt = self.target_list[self.current_target]
@@ -220,10 +210,6 @@ class HMDCalibrator(QObject):
         print("Gaze estimation finished")
         if self.storage:
             self.storer.store_calibration()
-        # if self.l_regressor is not None or self.r_regressor is not None:
-        #     self.stream = True
-        #     self.predictor = Thread(target=self.predict, args=())
-        #     self.predictor.start()
 
     @Slot()
     def perform_depth_estimation(self):
@@ -233,8 +219,9 @@ class HMDCalibrator(QObject):
         clf_z.fit(dist, targets)
         self.z_regressor = clf_z
         print("Depth estimation finished")
-        #TODO
-        #code for storage
+        #
+        #TODO: code for storage
+        #
         if self.z_regressor is not None:
             self.stream = True
             self.predictor = Thread(target=self.predict, args=())
@@ -252,7 +239,6 @@ class HMDCalibrator(QObject):
                     x2, y2, z2 = data[3], data[4], data[5]
                     z = self.__get_depth_val(z1)
                     d = 1.0/z
-                    #print('sending z:', z)
                     x1, y1, z1 = '{:.8f}'.format(x1/d), '{:.8f}'.format(y1/d), '{:.8f}'.format(z)
                     x2, y2, z2 = '{:.8f}'.format(x2/d), '{:.8f}'.format(y2/d), '{:.8f}'.format(z)
                     msg = 'G:'+x1+':'+y1+':'+z1+':'+x2+':'+y2+':'+z2
@@ -282,9 +268,7 @@ class HMDCalibrator(QObject):
                 data[2], data[3] = input_data[0]
                 pred[3], pred[4], pred[5] = float(re_c[0]), float(re_c[1]), float(re_c[2])
             if self.z_regressor is not None and self.l_regressor is not None:
-                #theta, ro = self.__get_theta_ro(pred)
                 dist = self.__get_dist(pred)
-                #input_data = np.array([theta, ro]).reshape(1,-1)
                 input_data = np.array([dist]).reshape(1,-1)
                 z = self.z_regressor.predict(input_data)[0]
                 pred[2], pred[5] = float(z[0]), float(z[0])

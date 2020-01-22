@@ -68,9 +68,6 @@ Window {
                     calibTarget.visible = false;
                     calibTargetOverlay.opacity = 0;
                     estimationMessage.opacity = 1;
-                    if (switchStore.checked) {
-                        calibControl.store_data();
-                    }
                     calibControl.perform_estimation();
                     reset();
                 }

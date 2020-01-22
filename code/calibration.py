@@ -154,8 +154,7 @@ class Calibrator(QObject):
 
     @Slot()
     def save_session(self):
-        if self.storage:
-            self.storer.store_session()
+        self.storer.store_session()
 
 
     def __get_clf(self):

@@ -17,8 +17,8 @@ class Storer():
         self.t_imgs, self.l_imgs, self.r_imgs = None, None, None
         self.l_sess, self.r_sess, self.l_raw, self.r_raw = [],[],[],[]
         self.hmd = hmd
-        #self.initialize_storage()
         self.scene, self.leye, self.reye = None, None, None
+        self.uid = time.ctime().replace(':', '_')
    
     def initialize_storage(self, ntargets):
         self.targets = {i:np.empty((0,2), dtype='float32') for i in range(ntargets)}
@@ -32,7 +32,6 @@ class Storer():
     
     def initialize_depth_storage(self, ntargets):
         self.depth_t = {i:np.empty((0,1), dtype='float32') for i in range(ntargets)}
-        #self.theta_ro = {i:np.empty((0,2), dtype='float32') for i in range(self.ntargets)}
         self.dist = {i:np.empty((0,1), dtype='float32') for i in range(ntargets)}
 
     def set_sources(self, scene, leye, reye):
@@ -43,7 +42,6 @@ class Storer():
     def set_target_list(self, target_list):
         self.target_list = target_list
 
-    #def collect_depth_data(self, idx, theta, ro, mode3D, minfreq):
     def collect_depth_data(self, idx, dist, mode3D, minfreq):
         le = self.leye.get_processed_data()
         re = self.reye.get_processed_data()
@@ -84,12 +82,10 @@ class Storer():
         if self.reye.is_cam_active():
             self.r_imgs[idx].append(re)
 
-    #def __add_depth_data(self, theta, ro, idx):
     def __add_depth_data(self, dist, idx):
         scd = np.array(self.target_list[idx][2])
         self.depth_t[idx] = np.vstack((self.depth_t[idx], scd))
         if self.leye.is_cam_active() and self.reye.is_cam_active():
-            #t_ro = np.array([theta, ro])
             d = np.array([dist])
             self.dist[idx] = np.vstack((self.dist[idx], d))
    
@@ -128,8 +124,6 @@ class Storer():
     def get_depth_t_list(self):
         return self.__dict_to_list(self.depth_t)
 
-    # def get_theta_ro_list(self):
-    #     return self.__dict_to_list(self.theta_ro)
     def get_dist_list(self):
         return self.__dict_to_list(self.dist)
 
@@ -183,13 +177,8 @@ class Storer():
 
     def __check_or_create_path(self, spec):
         '''
-        spec -> type of data to save: 'session' or 'calibration'
+        spec -> either 'calibration' or 'session'
         '''
-        uid = time.ctime()
-        path = os.getcwd() + "/data/"+uid+"/"+spec
-        while os.path.exists(path):
-            time.sleep(1)
-            uid = time.ctime()
-            path = os.getcwd() + "/data/"+uid+"/"+spec
+        path = os.getcwd() + "/data/"+self.uid+"/"+spec+"/"
         os.makedirs(path)
         return path
