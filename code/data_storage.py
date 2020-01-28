@@ -13,7 +13,7 @@ class Storer():
     def __init__(self, target_list, hmd=False):
         self.target_list = target_list
         self.targets, self.l_centers, self.r_centers = None, None, None
-        self.depth_t, self.dist = None, None#self.theta_ro = None, None
+        self.depth_t, self.dist = None, None
         self.t_imgs, self.l_imgs, self.r_imgs = None, None, None
         self.l_sess, self.r_sess, self.l_raw, self.r_raw = [],[],[],[]
         self.hmd = hmd

@@ -121,6 +121,22 @@ class Calibrator(QObject):
 
     @Property('QVariantList')
     def predict(self):
+        data, pred = [], []
+        if self.mode_3D:
+            data, pred = self.__predict3d()
+            if self.storage:
+                l_gz, r_gz   = pred[:2], pred[2:]
+                l_raw, r_raw = data[:6], data[6:]
+                self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
+        else:
+            data, pred = self.__predict2d()
+            if self.storage:
+                l_gz, r_gz   = pred[:2], pred[2:]
+                l_raw, r_raw = data[:2], data[2:]
+                self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
+        return pred
+
+    def __predict2d(self):
         data = [-1,-1,-1,-1]
         pred = [-1,-1,-1,-1]
         if self.l_regressor:
@@ -137,11 +153,27 @@ class Calibrator(QObject):
                 re_coord = self.r_regressor.predict(input_data)[0]
                 data[2], data[3] = input_data[0]
                 pred[2], pred[3] = float(re_coord[0]), float(re_coord[1])
-        if self.storage:
-            l_gz, r_gz   = pred[:2], pred[2:]
-            l_raw, r_raw = data[:2], data[2:]
-            self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
-        return pred
+        return data, pred
+
+
+    def __predict3d(self):
+        d = [-1 for i in range(12)]
+        pred = [-1,-1,-1,-1]
+        if self.l_regressor:
+            le = self.leye.get_processed_data()
+            if le is not None:
+                input_data = le[:6].reshape(1,-1)
+                le_coord = self.l_regressor.predict(input_data)[0]
+                d[0], d[1], d[2], d[3], d[4], d[5] = input_data[0]
+                pred[0], pred[1] = float(le_coord[0]), float(le_coord[1])
+        if self.r_regressor:
+            re = self.reye.get_processed_data()
+            if re is not None:
+                input_data = re[:6].reshape(1,-1)
+                re_coord = self.r_regressor.predict(input_data)[0]
+                d[6], d[7], d[8], d[9], d[10], d[11] = input_data[0]
+                pred[2], pred[3] = float(re_coord[0]), float(re_coord[1])
+        return d, pred
 
 
     @Slot()

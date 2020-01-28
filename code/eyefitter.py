@@ -199,7 +199,6 @@ class EyeFitter():
         cv2.line(img, ell_center, dest_pos, (0,0,255), 2)
         cv2.line(img, ell_center, dest_neg, (255,100,0), 2)
         # if self.eyeball is not None:
-        #     print('entrei')
         #     gazes = [self.curr_state['gaze_pos'], self.curr_state['gaze_neg']]
         #     posis = [self.curr_state['pupil3D_pos'],self.curr_state['pupil3D_neg']]
         #     gaze, position = self.select_pupil(gazes, posis, self.eyeball)
@@ -227,9 +226,9 @@ class EyeFitter():
             data = self.__check_z_consistency(unprojected_data)
             data = self.__check_polarity_consistency(data)
             pos,neg,tc_pos,tc_neg = data
-            print('pos:{: .3f} {: .3f} {: .3f}'.format(pos[0][0], pos[1][0], pos[2][0]))
-            print('neg:{: .3f} {: .3f} {: .3f}'.format(neg[0][0], neg[1][0], neg[2][0]))
-            print('-----------')
+            # print('pos:{: .3f} {: .3f} {: .3f}'.format(pos[0][0], pos[1][0], pos[2][0]))
+            # print('neg:{: .3f} {: .3f} {: .3f}'.format(neg[0][0], neg[1][0], neg[2][0]))
+            # print('-----------')
             self.curr_state['gaze_pos'] = pos
             self.curr_state['gaze_neg'] = neg
             self.curr_state['pupil3D_pos'] = tc_pos
