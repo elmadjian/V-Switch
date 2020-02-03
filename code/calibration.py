@@ -104,7 +104,9 @@ class Calibrator(QObject):
         future predictions. Based on Gaussian Processes regression.
         '''
         clf_l = self.__get_clf()
-        clf_r = self.__get_clf()                                  
+        clf_r = self.__get_clf()     
+        st, sl, sr = self.storer.get_random_test_samples(
+            self.samples, len(self.target_list))                             
         targets = self.storer.get_targets_list()
         if self.leye.is_cam_active():                                       
             l_centers = self.storer.get_l_centers_list(self.mode_3D)
@@ -135,6 +137,10 @@ class Calibrator(QObject):
                 l_raw, r_raw = data[:2], data[2:]
                 self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
         return pred
+
+
+    #def __test_calibration(self, st, sl, sr):
+
 
     def __predict2d(self):
         data = [-1,-1,-1,-1]

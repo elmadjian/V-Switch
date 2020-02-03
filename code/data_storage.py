@@ -133,11 +133,30 @@ class Storer():
             data = np.array(data[:,:2])
         return data
 
-    def get_r_centers_list(self,mode_3D):
+    def get_r_centers_list(self, mode_3D):
         data = self.__dict_to_list(self.r_centers)
         if not mode_3D:
             data = np.array(data[:,:2])
         return data
+
+    def get_random_test_samples(self, nsamples, ntargets):
+        s_target = {i:np.empty((0,3), dtype='float32') for i in range(ntargets)}
+        s_left   = {i:np.empty((0,6), dtype='float32') for i in range(ntargets)}
+        s_right  = {i:np.empty((0,6), dtype='float32') for i in range(ntargets)}
+        distribution = [i for i in range(nsamples)]
+        candidates = np.random.choice(distribution, 5, False)
+        for t in self.targets.keys():
+            targ  = np.take(self.targets[t], candidates)
+            left  = np.take(self.l_centers[t], candidates)
+            right = np.take(self.r_centers[t], candidates)
+            self.targets[t] = np.delete(self.targets[t], candidates)
+            self.l_centers[t] = np.delete(self.l_centers[t], candidates)
+            self.r_centers[t] = np.delete(self.r_centers[t], candidates)
+            s_target[t] = targ
+            s_left[t]   = left
+            s_right[t]  = right
+        return s_target, s_left, s_right            
+
 
     def append_session_data(self, l_gaze, r_gaze, l_raw, r_raw):
         self.l_sess.append(l_gaze)
