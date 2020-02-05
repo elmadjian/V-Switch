@@ -38,7 +38,7 @@ class HMDCalibrator(QObject):
         self.storage = False
         self.depth_buffer = []
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind(("127.0.0.1", 50021))
+        self.socket.bind(("0.0.0.0", 50021))
         self.ip, self.port = self.load_network_options()
 
 
@@ -315,15 +315,16 @@ class HMDCalibrator(QObject):
 
     @Slot()
     def connect(self):
-        self.socket.settimeout(4)
-        self.socket.sendto('C'.encode(), (self.ip, self.port))
+        self.socket.settimeout(10)
         try:
+            self.socket.sendto('C'.encode(), (self.ip, self.port))
             response = self.socket.recv(1024).decode()
             if response:
                 self.conn_status.emit(True)
                 self.start_calibration()
-        except Exception:
+        except Exception as e:
             self.conn_status.emit(False)
+            print("Connection error:", e)
 
     @Slot()
     def toggle_3D(self):
