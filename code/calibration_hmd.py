@@ -71,7 +71,7 @@ class HMDCalibrator(QObject):
 
     def __generate_depth_list(self, nz):
         target_list = []
-        for p in np.linspace(0.15,1, nz):
+        for p in np.logspace(0.36,1, nz)/10.0:
             target_list.append(np.array([0,0,p], dtype=np.float))
         return target_list
 
