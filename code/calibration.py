@@ -12,6 +12,7 @@ from threading import Thread
 class Calibrator(QObject):
 
     move_on = Signal()
+    draw_estimation = Signal('QVariantList', 'QVariantList', 'QVariantList')
 
     def __init__(self, v_targets, h_targets, samples_per_tgt, timeout):
         '''
@@ -31,6 +32,18 @@ class Calibrator(QObject):
         self.collector = None
         self.mode_3D = False
         self.storage = False
+
+
+    #DEBUG
+    @Slot()
+    def testinho(self):
+        print('entrando no testinho')
+        a = np.array([[0.1,0.1],[0.5,0.5],[0.75,0.75]])
+        b = np.array([[0.11,0.11],[0.51,0.51],[0.74,0.74]])
+        c = np.array([[0.09,0.09],[0.49,0.48],[0.76,0.77]])
+        print('emitindo sinal')
+        self.draw_estimation.emit(a.tolist(),b.tolist(),c.tolist())
+        #self.draw_calibration.emit(a.tolist())
 
     def set_sources(self, scene, leye, reye):
         self.scene = scene
@@ -117,6 +130,7 @@ class Calibrator(QObject):
             clf_r.fit(r_centers, targets)
             self.r_regressor = clf_r
         print("Gaze estimation finished")
+        self.__test_calibration(st, sl, sr)
         if self.storage:
             self.storer.store_calibration()
             
@@ -140,13 +154,32 @@ class Calibrator(QObject):
 
 
     def __test_calibration(self, st, sl, sr):
+        le_error, re_error = [],[]
+        tgt_mean, le_mean, re_mean = [],[],[]
         for t in st.keys():
-            print('key:', t)
-            [print('target ->', i) for i in st[t]]
-            [print('left_eye ->', i) for i in sl[t]]
-            [print('right_eye->', i) for i in sr[t]]
-            
+            le_pred, re_pred = self.__predict_batch_2D(sl[t], sr[t])
+            tmean = np.mean(st[t], axis=0)
+            lmean = np.mean(le_pred, axis=0)
+            rmean = np.mean(re_pred, axis=0)
+            le_error.append(np.linalg.norm(lmean-tmean))
+            re_error.append(np.linalg.norm(rmean-tmean))
+            tgt_mean.append(tmean)
+            le_mean.append(lmean)
+            re_mean.append(rmean)
 
+
+        
+
+
+    def __predict_batch_2D(self, le, re):
+        le_pred, re_pred = None, None
+        if self.l_regressor and le is not None:
+            input_data = le[:,:2]
+            le_pred = self.l_regressor.predict(input_data)
+        if self.r_regressor and re is not None:
+            input_data = re[:,:2]
+            re_pred = self.r_regressor.predict(input_data)
+        return le_pred, re_pred
 
     def __predict2d(self):
         data = [-1,-1,-1,-1]

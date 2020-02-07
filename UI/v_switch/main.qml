@@ -66,8 +66,8 @@ Window {
                 }
                 else if (textAt(index) === "No feed") {
                     sceneGroup.video?
-                        camManager.stop_scene_cam(true) :
-                        camManager.stop_scene_cam(false);
+                                camManager.stop_scene_cam(true) :
+                                camManager.stop_scene_cam(false);
                     sceneImage.source = "../imgs/novideo.png";
                 }
                 else {
@@ -196,8 +196,8 @@ Window {
                 }
                 else if (textAt(index) === "No feed") {
                     leftEyeGroup.video?
-                        camManager.stop_leye_cam(true):
-                        camManager.stop_leye_cam(false);
+                                camManager.stop_leye_cam(true):
+                                camManager.stop_leye_cam(false);
                     leyeImage.source = "../imgs/novideo.png";
                 }
                 else {
@@ -269,7 +269,7 @@ Window {
             text: "Right Eye Camera"
             font.weight: Font.Light
         }
-         property bool video: false
+        property bool video: false
 
         ComboBox {
             id: rightEyeBox
@@ -285,8 +285,8 @@ Window {
                 }
                 else if (textAt(index) === "No feed") {
                     rightEyeGroup.video?
-                        camManager.stop_reye_cam(true):
-                        camManager.stop_reye_cam(false);
+                                camManager.stop_reye_cam(true):
+                                camManager.stop_reye_cam(false);
                     reyeImage.source = "../imgs/novideo.png";
                 }
                 else {
@@ -391,194 +391,8 @@ Window {
     CALIBRATION CONTOL
     ------------------ */
     GroupBox {
-        id: calibrationSettings
-        x: 30
-        y: 16
-        width: 415
-        height: 110
-        label: Text {
-            color:"gray"
-            text:"Calibration Settings"
-        }
-        ColumnLayout {
-            y:0
-            Layout.fillHeight: false
-            Layout.fillWidth: false
-            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-
-            Text {
-                id: calibrationLabel
-                text: qsTr("Calibrate")
-                color: "white"
-                horizontalAlignment: Text.AlignHCenter
-            }
-            Image {
-                id: calibration
-                sourceSize.width: 50
-                sourceSize.height: 50
-                fillMode: Image.PreserveAspectFit
-                Layout.preferredHeight: 50
-                Layout.preferredWidth: 50
-                source: "../imgs/calibration.png"
-                //enabled: false DEBUG!
-                z:1
-
-                ColorOverlay {
-                    id: calibrationDisabledOverlay
-                    anchors.fill: calibration
-                    source: calibration
-                    color: "#555555"
-                    opacity: 1
-                }
-
-                ColorOverlay {
-                    id: calibrationOverlay
-                    anchors.fill: calibration
-                    source: calibration
-                    color: "white"
-                    opacity: 0
-                }
-
-                MouseArea {
-                    id: calibrationBtn
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    anchors.fill: parent
-                    onEntered: {
-                        calibrationOverlay.opacity = 1
-                    }
-                    onExited: {
-                        calibrationOverlay.opacity = 0
-                    }
-                    onClicked: {
-                        //calibScreen.showFullScreen();
-                        if (calibrationModeBox.currentText == "Screen") {
-                            console.log("initializing on-screen calibration");
-                            calibScreen.showNormal();
-                        }
-                        else if (calibrationModeBox.currentText == "HMD") {
-                            dropdownHMD.enabled = true;
-                            dropdownHMD.opacity = 1;
-                            calibHMDitem.focus = true;
-                        }
-                    }
-                }
-                DropdownHMD {
-                    id: dropdownHMD
-                    x: 34
-                    y: 50
-                    enabled: false
-                    opacity: 0
-                }
-            }
-        }
-
-        ColumnLayout {
-            x: 75
-            y:0
-            Layout.fillHeight: false
-            Layout.fillWidth: false
-            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-
-            Text {
-                id: calibrationModeLabel
-                text: qsTr("Mode")
-                color: "white"
-                horizontalAlignment: Text.AlignHCenter
-            }
-            ComboBox {
-                id: calibrationModeBox
-                width: 110
-                height: 28
-                currentIndex: 0
-                z: 1
-                font.pointSize: 10
-                model: ["Screen", "HMD"]
-                onActivated:  {
-                    console.log("selected:", index);
-                }
-            }
-        }
-        ColumnLayout {
-            x: 228
-            y:0
-            Layout.fillHeight: false
-            Layout.fillWidth: false
-            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-
-            Text {
-                id: calibrationStoreLabel
-                text: qsTr("Store Data")
-                color: "white"
-                horizontalAlignment: Text.AlignHCenter
-            }
-            Switch {
-                id: switchStore
-                width: 60
-                height: 40
-                checked: false
-                font.pointSize: 8
-                onCheckedChanged: {
-                    calibControl.toggle_storage();
-                }
-            }
-        }
-
-        //3D MANAGEMENT
-        //------------
-        ColumnLayout {
-            x: 312
-            y:0
-            Layout.fillHeight: false
-            Layout.fillWidth: false
-            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-
-            Text {
-                id: calibration3DLabel
-                text: qsTr("3D Model")
-                color: "white"
-                horizontalAlignment: Text.AlignHCenter
-            }
-            Switch {
-                id: switch3DModel
-                width: 60
-                height: 40
-                checked: false
-                font.pointSize: 8
-                onCheckedChanged: {
-                    camManager.toggle_3D();
-                    calibControl.toggle_3D();
-                    calibHMD.toggle_3D();
-                }
-            }
-        }
-    }
-
-    /*CALIB SCREEN
-      ------------*/
-    CalibScreen {
-        id: calibScreen
-        visible: false
-        height: 720
-        width: 1280
-    }
-
-    /*CALIB HMD
-      ----------*/
-    CalibHMD {
-        id: calibHMDitem
-        visible: false
-        width: mainWindow.width
-        height: mainWindow.height
-    }
-
-
-    /*
-    PLAYBACK CONTOL
-    ------------------ */
-    GroupBox {
         id: playbackSettings
-        x: 460
+        x: 470
         y: 16
         width: 110
         height: 110
@@ -676,18 +490,13 @@ Window {
         }
     }
 
-
-
-    /*
-    CAM SETTINGS
-    ------------
-    */
     GroupBox {
         id: cameraSettings
         x: 710
         y: 16
         width: 315
         height: 110
+        visible: true
         label: Text {
             color:"gray"
             text:"Camera Settings"
@@ -935,4 +744,277 @@ Window {
             }
         }
     }
+
+    GroupBox {
+        id: calibrationSettings
+        x: 30
+        y: 16
+        width: 425
+        height: 110
+        label: Text {
+            color:"gray"
+            text:"Calibration Settings"
+        }
+        ColumnLayout {
+            y:0
+            Layout.fillHeight: false
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+            Text {
+                id: calibrationLabel
+                text: qsTr("Calibrate")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Image {
+                id: calibration
+                sourceSize.width: 50
+                sourceSize.height: 50
+                fillMode: Image.PreserveAspectFit
+                Layout.preferredHeight: 50
+                Layout.preferredWidth: 50
+                source: "../imgs/calibration.png"
+                //enabled: false <-- turned on for DEBUG!
+                z:1
+
+                ColorOverlay {
+                    id: calibrationDisabledOverlay
+                    anchors.fill: calibration
+                    source: calibration
+                    color: "#555555"
+                    opacity: 1
+                }
+
+                ColorOverlay {
+                    id: calibrationOverlay
+                    anchors.fill: calibration
+                    source: calibration
+                    color: "white"
+                    opacity: 0
+                }
+
+                MouseArea {
+                    id: calibrationBtn
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    anchors.fill: parent
+                    onEntered: {
+                        calibrationOverlay.opacity = 1
+                    }
+                    onExited: {
+                        calibrationOverlay.opacity = 0
+                    }
+                    onClicked: {
+                        //calibScreen.showFullScreen();
+                        if (calibrationModeBox.currentText == "Screen") {
+                            console.log("initializing on-screen calibration");
+                            calibScreen.showNormal();
+                        }
+                        else if (calibrationModeBox.currentText == "HMD") {
+                            dropdownHMD.enabled = true;
+                            dropdownHMD.opacity = 1;
+                            calibHMDitem.focus = true;
+                        }
+                    }
+                }
+                DropdownHMD {
+                    id: dropdownHMD
+                    x: 34
+                    y: 50
+                    enabled: false
+                    opacity: 0
+                }
+            }
+        }
+
+        ColumnLayout {
+            x: 60
+            y: 0
+            Text {
+                id: estimationLabel
+                color: "#ffffff"
+                text: qsTr("Estimation")
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            Image {
+                id: estimation
+                fillMode: Image.PreserveAspectFit
+                Layout.preferredWidth: 50
+                sourceSize.width: 50
+                z: 1
+                source: "../imgs/estimation.png"
+                Layout.preferredHeight: 50
+                sourceSize.height: 50
+                //enabled: false <-- turned on for DEBUG!
+
+                ColorOverlay {
+                    id: estimationDisabledOverlay
+                    color: "#555555"
+                    opacity: 1
+                    source: estimation
+                    anchors.fill: estimation
+                }
+
+                ColorOverlay {
+                    id: estimationOverlay
+                    color: "#ffffff"
+                    opacity: 0
+                    source: estimation
+                    anchors.fill: estimation
+                }
+
+                MouseArea {
+                    id: estimationBtn
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    anchors.fill: parent
+                    onEntered: {
+                        estimationOverlay.opacity = 1
+                    }
+                    onExited: {
+                        estimationOverlay.opacity = 0
+                    }
+                    onClicked: {
+                        if (!dropdownEstimation.enabled) {
+                            dropdownEstimation.enabled = true;
+                            dropdownEstimation.opacity = 1;
+                            calibControl.testinho();
+                        } else {
+                            dropdownEstimation.enabled = false;
+                            dropdownEstimation.opacity = 0;
+                        }
+                    }
+                }
+                DropdownEstimation {
+                    id: dropdownEstimation
+                    x: 34
+                    y: 50
+                    z: 2
+                    enabled: false
+                    opacity: 0;
+                }
+            }
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            Layout.fillHeight: false
+        }
+
+        ColumnLayout {
+            x: 123
+            y:0
+            width: 140
+            height: 60
+            Layout.fillHeight: false
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+            Text {
+                id: calibrationModeLabel
+                text: qsTr("Mode")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            ComboBox {
+                id: calibrationModeBox
+                width: 140
+                height: 28
+                currentIndex: 0
+                z: 1
+                font.pointSize: 10
+                model: ["Screen", "HMD"]
+                onActivated:  {
+                    console.log("selected:", index);
+                }
+            }
+        }
+        ColumnLayout {
+            x: 268
+            y:0
+            width: 60
+            Layout.fillHeight: false
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+            Text {
+                id: calibrationStoreLabel
+                text: qsTr("Store Data")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Switch {
+                id: switchStore
+                width: 50
+                height: 40
+                checked: false
+                font.pointSize: 8
+                onCheckedChanged: {
+                    calibControl.toggle_storage();
+                }
+            }
+        }
+
+        //3D MANAGEMENT
+        //------------
+        ColumnLayout {
+            x: 337
+            y:0
+            width: 60
+            Layout.fillHeight: false
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+            Text {
+                id: calibration3DLabel
+                text: qsTr("3D Model")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Switch {
+                id: switch3DModel
+                width: 50
+                height: 40
+                checked: false
+                font.pointSize: 8
+                onCheckedChanged: {
+                    camManager.toggle_3D();
+                    calibControl.toggle_3D();
+                    calibHMD.toggle_3D();
+                }
+            }
+        }
+
+    }
+
+    /*CALIB SCREEN
+      ------------*/
+    CalibScreen {
+        id: calibScreen
+        visible: false
+        height: 720
+        width: 1280
+    }
+
+    /*CALIB HMD
+      ----------*/
+    CalibHMD {
+        id: calibHMDitem
+        visible: false
+        width: mainWindow.width
+        height: mainWindow.height
+    }
+
+
+    /*
+    PLAYBACK CONTOL
+    ------------------ */
+
+
+
+    /*
+    CAM SETTINGS
+    ------------
+    */
 }
