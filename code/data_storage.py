@@ -146,15 +146,12 @@ class Storer():
         distribution = [i for i in range(nsamples)]
         candidates = np.random.choice(distribution, 5, False)
         for t in self.targets.keys():
-            targ  = np.take(self.targets[t], candidates)
-            left  = np.take(self.l_centers[t], candidates)
-            right = np.take(self.r_centers[t], candidates)
-            self.targets[t] = np.delete(self.targets[t], candidates)
-            self.l_centers[t] = np.delete(self.l_centers[t], candidates)
-            self.r_centers[t] = np.delete(self.r_centers[t], candidates)
-            s_target[t] = targ
-            s_left[t]   = left
-            s_right[t]  = right
+            s_target[t] = np.take(self.targets[t], candidates, axis=0)
+            s_left[t]   = np.take(self.l_centers[t], candidates, axis=0)
+            s_right[t]  = np.take(self.r_centers[t], candidates, axis=0)
+            self.targets[t] = np.delete(self.targets[t], candidates, axis=0)
+            self.l_centers[t] = np.delete(self.l_centers[t], candidates, axis=0)
+            self.r_centers[t] = np.delete(self.r_centers[t], candidates, axis=0)
         return s_target, s_left, s_right            
 
 

@@ -139,7 +139,13 @@ class Calibrator(QObject):
         return pred
 
 
-    #def __test_calibration(self, st, sl, sr):
+    def __test_calibration(self, st, sl, sr):
+        for t in st.keys():
+            print('key:', t)
+            [print('target ->', i) for i in st[t]]
+            [print('left_eye ->', i) for i in sl[t]]
+            [print('right_eye->', i) for i in sr[t]]
+            
 
 
     def __predict2d(self):
