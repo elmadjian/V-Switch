@@ -881,7 +881,7 @@ Window {
                         if (!dropdownEstimation.enabled) {
                             dropdownEstimation.enabled = true;
                             dropdownEstimation.opacity = 1;
-                            calibControl.testinho();
+                            calibControl.show_estimation();
                         } else {
                             dropdownEstimation.enabled = false;
                             dropdownEstimation.opacity = 0;

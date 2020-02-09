@@ -14,8 +14,8 @@ Rectangle {
     Universal.accent: Universal.Lime
     z: 2
 
-    signal drawEstimation(var a, var b, var c)
-    property var targetList
+    signal drawEstimation(var tgt, var le, var re, var leErr, var reErr);
+    property var targetList: [];
     property var leftEyeList;
     property var rightEyeList;
 
@@ -24,22 +24,25 @@ Rectangle {
     }
 
     onDrawEstimation: {
-        console.log('signal received');
-        targetList = a;
-        leftEyeList = b;
-        rightEyeList = c;
+        targetList = tgt;
+        leftEyeList = le;
+        rightEyeList = re;
+        leftEyeError.text = "Left eye error = <b>" + leErr + "</b>";
+        rightEyeError.text = "Right eye error = <b>" + reErr + "</b>";
         canvasArea.requestPaint();
     }
 
-    function drawCrossHair(coord, ctx, color, width) {
-        var x = coord[0];
-        var y = coord[1];
-        ctx.strokeWidth = width;
+    function drawCrossHair(coord, ctx, color, width, size) {
+        var c = denormalize(coord);
+        var x = c[0];
+        var y = c[1];
+        ctx.beginPath();
+        ctx.lineWidth = width;
         ctx.strokeStyle = color;
-        ctx.moveTo(x,y-10);
-        ctx.lineTo(x,y+10);
-        ctx.moveTo(x-10,y);
-        ctx.lineTo(x+10,y);
+        ctx.moveTo(x,y-size);
+        ctx.lineTo(x,y+size);
+        ctx.moveTo(x-size,y);
+        ctx.lineTo(x+size,y);
         ctx.stroke();
     }
 
@@ -58,33 +61,86 @@ Rectangle {
         onPaint: {
             console.log("painting now");
             var ctx = getContext("2d");
-           // drawCrossHair([0.1, 0.1], ctx, "red", 2);
+            ctx.clearRect(0, 0, canvasArea.width, canvasArea.height);
             for (var i = 0; i < targetList.length; i++) {
-                //console.log(targetList[i]);
-                var vec = denormalize(targetList[i]);
-                var x = vec[0];
-                var y = vec[1];
-                ctx.strokeWidth = 3;
-                ctx.strokeStyle = "black";
-                ctx.moveTo(x,y-10);
-                ctx.lineTo(x,y+10);
-                ctx.moveTo(x-10,y);
-                ctx.lineTo(x+10,y);
-                ctx.stroke();
-                vec = denormalize(leftEyeList[i]);
-                x = vec[0];
-                y = vec[1];
-                ctx.strokeWidth = 3;
-                ctx.strokeStyle = "red";
-                ctx.moveTo(x,y-10);
-                ctx.lineTo(x,y+10);
-                ctx.moveTo(x-10,y);
-                ctx.lineTo(x+10,y);
-                ctx.stroke();
-
+                drawCrossHair(targetList[i], ctx, "black", 2, 10);
+                drawCrossHair(leftEyeList[i], ctx, "red", 1, 7);
+                drawCrossHair(rightEyeList[i], ctx, "green", 1, 7);
             }
 
         }
+    }
+
+    Rectangle {
+        id: caption
+        width: parent.width
+        height: 50
+        color: "#CCCCCC"
+        y: 475
+
+        Item {
+            x: 5
+            y: 10
+            Rectangle {
+                width: 18
+                height: 18
+                color: "black"
+            }
+            Text {
+                id: targetCaption
+                x: 22
+                y: 2
+                text: qsTr("target")
+            }
+        }
+
+        Item {
+            x: 85
+            y: 10
+            Rectangle {
+                width: 18
+                height: 18
+                color: "red"
+            }
+            Text {
+                id: leftEyeCaption
+                x: 22
+                y: 2
+                text: qsTr("left eye")
+            }
+        }
+
+        Item {
+            x: 165
+            y: 10
+            Rectangle {
+                width: 18
+                height: 18
+                color: "green"
+            }
+            Text {
+                id: rightEyeCaption
+                x: 22
+                y: 2
+                text: qsTr("right eye")
+            }
+        }
+
+        Text {
+            id: leftEyeError
+            x: 400
+            y: 10
+            text: qsTr("")
+        }
+
+        Text {
+            id: rightEyeError
+            x: 600
+            y: 10
+            text: qsTr("")
+        }
+
+
     }
 
     Image {

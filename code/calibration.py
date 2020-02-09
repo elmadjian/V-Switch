@@ -12,7 +12,8 @@ from threading import Thread
 class Calibrator(QObject):
 
     move_on = Signal()
-    draw_estimation = Signal('QVariantList', 'QVariantList', 'QVariantList')
+    draw_estimation = Signal('QVariantList', 'QVariantList', 'QVariantList',
+                             'QString', 'QString')
 
     def __init__(self, v_targets, h_targets, samples_per_tgt, timeout):
         '''
@@ -20,7 +21,6 @@ class Calibrator(QObject):
         frequency: value of the tracker's frequency in Hz
         '''
         QObject.__init__(self)
-        ntargets  = v_targets * h_targets
         self.target_list = self.__generate_target_list(v_targets, h_targets)
         self.storer = ds.Storer(self.target_list)
         self.l_regressor = None
@@ -32,18 +32,8 @@ class Calibrator(QObject):
         self.collector = None
         self.mode_3D = False
         self.storage = False
+        self.estimation = {}
 
-
-    #DEBUG
-    @Slot()
-    def testinho(self):
-        print('entrando no testinho')
-        a = np.array([[0.1,0.1],[0.5,0.5],[0.75,0.75]])
-        b = np.array([[0.11,0.11],[0.51,0.51],[0.74,0.74]])
-        c = np.array([[0.09,0.09],[0.49,0.48],[0.76,0.77]])
-        print('emitindo sinal')
-        self.draw_estimation.emit(a.tolist(),b.tolist(),c.tolist())
-        #self.draw_calibration.emit(a.tolist())
 
     def set_sources(self, scene, leye, reye):
         self.scene = scene
@@ -131,6 +121,7 @@ class Calibrator(QObject):
             self.r_regressor = clf_r
         print("Gaze estimation finished")
         self.__test_calibration(st, sl, sr)
+        print('Estimation assessment ready')
         if self.storage:
             self.storer.store_calibration()
             
@@ -163,12 +154,27 @@ class Calibrator(QObject):
             rmean = np.mean(re_pred, axis=0)
             le_error.append(np.linalg.norm(lmean-tmean))
             re_error.append(np.linalg.norm(rmean-tmean))
-            tgt_mean.append(tmean)
-            le_mean.append(lmean)
-            re_mean.append(rmean)
+            tgt_mean.append(tmean.tolist())
+            le_mean.append(lmean.tolist())
+            re_mean.append(rmean.tolist())
+        le_err_porc = np.mean(le_error) * 100
+        re_err_porc = np.mean(re_error) * 100
+        self.estimation['target'] = tgt_mean
+        self.estimation['left_eye'] = le_mean
+        self.estimation['right_eye'] = re_mean
+        self.estimation['le_error'] = "{:.3f}%".format(le_err_porc)
+        self.estimation['re_error'] = "{:.3f}%".format(re_err_porc)
 
 
-        
+    @Slot()
+    def show_estimation(self):
+        tgt = self.estimation['target']
+        le  = self.estimation['left_eye']
+        re  = self.estimation['right_eye']
+        le_err = self.estimation['le_error']
+        re_err = self.estimation['re_error']
+        print("calling draw_estimation")
+        self.draw_estimation.emit(tgt, le, re, le_err, re_err)
 
 
     def __predict_batch_2D(self, le, re):
