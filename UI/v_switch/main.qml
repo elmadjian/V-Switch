@@ -848,7 +848,17 @@ Window {
                 source: "../imgs/estimation.png"
                 Layout.preferredHeight: 50
                 sourceSize.height: 50
-                //enabled: false <-- turned on for DEBUG!
+                enabled: false// <-- turned on for DEBUG!
+
+                signal enableEstimation();
+
+                Component.onCompleted: {
+                    calibControl.enable_estimation.connect(enableEstimation);
+                }
+
+                onEnableEstimation: {
+                    estimation.enabled = true;
+                }
 
                 ColorOverlay {
                     id: estimationDisabledOverlay

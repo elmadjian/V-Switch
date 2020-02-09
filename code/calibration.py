@@ -12,8 +12,10 @@ from threading import Thread
 class Calibrator(QObject):
 
     move_on = Signal()
+    enable_estimation = Signal()
     draw_estimation = Signal('QVariantList', 'QVariantList', 'QVariantList',
                              'QString', 'QString')
+                            
 
     def __init__(self, v_targets, h_targets, samples_per_tgt, timeout):
         '''
@@ -122,6 +124,7 @@ class Calibrator(QObject):
         print("Gaze estimation finished")
         self.__test_calibration(st, sl, sr)
         print('Estimation assessment ready')
+        self.enable_estimation.emit()
         if self.storage:
             self.storer.store_calibration()
             
