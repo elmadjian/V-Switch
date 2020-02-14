@@ -100,8 +100,8 @@ if sys.argv[1] == "--eye":
 
 
 if sys.argv[1] == '--3D':
-    cap = cv2.VideoCapture('eye0.mp4')
-    #cap = cv2.VideoCapture('pupil2.mkv')
+    #cap = cv2.VideoCapture('pupil.mp4')
+    cap = cv2.VideoCapture('pupil2.mkv')
     #cap = cv2.VideoCapture('demo.mp4')
     eyeobj = eip.EyeImageProcessor(0,(480,640),0,0,0,0)
     sensor_size = (3.6, 4.8) #mm

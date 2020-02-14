@@ -15,7 +15,7 @@ class Geometry():
     
     def convert_ellipse_to_general(self, xc, yc, w, h, radian):
         A = (w**2)*(np.sin(radian)**2) + (h**2) * (np.cos(radian)**2)
-        B = 2 * ((h**2) - (w**2)) * np.sin(radian) * np.cos(radian)
+        B = 2 * (h**2 - w**2) * np.sin(radian) * np.cos(radian)
         C = (w**2)*(np.cos(radian)**2) + (h**2)*(np.sin(radian)**2)
         D = -2*A*xc - B*yc
         E = -B*xc - 2*C*yc
@@ -25,12 +25,12 @@ class Geometry():
 
     def unproject_gaze(self, vertex, ell_co, radius=None):
         a,b,c,_,f,g,h,u,v,w = self.__gen_cone_co(vertex, ell_co)
+        #Discriminating cubic equation coefficients
         lamb_co1 = 1
         lamb_co2 = -(a+b+c)
-        lamb_co3 = (b*c + c*a + a*b - np.power(f,2)\
-                   - np.power(g,2) - np.power(h,2))
-        lamb_co4 = -(a*b*c + 2*f*g*h - a*np.power(f,2)\
-                   - b*np.power(g,2) - c*np.power(h,2))
+        lamb_co3 = (b*c + c*a + a*b - f**2 - g**2 - h**2)
+        lamb_co4 = -(a*b*c + 2*f*g*h - a*f**2 - b*g**2 - c*h**2)
+        #Discriminating cubic solution
         lamb1, lamb2, lamb3 = np.roots([lamb_co1,lamb_co2,lamb_co3,lamb_co4])
         l,m,n = self.__gen_lmn(lamb1, lamb2, lamb3)
         norm_cano_pos = np.array([l[0],m[0],n[0],1]).reshape(4,1)
@@ -40,11 +40,11 @@ class Geometry():
         l1, m1, n1 = self.__get_rotmat_co(lamb1, a,b,g,f,h)
         l2, m2, n2 = self.__get_rotmat_co(lamb2, a,b,g,f,h)
         l3, m3, n3 = self.__get_rotmat_co(lamb3, a,b,g,f,h)
-        T1 = np.array([l1,l2,l3,0,m1,m2,m3,0,n1,n2,n3,0,0,0,0,1]).reshape(4,4)
+        T1 = np.array([[l1,l2,l3,0],
+                       [m1,m2,m3,0],
+                       [n1,n2,n3,0],
+                       [0, 0, 0, 1]])
         li, mi, ni = T1[0,0:3], T1[1,0:3], T1[2,0:3]
-        if np.cross(li,mi).dot(ni) < 0:
-            li, mi, ni = -li, -mi, -ni
-        T1[0,0:3], T1[1,0:3], T1[2,0:3] = li, mi, ni
         norm_cam_pos = np.dot(T1, norm_cano_pos)
         norm_cam_neg = np.dot(T1, norm_cano_neg)
 
@@ -65,6 +65,10 @@ class Geometry():
         center_neg = self.__calc_XYZ_frame(A_neg,B_neg,C_neg,D_neg,radius)
         true_center_pos, true_center_neg = self.__get_true_centers(T0, T1, T2, 
             [T3_pos, T3_neg], [center_pos, center_neg])
+        #fix for direction inconsistency
+        if h < 0:
+            norm_cam_pos, norm_cam_neg, true_center_pos, true_center_neg =\
+                norm_cam_neg, norm_cam_pos, true_center_neg, true_center_pos
         return norm_cam_pos[0:3], norm_cam_neg[0:3],\
             true_center_pos[0:3], true_center_neg[0:3]
 
@@ -219,7 +223,7 @@ class Geometry():
         t1 = (b-lamb)*g - f*h
         t2 = (a - lamb)*f - g*h
         t3 = -(a-lamb)*(t1/t2)/g - (h/g)
-        m = 1/(np.sqrt(1+np.power((t1/t2),2)+np.power(t3,2)))
+        m = 1/(np.sqrt(1 + (t1/t2)**2 + t3**2))
         l = (t1/t2)*m
         n = t3*m
         return l, m, n
@@ -230,11 +234,11 @@ class Geometry():
         alpha, beta, gamma = vertex
         a_prime, h_prime, b_prime = A, B/2, C
         g_prime, f_prime, d_prime = D/2, E/2, F
-        gamma_square = np.power(gamma,2)
+        gamma_square = gamma**2
         a = gamma_square * a_prime
         b = gamma_square * b_prime
-        c = a_prime * np.power(alpha,2) + 2 * h_prime * alpha * beta\
-            + b_prime * np.power(beta,2) + 2 * g_prime * alpha + 2\
+        c = a_prime * alpha**2 + 2 * h_prime * alpha * beta\
+            + b_prime * beta**2 + 2 * g_prime * alpha + 2\
             * f_prime * beta + d_prime
         d = gamma_square * d_prime
         f = -gamma * (b_prime * beta + h_prime * alpha +f_prime)
@@ -247,19 +251,19 @@ class Geometry():
 
 
     def __gen_lmn(self, lamb1, lamb2, lamb3):
-        if lamb1 < lamb2:
-            m_pos = np.sqrt((lamb2-lamb1)/(lamb2-lamb3))
-            m_neg = -m_pos
-            n = np.sqrt((lamb1-lamb3)/(lamb2-lamb3))
-            return [0, 0], [m_pos, m_neg], [n, n]
-        elif lamb1 > lamb2:
-            l_pos = np.sqrt((lamb1-lamb2)/(lamb1-lamb3))
-            l_neg = -l_pos
-            n = np.sqrt((lamb2-lamb3)/(lamb1-lamb3))
-            return [l_pos, l_neg], [0, 0], [n, n]
-        elif lamb1 == lamb2:
-            return [0,0], [0,0], [1,1]
-        else:
-            return None, None, None
+        if lamb1 > 0 and lamb2 > 0 and lamb3 < 0:
+            if lamb2 > lamb1:
+                m_pos = np.sqrt((lamb2-lamb1)/(lamb2-lamb3))
+                m_neg = -m_pos
+                n = np.sqrt((lamb1-lamb3)/(lamb2/lamb3))
+                return [0,0], [m_pos,m_neg], [n,n]
+            if lamb1 > lamb2:
+                l_pos = np.sqrt((lamb1-lamb2)/(lamb1-lamb3))
+                l_neg = -l_pos
+                n = np.sqrt((lamb2-lamb3)/(lamb1-lamb3))
+                return [l_pos,l_neg], [0,0], [n,n]
+            elif lamb1 == lamb2:
+                return [0,0], [0,0], [1,1]
+        return None, None, None
 
     

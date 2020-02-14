@@ -18,8 +18,8 @@ class EyeFitter():
         self.mm2px_scaling = None
         self.sensor_size = sensor
         self.update_mm2px_scaling(image_shape)
-        self.focal_length = focal_length * self.mm2px_scaling #* 0.5
-        self.pupil_radius = 2 * self.mm2px_scaling #* 0.5
+        self.focal_length = focal_length * self.mm2px_scaling
+        self.pupil_radius = 2 * self.mm2px_scaling
         self.eye_z = eye_z * self.mm2px_scaling
         self.aver_eye_radius = None
         self.eyeball = None
@@ -57,7 +57,6 @@ class EyeFitter():
         '''
         if ellipse is not None:
             ((xc,yc), (w,h), radian) = ellipse
-            #print('ellipse:', ellipse)
             xcc, ycc = xc.copy(), yc.copy()
             xcc = xcc - image.shape[1]/2
             ycc = ycc - image.shape[0]/2
@@ -191,7 +190,7 @@ class EyeFitter():
        # proj_eye  += np.array([img.shape[:2]]).T.reshape(-1,1)/2
        # proj_eye   = (int(proj_eye[0]), int(proj_eye[1]))
         dest_pos    = (int(xc+pos[0]*50), int(yc+pos[1]*50))
-        dest_neg    = (int(xc+neg[0]*50), int(yc+neg[1]*50))
+        dest_neg    = (int(xc-neg[0]*50), int(yc-neg[1]*50))
         # frame, shape, ellipse, ellipse_center_np, projected_eye_center, n1=gaze_vec
 
         cv2.ellipse(img, ellipse, (0,255,0), thickness=2)
@@ -224,11 +223,11 @@ class EyeFitter():
     def __update_current_state(self, unprojected_data, center):
         if unprojected_data is not None:
             data = self.__check_z_consistency(unprojected_data)
-            data = self.__check_polarity_consistency(data)
+            #data = self.__check_polarity_consistency(data)
             pos,neg,tc_pos,tc_neg = data
-            # print('pos:{: .3f} {: .3f} {: .3f}'.format(pos[0][0], pos[1][0], pos[2][0]))
-            # print('neg:{: .3f} {: .3f} {: .3f}'.format(neg[0][0], neg[1][0], neg[2][0]))
-            # print('-----------')
+            #print('pos:{: .3f} {: .3f} {: .3f}'.format(pos[0][0], pos[1][0], pos[2][0]))
+            #print('neg:{: .3f} {: .3f} {: .3f}'.format(neg[0][0], neg[1][0], neg[2][0]))
+            #print('-----------')
             self.curr_state['gaze_pos'] = pos
             self.curr_state['gaze_neg'] = neg
             self.curr_state['pupil3D_pos'] = tc_pos
