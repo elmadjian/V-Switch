@@ -39,6 +39,17 @@ class EyeFitter():
             "pupil3D_neg": np.empty((0,3), float),
             "ell_center": np.empty((0,2), float)
         }
+        self.center_axis = None
+        self.candidates = {
+            'x':[],
+            'y':[]
+        }
+        self.quads = {
+            '++':[],
+            '+-':[],
+            '--':[],
+            '-+':[]
+        }
 
    
     def update_mm2px_scaling(self, image_shape):
@@ -58,15 +69,16 @@ class EyeFitter():
         if ellipse is not None:
             ((xc,yc), (w,h), radian) = ellipse
             xcc, ycc = xc.copy(), yc.copy()
-            xcc = xcc - image.shape[1]/2
-            ycc = ycc - image.shape[0]/2
+            im_w, im_h = image.shape[1], image.shape[0]
+            xcc = xcc - im_w/2
+            ycc = ycc - im_h/2
             ell_co = self.geo.convert_ellipse_to_general(xcc,ycc,w,h,radian)
             vertex = [0,0,-self.focal_length]
             unprojected = self.geo.unproject_gaze(vertex, ell_co, self.pupil_radius)
             unprojected = self.__normalize_and_to_real(unprojected)
-            self.__update_current_state(unprojected, [xc,yc])
+            self.__update_current_state(unprojected, [xc,yc], im_w, im_h)
         else:
-            self.__update_current_state(None, None)
+            self.__update_current_state(None, None, None, None)
 
 
     def add_to_fitting(self):
@@ -197,6 +209,8 @@ class EyeFitter():
         #cv2.line(img, proj_eye, ell_center, (255,100,0))
         cv2.line(img, ell_center, dest_pos, (0,0,255), 2)
         cv2.line(img, ell_center, dest_neg, (255,100,0), 2)
+        if self.center_axis is not None:
+            cv2.circle(img, self.center_axis, 5, (0,255,255), -1)
         # if self.eyeball is not None:
         #     gazes = [self.curr_state['gaze_pos'], self.curr_state['gaze_neg']]
         #     posis = [self.curr_state['pupil3D_pos'],self.curr_state['pupil3D_neg']]
@@ -220,14 +234,16 @@ class EyeFitter():
             return gazes[1], positions[1]
 
 
-    def __update_current_state(self, unprojected_data, center):
+    def __update_current_state(self, unprojected_data, center, w, h):
         if unprojected_data is not None:
             data = self.__check_z_consistency(unprojected_data)
-            #data = self.__check_polarity_consistency(data)
+            data = self.__check_temporal_consistency(data)
+            data = self.__check_center_axis(data, center, w, h)
             pos,neg,tc_pos,tc_neg = data
-            #print('pos:{: .3f} {: .3f} {: .3f}'.format(pos[0][0], pos[1][0], pos[2][0]))
-            #print('neg:{: .3f} {: .3f} {: .3f}'.format(neg[0][0], neg[1][0], neg[2][0]))
-            #print('-----------')
+            # print('pos:{: .3f} {: .3f} {: .3f}'.format(pos[0][0], pos[1][0], pos[2][0]))
+            # print('neg:{: .3f} {: .3f} {: .3f}'.format(neg[0][0], neg[1][0], neg[2][0]))
+            # print('center:', center[0]/w, center[1]/h)
+            # print('-----------')
             self.curr_state['gaze_pos'] = pos
             self.curr_state['gaze_neg'] = neg
             self.curr_state['pupil3D_pos'] = tc_pos
@@ -243,7 +259,7 @@ class EyeFitter():
             return [-neg, -pos, -tc_neg, -tc_pos]
         return [pos, neg, tc_pos, tc_neg]
 
-    def __check_polarity_consistency(self, unprojected_data):
+    def __check_temporal_consistency(self, unprojected_data):
         pos, neg, tc_pos, tc_neg = unprojected_data
         if self.curr_state['gaze_pos'] is not None:
             curr_pos = self.curr_state['gaze_pos']
@@ -252,6 +268,41 @@ class EyeFitter():
             if diff_neg < diff_pos:
                 return [neg, pos, tc_neg, tc_pos]
         return unprojected_data
+
+    def __check_center_axis(self, unprojected_data, center, w, h):
+        pos, neg, tc_pos, tc_neg = unprojected_data
+        cnorm = [center[0]/w, center[1]/h]
+        if self.curr_state['gaze_pos'] is not None:
+            curr_pos = self.curr_state['gaze_pos']
+            curr_neg = self.curr_state['gaze_neg']
+            if self.center_axis is None:
+                if pos[0][0] > 0 and curr_pos[0] < 0:
+                    self.candidates['x'].append(cnorm[0])
+                elif pos[0][0] < 0 and curr_pos[0] > 0:
+                    self.candidates['x'].append(cnorm[0])
+                if pos[1][0] > 0 and curr_pos[1] < 0:
+                    self.candidates['y'].append(cnorm[1])
+                elif pos[1][0] < 0 and curr_pos[1] > 0:
+                    self.candidates['y'].append(cnorm[1])
+                if len(self.candidates['x']) > 1 and len(self.candidates['y']) > 1:
+                    self.center_axis = (
+                        int(np.mean(self.candidates['x'])*w),
+                        int(np.mean(self.candidates['y'])*h)
+                    )
+            else:
+                invert = 0
+                if pos[0][0] < 0 and center[0] > self.center_axis[0]:
+                    invert += 1
+                elif pos[0][0] > 0 and center[0] < self.center_axis[0]:
+                    invert += 1
+                if pos[1][0] < 0 and center[1] > self.center_axis[1]:
+                    invert += 1
+                elif pos[1][0] > 0 and center[1] < self.center_axis[1]:
+                    invert += 1
+                if invert >= 2:
+                    return [neg, pos, tc_neg, tc_pos]
+        return unprojected_data
+
 
 
     def __normalize_and_to_real(self, unprojected_data):

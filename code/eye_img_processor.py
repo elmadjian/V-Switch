@@ -113,6 +113,11 @@ class EyeImageProcessor(imp.ImageProcessor):
         edges[dilate >= 255] = 0
         return edges
 
+    # def __find_glint(self, img):
+    #     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    #     thresh_3 = cv2.threshold(gray, 235, 255, cv2.THRESH_BINARY)[1]
+    #     cv2.imshow('thresh_3', thresh_3)        
+
 
     def __fit_ellipse(self, crop, cnt):
         empty_box = np.zeros(crop.shape)

@@ -35,8 +35,9 @@ if sys.argv[1] == "--uvc":
 #RECORDING
 if sys.argv[1] == "--rec":
     dev_list = uvc.device_list()
-    cap = uvc.Capture(dev_list[0]['uid'])
-    cap.frame_mode = (400,400,120)
+    print(dev_list)
+    cap = uvc.Capture(dev_list[3]['uid'])
+    cap.frame_mode = (400,400,60)
     cap.bandwidth_factor = 1.3
     out = cv2.VideoWriter('test.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 120, (400,400))
     while True:
@@ -100,12 +101,15 @@ if sys.argv[1] == "--eye":
 
 
 if sys.argv[1] == '--3D':
-    #cap = cv2.VideoCapture('pupil.mp4')
-    cap = cv2.VideoCapture('pupil2.mkv')
+    cap = cv2.VideoCapture('pupil.mp4')
+    #cap = cv2.VideoCapture('pupil2.mkv')
     #cap = cv2.VideoCapture('demo.mp4')
+    #cap = cv2.VideoCapture('test.avi')
+    #eyeobj = eip.EyeImageProcessor(0,(400,400),0,0,0,0)
     eyeobj = eip.EyeImageProcessor(0,(480,640),0,0,0,0)
     sensor_size = (3.6, 4.8) #mm
     focal_length = 6         #mm
+    #fitter = ef.EyeFitter(focal_length, (400,400), sensor_size)
     fitter = ef.EyeFitter(focal_length, (480,640), sensor_size)
     counter = 0
 
