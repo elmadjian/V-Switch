@@ -190,7 +190,7 @@ class EyeFitter():
        # proj_eye  += np.array([img.shape[:2]]).T.reshape(-1,1)/2
        # proj_eye   = (int(proj_eye[0]), int(proj_eye[1]))
         dest_pos    = (int(xc+pos[0]*50), int(yc+pos[1]*50))
-        dest_neg    = (int(xc-neg[0]*50), int(yc-neg[1]*50))
+        dest_neg    = (int(xc+neg[0]*50), int(yc+neg[1]*50))
         # frame, shape, ellipse, ellipse_center_np, projected_eye_center, n1=gaze_vec
 
         cv2.ellipse(img, ellipse, (0,255,0), thickness=2)
