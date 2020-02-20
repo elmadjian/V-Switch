@@ -127,8 +127,8 @@ class Camera(QQuickImageProvider, QObject):
     def set_source(self, source):
         print('setting camera source to', source)
         self.source = source
-        self.__set_fps_modes()
         self.load_state()
+        self.__set_fps_modes()
         self.shared_array = self.create_shared_array(self.mode)
         self.capturing.value = 1
         self.init_process(source, self.child, self.shared_array, 

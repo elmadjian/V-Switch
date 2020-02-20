@@ -12,18 +12,21 @@ import os
 import socket
 import time
 
+#testing cameras. Use test.py --uvc [cam_id]
 if sys.argv[1] == "--uvc":
+    cam = int(sys.argv[2])
     dev_list = uvc.device_list()
     print('devices found:')
     for d in dev_list:
         print('>>>', d)
-    cap = uvc.Capture(dev_list[3]['uid'])
+    cap = uvc.Capture(dev_list[cam]['uid'])
     # #cap2 = uvc.Capture(dev_list[2]['uid'])
     print(sorted(cap.avaible_modes))
+    cap.frame_mode = cap.avaible_modes[0]
+    print("current mode:", cap.frame_mode)
     # #cap.bandwidth_factor = 1.3
     while True:
         frame = cap.get_frame()
-      #  print("current mode:", cap.frame_mode)
      #   frame2 = cap2.get_frame()
         cv2.imshow('uvc test', frame.bgr)
       #  cv2.imshow('uvc test2', frame2.bgr)
