@@ -110,8 +110,8 @@ class Calibrator(QObject):
         '''
         clf_l = self.__get_clf()
         clf_r = self.__get_clf()     
-        st, sl, sr = self.storer.get_random_test_samples(
-            self.samples, len(self.target_list))                             
+        # st, sl, sr = self.storer.get_random_test_samples(
+        #    self.samples, len(self.target_list))                             
         targets = self.storer.get_targets_list()
         if self.leye.is_cam_active():                                       
             l_centers = self.storer.get_l_centers_list(self.mode_3D)
@@ -122,7 +122,7 @@ class Calibrator(QObject):
             clf_r.fit(r_centers, targets)
             self.r_regressor = clf_r
         print("Gaze estimation finished")
-        self.__test_calibration(st, sl, sr)
+        #self.__test_calibration(st, sl, sr)
         print('Estimation assessment ready')
         self.enable_estimation.emit()
         if self.storage:
@@ -136,7 +136,7 @@ class Calibrator(QObject):
             data, pred = self.__predict3d()
             if self.storage:
                 l_gz, r_gz   = pred[:2], pred[2:]
-                l_raw, r_raw = data[:6], data[6:]
+                l_raw, r_raw = data[:3], data[3:]
                 self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
         else:
             data, pred = self.__predict2d()
@@ -151,7 +151,7 @@ class Calibrator(QObject):
         le_error, re_error = [],[]
         tgt_mean, le_mean, re_mean = [],[],[]
         for t in st.keys():
-            le_pred, re_pred = self.__predict_batch_2D(sl[t], sr[t])
+            le_pred, re_pred = self.__predict_batch(sl[t], sr[t])
             tmean = np.mean(st[t], axis=0)
             lmean = np.mean(le_pred, axis=0)
             rmean = np.mean(re_pred, axis=0)
@@ -180,15 +180,20 @@ class Calibrator(QObject):
         self.draw_estimation.emit(tgt, le, re, le_err, re_err)
 
 
-    def __predict_batch_2D(self, le, re):
+    def __predict_batch(self, le, re):
         le_pred, re_pred = None, None
         if self.l_regressor and le is not None:
             input_data = le[:,:2]
+            if self.mode_3D:
+                input_data = le[:,:3]
             le_pred = self.l_regressor.predict(input_data)
         if self.r_regressor and re is not None:
             input_data = re[:,:2]
+            if self.mode_3D:
+                input_data = re[:,:3]
             re_pred = self.r_regressor.predict(input_data)
         return le_pred, re_pred
+
 
     def __predict2d(self):
         data = [-1,-1,-1,-1]
@@ -211,21 +216,21 @@ class Calibrator(QObject):
 
 
     def __predict3d(self):
-        d = [-1 for i in range(12)]
+        d = [-1 for i in range(6)]
         pred = [-1,-1,-1,-1]
         if self.l_regressor:
             le = self.leye.get_processed_data()
             if le is not None:
-                input_data = le[:6].reshape(1,-1)
+                input_data = le[:3].reshape(1,-1)
                 le_coord = self.l_regressor.predict(input_data)[0]
-                d[0], d[1], d[2], d[3], d[4], d[5] = input_data[0]
+                d[0], d[1], d[2] = input_data[0]#, d[3], d[4], d[5] = input_data[0]
                 pred[0], pred[1] = float(le_coord[0]), float(le_coord[1])
         if self.r_regressor:
             re = self.reye.get_processed_data()
             if re is not None:
-                input_data = re[:6].reshape(1,-1)
+                input_data = re[:3].reshape(1,-1)
                 re_coord = self.r_regressor.predict(input_data)[0]
-                d[6], d[7], d[8], d[9], d[10], d[11] = input_data[0]
+                d[3], d[4], d[5] = input_data[0]
                 pred[2], pred[3] = float(re_coord[0]), float(re_coord[1])
         return d, pred
 

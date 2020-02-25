@@ -12,7 +12,6 @@ class VideoIO_UVC(QObject):
         self.scene = None
         self.leye  = None
         self.reye  = None
-        self.mode_3D = False
 
     
     def read_inputs(self):
@@ -41,10 +40,6 @@ class VideoIO_UVC(QObject):
 
     @Slot()
     def toggle_3D(self):
-        self.mode_3D = not self.mode_3D
-        self.__toggle_3D()
-
-    def __toggle_3D(self):
         self.leye.toggle_3D()
         self.reye.toggle_3D()
 
@@ -91,8 +86,6 @@ class VideoIO_UVC(QObject):
         else:
             self.reye.stop(video_file=True)
             self.reye.set_video_file(filename)
-        if self.mode_3D:
-            self.__toggle_3D()
 
 
     @Slot(str, str)
@@ -104,8 +97,6 @@ class VideoIO_UVC(QObject):
             self.__change_cameras(self.leye, self.scene, self.reye, source)
         else:
             self.__change_cameras(self.reye, self.scene, self.leye, source)
-        if self.mode_3D:
-            self.__toggle_3D()
 
     @Slot()
     def save_session_config(self):

@@ -38,6 +38,7 @@ class Camera(QQuickImageProvider, QObject):
         self.paused = False
         self.gamma = 1.0
         self.color = True
+        
 
     def thread_loop(self):
         while self.capturing.value:
@@ -161,7 +162,6 @@ class Camera(QQuickImageProvider, QObject):
                     self.shared_pos, self.mode, self.capturing)
         self.cam_thread = Thread(target=self.thread_loop, args=())
         self.cam_thread.start()
-
 
     def __set_fps_modes(self):
         self.fps_res, self.modes = {}, {}

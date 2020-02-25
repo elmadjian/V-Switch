@@ -24,8 +24,8 @@ class Storer():
         self.targets = {i:np.empty((0,2), dtype='float32') for i in range(ntargets)}
         if self.hmd:
             self.targets = {i:np.empty((0,3), dtype='float32') for i in range(ntargets)}
-        self.l_centers = {i:np.empty((0,6), dtype='float32') for i in range(ntargets)}
-        self.r_centers = {i:np.empty((0,6), dtype='float32') for i in range(ntargets)}
+        self.l_centers = {i:np.empty((0,3), dtype='float32') for i in range(ntargets)}
+        self.r_centers = {i:np.empty((0,3), dtype='float32') for i in range(ntargets)}
         self.t_imgs = {i:[] for i in range(ntargets)}
         self.l_imgs = {i:[] for i in range(ntargets)}
         self.r_imgs = {i:[] for i in range(ntargets)}
@@ -48,7 +48,6 @@ class Storer():
         if self.__check_data_n_timestamp(None, le, re, mode3D, 1/minfreq):
             self.__add_depth_data(dist, idx)
 
-
     def collect_data(self, idx, mode3D, minfreq):
         sc, sc_img = None, None
         if self.scene is not None:
@@ -68,10 +67,10 @@ class Storer():
             scd = np.array([sc[0], sc[1]], dtype='float32')
         self.targets[idx] = np.vstack((self.targets[idx], scd))
         if self.leye.is_cam_active():
-            led = np.array([le[0],le[1],le[2],le[3],le[4],le[5]])
+            led = np.array([le[0],le[1],le[2]])#,le[3],le[4],le[5]])
             self.l_centers[idx] = np.vstack((self.l_centers[idx], led))
         if self.reye.is_cam_active():
-            red = np.array([re[0],re[1],re[2],le[3],le[4],le[5]])
+            red = np.array([re[0],re[1],re[2]])#,le[3],le[4],le[5]])
             self.r_centers[idx] = np.vstack((self.r_centers[idx], red))
 
     def __add_imgs(self, sc, le, re, idx):
@@ -98,16 +97,17 @@ class Storer():
             return True
         sc_t, le_t, re_t = sc[2], le[2], re[2]
         if mode3D:
-            le_t, re_t = le[6], re[6]
-        if sc is not None:
-            if le is not None and re is not None:
+            #le_t, re_t = le[6], re[6]
+            le_t, re_t = le[3], re[3]
+        if sc.any(): #check for zeros since Windows compat update
+            if le.any() and re.any():
                 if abs(sc_t - le_t) < thresh:
                     if abs(sc_t - re_t) < thresh:
                         return True
-            if le is not None and re is None:
+            if le.any() and not re.any():
                 if abs(sc_t - le_t) < thresh:
                     return True
-            if le is None and re is not None:
+            if not le.any() and re.any():
                 if abs(sc_t - re_t) < thresh:
                     return True
         return False
@@ -141,8 +141,8 @@ class Storer():
 
     def get_random_test_samples(self, nsamples, ntargets):
         s_target = {i:np.empty((0,3), dtype='float32') for i in range(ntargets)}
-        s_left   = {i:np.empty((0,6), dtype='float32') for i in range(ntargets)}
-        s_right  = {i:np.empty((0,6), dtype='float32') for i in range(ntargets)}
+        s_left   = {i:np.empty((0,3), dtype='float32') for i in range(ntargets)}
+        s_right  = {i:np.empty((0,3), dtype='float32') for i in range(ntargets)}
         distribution = [i for i in range(nsamples)]
         candidates = np.random.choice(distribution, 5, False)
         for t in self.targets.keys():

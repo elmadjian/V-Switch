@@ -45,10 +45,13 @@ class EyeImageProcessor(imp.ImageProcessor):
                             self.fitter.unproject_ellipse([c,axes,rad],img)
                             self.fitter.draw_vectors([c,axes,rad], img)
                             ppos = self.fitter.curr_state['gaze_pos'].flatten()
-                            pneg = self.fitter.curr_state['gaze_neg'].flatten()
-                            return img, np.hstack((ppos,pneg,time.monotonic()))
-                        return img, np.array([c[0]/width, c[1]/height, 
-                                    time.monotonic(),0,0,0,0], dtype='float32')
+                            #pneg = self.fitter.curr_state['gaze_neg'].flatten()
+                            #return img, np.hstack((ppos,pneg,time.monotonic()))
+                            return img, np.hstack((ppos,time.monotonic()))
+                        return img, np.array([c[0]/width, c[1]/height,
+                                time.monotonic(),0], dtype='float32')
+                        # return img, np.array([c[0]/width, c[1]/height, 
+                        #             time.monotonic(),0,0,0,0], dtype='float32')
                 else:
                     self.buffer = []
                     self.lost_tracking += 1

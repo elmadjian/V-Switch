@@ -19,19 +19,24 @@ class EyeCamera(camera.Camera):
         self.vid_process = None
         self.shared_array = self.create_shared_array(mode)
         self.shared_pos = self.create_shared_pos()
+        self.mode_3D = False
 
     def init_process(self, source, pipe, array, pos, mode, cap):
         mode = self.check_mode_availability(source, mode)
         self.cam_process = EyeImageProcessor(source, mode, pipe,
                                              array, pos, cap)
-        self.cam_process.start()    
+        self.cam_process.start()
+        if self.mode_3D:
+            self.pipe.send("mode_3D")    
 
     def init_vid_process(self, source, pipe, array, pos, mode, cap):
         mode = self.check_mode_availability(source, mode)
         self.cam_process = EyeImageProcessor(source, mode, pipe,
                                              array, pos, cap)
         self.vid_process = Process(target=self.cam_process.run_vid, args=())
-        self.vid_process.start()        
+        self.vid_process.start()
+        if self.mode_3D:
+            self.pipe.send("mode_3D")
 
     def join_process(self):
         self.cam_process.join(10)
@@ -40,6 +45,7 @@ class EyeCamera(camera.Camera):
         self.vid_process.join(3)
 
     def toggle_3D(self):
+        self.mode_3D = not self.mode_3D
         self.pipe.send("mode_3D")
 
     def create_shared_array(self, mode):
@@ -48,7 +54,7 @@ class EyeCamera(camera.Camera):
         return Array(ctypes.c_uint8, h*w*3, lock=False)
 
     def create_shared_pos(self):
-        return Array(ctypes.c_float, 7, lock=False)
+        return Array(ctypes.c_float, 4, lock=False)
 
     def check_mode_availability(self, source, mode):
         dev_list = uvc.device_list()
