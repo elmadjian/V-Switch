@@ -147,11 +147,13 @@ class Storer():
         candidates = np.random.choice(distribution, 5, False)
         for t in self.targets.keys():
             s_target[t] = np.take(self.targets[t], candidates, axis=0)
-            s_left[t]   = np.take(self.l_centers[t], candidates, axis=0)
-            s_right[t]  = np.take(self.r_centers[t], candidates, axis=0)
+            if len(self.l_centers[t]) > 0:
+                s_left[t] = np.take(self.l_centers[t], candidates, axis=0)
+                self.l_centers[t] = np.delete(self.l_centers[t], candidates, axis=0)
+            if len(self.r_centers[t]) > 0:
+                s_right[t] = np.take(self.r_centers[t], candidates, axis=0)
+                self.r_centers[t] = np.delete(self.r_centers[t], candidates, axis=0)
             self.targets[t] = np.delete(self.targets[t], candidates, axis=0)
-            self.l_centers[t] = np.delete(self.l_centers[t], candidates, axis=0)
-            self.r_centers[t] = np.delete(self.r_centers[t], candidates, axis=0)
         return s_target, s_left, s_right            
 
 
