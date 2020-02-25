@@ -284,7 +284,7 @@ class EyeFitter():
                     self.candidates['y'].append(cnorm[1])
                 elif pos[1][0] < 0 and curr_pos[1] > 0:
                     self.candidates['y'].append(cnorm[1])
-                if len(self.candidates['x']) > 1 and len(self.candidates['y']) > 1:
+                if len(self.candidates['x']) > 3 and len(self.candidates['y']) > 3:
                     self.center_axis = (
                         int(np.mean(self.candidates['x'])*w),
                         int(np.mean(self.candidates['y'])*h)

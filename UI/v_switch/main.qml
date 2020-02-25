@@ -392,7 +392,7 @@ Window {
     ------------------ */
     GroupBox {
         id: playbackSettings
-        x: 470
+        x: 500
         y: 16
         width: 110
         height: 110
@@ -749,7 +749,7 @@ Window {
         id: calibrationSettings
         x: 30
         y: 16
-        width: 425
+        width: 460
         height: 110
         label: Text {
             color:"gray"
@@ -829,7 +829,7 @@ Window {
         }
 
         ColumnLayout {
-            x: 60
+            x: 67
             y: 0
             Text {
                 id: estimationLabel
@@ -913,7 +913,7 @@ Window {
         }
 
         ColumnLayout {
-            x: 123
+            x: 145
             y:0
             width: 140
             height: 60
@@ -941,7 +941,7 @@ Window {
             }
         }
         ColumnLayout {
-            x: 268
+            x: 290
             y:0
             width: 60
             Layout.fillHeight: false
@@ -969,7 +969,7 @@ Window {
         //3D MANAGEMENT
         //------------
         ColumnLayout {
-            x: 337
+            x: 370
             y:0
             width: 60
             Layout.fillHeight: false
