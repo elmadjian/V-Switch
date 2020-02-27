@@ -88,6 +88,8 @@ class ImageProcessor(Process):
                     gamma = self.pipe.recv()
                 elif msg == "color":
                     color = self.pipe.recv()
+                elif msg == "reset_axis":
+                    self.reset_center_axis()
         cap.release()
         self.capturing.value = 0
 
@@ -128,10 +130,15 @@ class ImageProcessor(Process):
                     gamma = self.pipe.recv()
                 elif msg == "color":
                     color = self.pipe.recv()
+                elif msg == "reset_axis":
+                    self.reset_center_axis()
         self.capturing.value = 0
         print("camera", self.source, "closed")
 
 
     def process(self, frame):
         return frame, None
+
+    def reset_center_axis(self):
+        return None
     

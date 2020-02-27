@@ -44,12 +44,6 @@ class EyeFitter():
             'x':[],
             'y':[]
         }
-        self.quads = {
-            '++':[],
-            '+-':[],
-            '--':[],
-            '-+':[]
-        }
 
    
     def update_mm2px_scaling(self, image_shape):
@@ -217,8 +211,13 @@ class EyeFitter():
         #     gaze, position = self.select_pupil(gazes, posis, self.eyeball)
         #     dest_pup    = (int(xc+gaze[0]*100), int(yc+gaze[1]*100))
         #     cv2.line(img, ell_center, dest_pup, (150,120,70))
-
-
+    
+    def reset_axis(self):
+        self.center_axis = None
+        self.candidates = {
+            'x':[],
+            'y':[]
+        }
 
 
     def select_pupil(self, gazes, positions, globe_center):

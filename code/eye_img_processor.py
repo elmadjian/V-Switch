@@ -45,13 +45,9 @@ class EyeImageProcessor(imp.ImageProcessor):
                             self.fitter.unproject_ellipse([c,axes,rad],img)
                             self.fitter.draw_vectors([c,axes,rad], img)
                             ppos = self.fitter.curr_state['gaze_pos'].flatten()
-                            #pneg = self.fitter.curr_state['gaze_neg'].flatten()
-                            #return img, np.hstack((ppos,pneg,time.monotonic()))
                             return img, np.hstack((ppos,time.monotonic()))
                         return img, np.array([c[0]/width, c[1]/height,
                                 time.monotonic(),0], dtype='float32')
-                        # return img, np.array([c[0]/width, c[1]/height, 
-                        #             time.monotonic(),0,0,0,0], dtype='float32')
                 else:
                     self.buffer = []
                     self.lost_tracking += 1
@@ -61,6 +57,12 @@ class EyeImageProcessor(imp.ImageProcessor):
             except Exception as e:
                 print('Error:', e)
         return img, None
+
+    
+    def reset_center_axis(self):
+        self.fitter.reset_axis()
+        print('>>> resetting center axis')
+        
 
 
     def __is_consistent(self, axes, width, thresh):

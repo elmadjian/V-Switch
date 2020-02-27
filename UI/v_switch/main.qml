@@ -182,6 +182,30 @@ Window {
         }
         property bool video: false
 
+        Image {
+            id: leftIcon3d
+            z: 2
+            x: 256
+            y: 174
+            width: 35
+            height: 35
+            source: "../imgs/reload-icon.png"
+            fillMode: Image.PreserveAspectFit
+            opacity: 0
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+
+            MouseArea {
+                id: leftIcon3dButton
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                anchors.fill: parent
+                onClicked: {
+                    leftEyeCam.reset_axis();
+                }
+            }
+        }
+
         ComboBox {
             id: leftEyeBox
             currentIndex: 0
@@ -250,6 +274,7 @@ Window {
                 }
             }
         }
+
     }
 
     /*
@@ -270,6 +295,30 @@ Window {
             font.weight: Font.Light
         }
         property bool video: false
+
+        Image {
+            id: rightIcon3d
+            z: 2
+            x: 261
+            y: 174
+            width: 35
+            height: 35
+            source: "../imgs/reload-icon.png"
+            fillMode: Image.PreserveAspectFit
+            opacity: 0
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+
+            MouseArea {
+                id: rightIcon3dButton
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                anchors.fill: parent
+                onClicked: {
+                    rightEyeCam.reset_axis();
+                }
+            }
+        }
 
         ComboBox {
             id: rightEyeBox
@@ -340,6 +389,7 @@ Window {
             }
         }
 
+
     }
 
 
@@ -390,6 +440,7 @@ Window {
     /*
     CALIBRATION CONTOL
     ------------------ */
+
     GroupBox {
         id: playbackSettings
         x: 500
@@ -992,6 +1043,13 @@ Window {
                     camManager.toggle_3D();
                     calibControl.toggle_3D();
                     calibHMD.toggle_3D();
+                    if (switch3DModel.checked) {
+                        leftIcon3d.opacity  = 1;
+                        rightIcon3d.opacity = 1;
+                    } else {
+                        leftIcon3d.opacity  = 0;
+                        rightIcon3d.opacity = 0;
+                    }
                 }
             }
         }
@@ -1015,6 +1073,7 @@ Window {
         width: mainWindow.width
         height: mainWindow.height
     }
+
 
 
     /*

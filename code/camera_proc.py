@@ -238,6 +238,10 @@ class Camera(QQuickImageProvider, QObject):
         self.pipe.send("color")
         self.pipe.send(bool(value))
 
+    @Slot()
+    def reset_axis(self):
+        self.pipe.send("reset_axis")
+
     def to_QPixmap(self, img):
         if len(img.shape) == 3:
             h,w,_ = img.shape
