@@ -50,7 +50,7 @@ class Calibrator(QObject):
                 target_list.append([x,y])
         seed = np.random.randint(0,99)
         rnd  = np.random.RandomState(seed)
-        rnd.shuffle(target_list)
+        #rnd.shuffle(target_list)
         return target_list
 
     def __get_target_data(self, maxfreq, minfreq):
@@ -112,8 +112,8 @@ class Calibrator(QObject):
         '''
         clf_l = self.__get_clf()
         clf_r = self.__get_clf()     
-        st, sl, sr = self.storer.get_random_test_samples(
-            self.samples, len(self.target_list))                             
+        # st, sl, sr = self.storer.get_random_test_samples(
+        #     self.samples, len(self.target_list))                             
         targets = self.storer.get_targets_list()
         if self.leye.is_cam_active():                                       
             l_centers = self.storer.get_l_centers_list(self.mode_3D)
@@ -124,8 +124,8 @@ class Calibrator(QObject):
             clf_r.fit(r_centers, targets)
             self.__set_regressor('right', clf_r)
         print("Gaze estimation finished")
-        self.__test_calibration(st, sl, sr)
-        print('Estimation assessment ready')
+        # self.__test_calibration(st, sl, sr)
+        # print('Estimation assessment ready')
         self.enable_estimation.emit()
         if self.storage:
             self.storer.store_calibration()

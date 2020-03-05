@@ -21,7 +21,8 @@ if __name__=='__main__':
     
     videoio   = videoio_uvc.VideoIO_UVC()
     #cameras   = videoio.get_cameras()
-    calib_ctl = calibration.Calibrator(3, 3, 60, 10)
+    #row, col, number of sumples, timeout
+    calib_ctl = calibration.Calibrator(5, 7, 30, 5)
     calib_hmd = calibration_hmd.HMDCalibrator(3, 3, 60, 4) 
     vgc_ctl   = vergence.VergenceCtl(3, 40, 4)
 

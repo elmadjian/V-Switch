@@ -4,6 +4,7 @@ import uvc
 import numpy as np
 import eye
 import eye_img_processor as eip
+import scene_img_processor as scn
 from multiprocessing import Process, Pipe
 import eyefitter as ef
 import geometry as geo
@@ -35,14 +36,45 @@ if sys.argv[1] == "--uvc":
     cap.close()
     cv2.destroyAllWindows()
 
+
+#SCENE CAM
+if sys.argv[1] == '--scene':
+    cam = int(sys.argv[2])
+    dev_list = uvc.device_list()
+    cap = uvc.Capture(dev_list[cam]['uid'])
+    print(sorted(cap.avaible_modes))
+    cap.frame_mode = (800,600,30)
+    sceneobj = scn.SceneImageProcessor(0,(600,800),0,0,0,0)
+    while True:
+        frame = cap.get_frame()
+        sceneobj.process(frame.bgr)               
+        if cv2.waitKey(0) & 0xFF == ord('q'):
+            break
+
+
+#SCENE LOAD
+if sys.argv[1] == '--test_scene':
+    cap = cv2.VideoCapture('scn.avi')
+    sceneobj = scn.SceneImageProcessor(0,(600,800),0,0,0,0)
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret:
+            img, tgt = sceneobj.process(frame)               
+            print('target_pos:', tgt)
+            cv2.imshow('test', img)
+            if cv2.waitKey(0) & 0xFF == ord('q'):
+                break
+
+
 #RECORDING
 if sys.argv[1] == "--rec":
     dev_list = uvc.device_list()
     print(dev_list)
-    cap = uvc.Capture(dev_list[3]['uid'])
-    cap.frame_mode = (400,400,60)
+    cap = uvc.Capture(dev_list[1]['uid'])
+    cap.frame_mode = (800,600,30)
     cap.bandwidth_factor = 1.3
-    out = cv2.VideoWriter('test.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 120, (400,400))
+    out = cv2.VideoWriter('scn.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 30, (800,600))
     while True:
         frame = cap.get_frame()
         out.write(frame.bgr)

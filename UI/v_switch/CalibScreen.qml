@@ -113,7 +113,7 @@ Window {
     Image {
         visible: false
         id: calibTarget
-        source:"../imgs/aruco.png"
+        source:"../imgs/crosshair.png"
         sourceSize.width: calibWindow.width/12
         sourceSize.height: calibWindow.height/6.75
     }
@@ -123,7 +123,7 @@ Window {
         id: calibTargetOverlay
         anchors.fill: calibTarget
         source: calibTarget
-        color: "#752b26"
+        color: "#C00000"
         opacity: 1
     }
 
