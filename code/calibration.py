@@ -150,13 +150,13 @@ class Calibrator(QObject):
             if self.storage:
                 l_gz, r_gz   = pred[:2], pred[2:]
                 l_raw, r_raw = data[:3], data[3:]
-                self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
+                #self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
         else:
             data, pred = self.__predict2d()
             if self.storage:
                 l_gz, r_gz   = pred[:2], pred[2:]
                 l_raw, r_raw = data[:2], data[2:]
-                self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
+                #self.storer.append_session_data(l_gz, r_gz, l_raw, r_raw)
         return pred
 
 
