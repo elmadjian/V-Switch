@@ -54,8 +54,8 @@ if sys.argv[1] == '--scene':
 
 #SCENE LOAD
 if sys.argv[1] == '--test_scene':
-    cap = cv2.VideoCapture('scn.avi')
-    sceneobj = scn.SceneImageProcessor(0,(600,800),0,0,0,0)
+    cap = cv2.VideoCapture('scn.mkv')
+    sceneobj = scn.SceneImageProcessor(0,(576,1024),0,0,0,0)
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -71,8 +71,8 @@ if sys.argv[1] == '--test_scene':
 if sys.argv[1] == "--rec":
     dev_list = uvc.device_list()
     print(dev_list)
-    cap = uvc.Capture(dev_list[1]['uid'])
-    cap.frame_mode = (800,600,30)
+    cap = uvc.Capture(dev_list[2]['uid'])
+    cap.frame_mode = (1024,576,30)
     cap.bandwidth_factor = 1.3
     out = cv2.VideoWriter('scn.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 30, (800,600))
     while True:

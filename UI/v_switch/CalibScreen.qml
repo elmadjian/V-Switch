@@ -7,9 +7,9 @@ import QtQuick.Layouts 1.0
 
 Window {
     id: calibWindow
-    height: 720
-    width: 1280
-    color: "white"
+    height: 1080
+    width: 1920
+    color: "black"
     property var recording: false
     property var counter: 0
 

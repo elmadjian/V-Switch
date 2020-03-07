@@ -1,4 +1,5 @@
 import sys
+import os
 import numpy as np
 import cv2
 
@@ -35,11 +36,11 @@ class DataLoader():
                         self.__check_key_and_append(self.leye, coord, f)
                     elif "reye" in src:
                         self.__check_key_and_append(self.reye, coord, f)
-                    elif "img_scn" in src:
+                    elif "imgscn" in src:
                         self.__check_key_and_append(self.tgt_img, coord, f)
-                    elif "img_le" in src:
+                    elif "imgle" in src:
                         self.__check_key_and_append(self.leye_img, coord, f)
-                    elif "img_re" in src:
+                    elif "imgre" in src:
                         self.__check_key_and_append(self.reye_img, coord, f)
 
 
@@ -58,3 +59,4 @@ class DataLoader():
 if __name__=="__main__":
     dl = DataLoader(sys.argv[1])
     dl.parse_dir()
+    dl.show_data(dl.tgt)

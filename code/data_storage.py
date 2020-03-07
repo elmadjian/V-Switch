@@ -176,9 +176,9 @@ class Storer():
             print(">>> {}%...".format(perc), end="\r", flush=True)
             c1, c2 = self.target_list[k]
             prefix = str(c1) + "_" + str(c2) + "_"
-            np.savez_compressed(path+prefix+ "img_scn", self.t_imgs[k])
-            np.savez_compressed(path+prefix+ "img_le", self.l_imgs[k])
-            np.savez_compressed(path+prefix+ "img_re", self.r_imgs[k])
+            np.savez_compressed(path+prefix+ "imgscn", self.t_imgs[k])
+            np.savez_compressed(path+prefix+ "imgle", self.l_imgs[k])
+            np.savez_compressed(path+prefix+ "imgre", self.r_imgs[k])
             np.savez_compressed(path+prefix+ "tgt", self.targets[k])
             if len(self.l_centers[k]) > 0:
                 np.savez_compressed(path+prefix+"leye", self.l_centers[k])
