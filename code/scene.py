@@ -11,6 +11,7 @@ import uvc
 
 class SceneCamera(camera.Camera):
 
+
     def __init__(self, name=None, mode=(640,480,30)):
         super().__init__(name)
         self.mode = mode

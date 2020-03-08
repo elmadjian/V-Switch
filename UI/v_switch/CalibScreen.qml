@@ -123,7 +123,7 @@ Window {
         id: calibTargetOverlay
         anchors.fill: calibTarget
         source: calibTarget
-        color: "#C00000"
+        color: "#ffcccc"
         opacity: 1
     }
 

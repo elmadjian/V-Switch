@@ -13,9 +13,9 @@ class SceneImageProcessor(imp.ImageProcessor):
 
     def process(self, img, mode_3D=False):
         height, width = img.shape[0], img.shape[1]
-        target_pos = self.__find_marker(img)
+        target_pos = self.__find_marker2(img)
         if target_pos is not None:
-            self.__find_ROI(img, target_pos, 50)
+            self.__find_ROI(img, target_pos, 40)
             cv2.circle(img, target_pos, 2, (0,255,0), -1)
             x = target_pos[0]/width
             y = target_pos[1]/height
@@ -23,6 +23,43 @@ class SceneImageProcessor(imp.ImageProcessor):
         else:
             self.bbox = None
         return img, target_pos
+
+    def __grab_contours(self, cnts):
+        if len(cnts) == 2:
+            cnts = cnts[0]
+        elif len(cnts) == 3:
+            cnts = cnts[1]
+        else:
+            raise Exception(("Contours tuple must have length 2 or 3"))
+        return cnts
+
+
+    def __find_marker2(self, img):
+        imgcopy = img.copy()
+        if self.bbox is not None:
+            x,y,w,h = self.bbox
+            imgcopy = img[y:y+h,x:x+w]
+        gray = cv2.cvtColor(imgcopy, cv2.COLOR_BGR2GRAY)
+        gray2 = self.__adjust_histogram(gray)
+        kernel = np.ones((3,3), np.uint8)
+        thresh = cv2.threshold(gray2, 225, 255, cv2.THRESH_BINARY)[1]
+        cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = self.__grab_contours(cnts)
+        for c in cnts:
+            peri = cv2.arcLength(c, True)
+            approx = cv2.approxPolyDP(c, 0.1 * peri, True)
+            hull = cv2.convexHull(c, returnPoints=False)
+            defects = cv2.convexityDefects(c, hull)
+            if defects is not None:
+                if peri > 65 and peri < 95 and len(approx) == 4 and\
+                len(defects) == 4 and np.std(defects[:,:,-1]) < 300:
+                    #print('defects:', len(defects), 'peri:', peri, 'approx:', len(approx))
+                    #print(defects.shape)
+                    #print('defects:', np.std(defects[:,:,-1]))
+                    cv2.drawContours(img, [c], -1, (0,255,0), 2)
+        #print('-------')
+    
+
 
 
     def __find_marker(self, img):
@@ -35,13 +72,12 @@ class SceneImageProcessor(imp.ImageProcessor):
         kernel = np.ones((3,3), np.uint8)
         thresh = cv2.threshold(gray2, 230, 255, cv2.THRESH_BINARY)[1]
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
-
-        cv2.imshow('thresh', thresh)
+        #cv2.imshow('thresh', thresh)
         _,labels, stats,_ = cv2.connectedComponentsWithStats(thresh)
         stats = stats[1:]
         length, idx, = 0, 0
         target_pos = None
-        print('len(status):', len(stats))
+        #print('len(status):', len(stats))
         if self.bbox is not None and len(stats) > 1:
             return 
         if len(stats) > 0:
@@ -49,10 +85,10 @@ class SceneImageProcessor(imp.ImageProcessor):
                 ratio = stats[i,2]/stats[i,3]
                 max_area = stats[i,2] * stats[i,3]
                 area = stats[i,4]
-                print('area:', area, 'max_area:', max_area, 'ratio:', ratio)
-                if (ratio < 0.85 or ratio > 1.15) or\
-                area < 50 or area > 300 or\
-                max_area < 2*area or max_area > 1000 or max_area < 300:
+                #print('area:', area, 'max_area:', max_area, 'ratio:', ratio)
+                if (ratio < 0.83 or ratio > 1.17) or\
+                area < 40 or area > 400 or\
+                max_area < 2*area or max_area > 1000 or max_area < 400:
                     idx = i+1
                     thresh[labels==idx] = 0
                 else:
@@ -61,7 +97,7 @@ class SceneImageProcessor(imp.ImageProcessor):
                     target_pos = (x,y)
                     if self.bbox is not None:
                         target_pos = (x+self.bbox[0], y+self.bbox[1])
-            print('---------------')
+            #print('---------------')
         return target_pos
 
 

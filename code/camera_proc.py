@@ -70,7 +70,7 @@ class Camera(QQuickImageProvider, QObject):
         return self.__image
 
     def get_np_image(self):
-        return self.__np_img
+        return self.__np_img.copy()
 
     def get_processed_data(self):
         nparray = np.frombuffer(self.shared_pos, dtype=ctypes.c_float)

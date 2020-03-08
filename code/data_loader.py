@@ -46,7 +46,7 @@ class DataLoader():
 
     def show_data(self, data, img=False):
         for k in data.keys():
-            print("Showing for key:", k)
+            print("Showing data for key:", k)
             for el in data[k]:
                 if img:
                     cv2.imshow("data", el)
@@ -59,4 +59,5 @@ class DataLoader():
 if __name__=="__main__":
     dl = DataLoader(sys.argv[1])
     dl.parse_dir()
-    dl.show_data(dl.tgt)
+    #dl.show_data(dl.tgt)
+    #dl.show_data(dl.leye_img, img=True)
