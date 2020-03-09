@@ -50,7 +50,7 @@ class Calibrator(QObject):
                 target_list.append([x,y])
         seed = np.random.randint(0,99)
         rnd  = np.random.RandomState(seed)
-        #rnd.shuffle(target_list)
+        rnd.shuffle(target_list)
         return target_list
 
     def __get_target_data(self, maxfreq, minfreq):

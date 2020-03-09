@@ -61,7 +61,7 @@ if sys.argv[1] == '--test_scene':
         ret, frame = cap.read()
         if ret:
             img, tgt = sceneobj.process(frame)               
-            print('target_pos:', tgt)
+            #print('target_pos:', tgt)
             cv2.imshow('test', img)
             if cv2.waitKey(0) & 0xFF == ord('q'):
                 break

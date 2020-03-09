@@ -13,15 +13,22 @@ class SceneImageProcessor(imp.ImageProcessor):
 
     def process(self, img, mode_3D=False):
         height, width = img.shape[0], img.shape[1]
-        target_pos = self.__find_marker2(img)
-        if target_pos is not None:
-            self.__find_ROI(img, target_pos, 40)
-            cv2.circle(img, target_pos, 2, (0,255,0), -1)
-            x = target_pos[0]/width
-            y = target_pos[1]/height
-            target_pos = np.array([x,y,time.monotonic()],dtype='float32')
+        target_pos = None
+        if self.bbox is None:
+            pos = self.__find_marker(img)
+            if pos is not None:
+                self.__find_ROI(img, pos, 40)
         else:
-            self.bbox = None
+            target_pos = self.__find_blob(img)
+            #print('target_pos_blob:', target_pos)
+            if target_pos is not None:
+                self.__find_ROI(img, target_pos, 40)
+                cv2.circle(img, target_pos, 3, (0,255,0), -1)
+                x = target_pos[0]/width
+                y = target_pos[1]/height
+                target_pos = np.array([x,y,time.monotonic()],dtype='float32')
+            else:
+                self.bbox = None
         return img, target_pos
 
     def __grab_contours(self, cnts):
@@ -34,12 +41,9 @@ class SceneImageProcessor(imp.ImageProcessor):
         return cnts
 
 
-    def __find_marker2(self, img):
-        imgcopy = img.copy()
-        if self.bbox is not None:
-            x,y,w,h = self.bbox
-            imgcopy = img[y:y+h,x:x+w]
-        gray = cv2.cvtColor(imgcopy, cv2.COLOR_BGR2GRAY)
+    def __find_marker(self, img):
+        target_pos = None
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         gray2 = self.__adjust_histogram(gray)
         kernel = np.ones((3,3), np.uint8)
         thresh = cv2.threshold(gray2, 225, 255, cv2.THRESH_BINARY)[1]
@@ -51,33 +55,28 @@ class SceneImageProcessor(imp.ImageProcessor):
             hull = cv2.convexHull(c, returnPoints=False)
             defects = cv2.convexityDefects(c, hull)
             if defects is not None:
-                if peri > 65 and peri < 95 and len(approx) == 4 and\
+                if peri > 55 and peri < 95 and len(approx) == 4 and\
                 len(defects) == 4 and np.std(defects[:,:,-1]) < 300:
-                    #print('defects:', len(defects), 'peri:', peri, 'approx:', len(approx))
-                    #print(defects.shape)
-                    #print('defects:', np.std(defects[:,:,-1]))
                     cv2.drawContours(img, [c], -1, (0,255,0), 2)
-        #print('-------')
+                    M = cv2.moments(c)
+                    cX = int(M["m10"] / M["m00"])
+                    cY = int(M["m01"] / M["m00"])
+                    target_pos = (cX,cY)
+        return target_pos
     
 
-
-
-    def __find_marker(self, img):
-        imgcopy = img.copy()
-        if self.bbox is not None:
-            x,y,w,h = self.bbox
-            imgcopy = img[y:y+h,x:x+w]
+    def __find_blob(self, img):
+        x,y,w,h = self.bbox
+        imgcopy = img[y:y+h,x:x+w]
         gray = cv2.cvtColor(imgcopy, cv2.COLOR_BGR2GRAY)
         gray2 = self.__adjust_histogram(gray)
         kernel = np.ones((3,3), np.uint8)
-        thresh = cv2.threshold(gray2, 230, 255, cv2.THRESH_BINARY)[1]
-        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
-        #cv2.imshow('thresh', thresh)
+        thresh = cv2.threshold(gray2, 225, 255, cv2.THRESH_BINARY)[1]
+        thresh = cv2.morphologyEx(thresh,cv2.MORPH_CLOSE,kernel,iterations=2)
         _,labels, stats,_ = cv2.connectedComponentsWithStats(thresh)
         stats = stats[1:]
         length, idx, = 0, 0
         target_pos = None
-        #print('len(status):', len(stats))
         if self.bbox is not None and len(stats) > 1:
             return 
         if len(stats) > 0:
@@ -86,17 +85,15 @@ class SceneImageProcessor(imp.ImageProcessor):
                 max_area = stats[i,2] * stats[i,3]
                 area = stats[i,4]
                 #print('area:', area, 'max_area:', max_area, 'ratio:', ratio)
-                if (ratio < 0.83 or ratio > 1.17) or\
-                area < 40 or area > 400 or\
-                max_area < 2*area or max_area > 1000 or max_area < 400:
+                if (ratio < 0.88 or ratio > 1.12) or\
+                area < 30 or area > 500 or\
+                max_area > 1000 or max_area < 300:
                     idx = i+1
                     thresh[labels==idx] = 0
                 else:
                     x = stats[i,0] + stats[i,2]//2
                     y = stats[i,1] + stats[i,3]//2
-                    target_pos = (x,y)
-                    if self.bbox is not None:
-                        target_pos = (x+self.bbox[0], y+self.bbox[1])
+                    target_pos = (x+self.bbox[0], y+self.bbox[1])
             #print('---------------')
         return target_pos
 
