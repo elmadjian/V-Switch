@@ -65,6 +65,7 @@ class Storer():
         scd = np.array(self.target_list[idx])
         if sc is not None and self.scene.is_cam_active():
             scd = np.array([sc[0], sc[1]], dtype='float32')
+        #print("STORING:", scd, 'id:', idx)
         self.targets[idx] = np.vstack((self.targets[idx], scd))
         if self.leye.is_cam_active():
             led = np.array([le[0],le[1],le[2]])#,le[3],le[4],le[5]])

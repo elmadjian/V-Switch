@@ -23,8 +23,10 @@ class HMDCalibrator(QObject):
         QObject.__init__(self)
         self.target_list = self.__generate_target_list(v_targets, h_targets)
         self.storer = ds.Storer(self.target_list, True)
-        self.l_regressor = None
-        self.r_regressor = None
+        self.l_regressor1 = None
+        self.r_regressor1 = None
+        self.l_regressor2 = None
+        self.r_regressor2 = None
         self.z_regressor = None
         self.current_target = -1
         self.leye, self.reye = None, None
@@ -36,6 +38,7 @@ class HMDCalibrator(QObject):
         self.vergence = None
         self.mode_3D = False
         self.storage = False
+        self.curr_f = "f1"
         self.depth_buffer = []
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(("0.0.0.0", 50021))
@@ -64,14 +67,18 @@ class HMDCalibrator(QObject):
         for y in np.linspace(-1,1, v):
             for x in np.linspace(-1,1, h):
                 target_list.append(np.array([x,y,1], dtype=np.float32))
-        seed = np.random.randint(0,99)
-        rnd  = np.random.RandomState(seed)
-        rnd.shuffle(target_list)
+        d = 1/0.33
+        for y in np.linspace(-1/d,1/d, v):
+            for x in np.linspace(-1/d,1/d, h):
+                target_list.append(np.array([x,y,0.27], dtype=np.float32))
+        # seed = np.random.randint(0,99)
+        # rnd  = np.random.RandomState(seed)
+        # rnd.shuffle(target_list)
         return target_list
 
     def __generate_depth_list(self, nz):
         target_list = []
-        for p in np.logspace(0.36,1, nz)/10.0:
+        for p in np.logspace(0.3,1, nz)/10.0:
             target_list.append(np.array([0,0,p], dtype=np.float))
         return target_list
 
@@ -135,8 +142,10 @@ class HMDCalibrator(QObject):
     def start_calibration(self):
         print('resetting calibration')
         self.storer.initialize_storage(len(self.target_list))
-        self.l_regressor = None
-        self.r_regressor = None
+        self.l_regressor1 = None
+        self.r_regressor1 = None
+        self.l_regressor2 = None
+        self.r_regressor2 = None
         if self.predictor is not None:
             self.stream = False
             self.predictor.join()
@@ -145,7 +154,7 @@ class HMDCalibrator(QObject):
     @Slot()
     def start_depth_calibration(self):
         print('starting depth calibration')
-        self.depth_list  = self.__generate_depth_list(5)
+        self.depth_list  = self.__generate_depth_list(6)
         self.storer.set_target_list(self.depth_list)
         self.storer.initialize_depth_storage(len(self.depth_list))
         self.current_target = -1
@@ -196,17 +205,28 @@ class HMDCalibrator(QObject):
         Finds a gaze estimation function to be used for 
         future predictions. Based on Gaussian Processes regression.
         '''
-        clf_l = self.__get_clf()
-        clf_r = self.__get_clf()        
-        targets = self.storer.get_targets_list()                         
+        clf_l1 = self.__get_clf()
+        clf_r1 = self.__get_clf()        
+        clf_l2 = self.__get_clf()
+        clf_r2 = self.__get_clf() 
+        targets = self.storer.get_targets_list() 
+        targets1, targets2 = targets[:180,:], targets[180:,:]                     
         if self.leye.is_cam_active():           
-            l_centers = self.storer.get_l_centers_list(self.mode_3D)     
-            clf_l.fit(l_centers, targets)
-            self.l_regressor = clf_l
+            l_centers = self.storer.get_l_centers_list(self.mode_3D)
+            l_centers1, l_centers2 = l_centers[:180,:], l_centers[180:,:]     
+            #print("L_CENTERS:", l_centers1)
+            clf_l1.fit(l_centers1, targets1)
+            clf_l2.fit(l_centers2, targets2)
+            self.l_regressor1 = clf_l1
+            self.l_regressor2 = clf_l2
         if self.reye.is_cam_active():
             r_centers = self.storer.get_r_centers_list(self.mode_3D)
-            clf_r.fit(r_centers, targets)
-            self.r_regressor = clf_r
+            r_centers1, r_centers2 = r_centers[:180,:], r_centers[180:,:]
+            #print("R_CENTERS:", r_centers1)
+            clf_r1.fit(r_centers1, targets1)
+            clf_r2.fit(r_centers2, targets2)
+            self.r_regressor1 = clf_r1
+            self.r_regressor2 = clf_r2
         print("Gaze estimation finished")
         if self.storage:
             self.storer.store_calibration()
@@ -242,6 +262,7 @@ class HMDCalibrator(QObject):
                     x1, y1, z1 = '{:.8f}'.format(x1/d), '{:.8f}'.format(y1/d), '{:.8f}'.format(z)
                     x2, y2, z2 = '{:.8f}'.format(x2/d), '{:.8f}'.format(y2/d), '{:.8f}'.format(z)
                     msg = 'G:'+x1+':'+y1+':'+z1+':'+x2+':'+y2+':'+z2
+                    #print("sending:", msg)
                     self.socket.sendto(msg.encode(), (self.ip, self.port))
             except Exception as e:
                 print("no request from HMD...", e)
@@ -253,25 +274,49 @@ class HMDCalibrator(QObject):
     def __predict(self):
         data = [-9,-9,-9,-9]
         pred = [-9,-9,-9,-9,-9,-9]
-        if self.l_regressor is not None:
-            le = self.leye.get_processed_data()
-            if le is not None:
-                input_data = le[:2].reshape(1,-1)
-                le_c = self.l_regressor.predict(input_data)[0]
-                data[0], data[1] = input_data[0]
-                pred[0], pred[1], pred[2] = float(le_c[0]), float(le_c[1]), float(le_c[2])
-        if self.r_regressor is not None:
-            re = self.reye.get_processed_data()
-            if re is not None:
-                input_data = re[:2].reshape(1,-1)
-                re_c = self.r_regressor.predict(input_data)[0]
-                data[2], data[3] = input_data[0]
-                pred[3], pred[4], pred[5] = float(re_c[0]), float(re_c[1]), float(re_c[2])
-            if self.z_regressor is not None and self.l_regressor is not None:
-                dist = self.__get_dist(pred)
-                input_data = np.array([dist]).reshape(1,-1)
-                z = self.z_regressor.predict(input_data)[0]
-                pred[2], pred[5] = float(z[0]), float(z[0])
+        if self.curr_f == "f1":
+            if self.l_regressor1 is not None:
+                le = self.leye.get_processed_data()
+                if le is not None:
+                    input_data = le[:2].reshape(1,-1)
+                    le_c = self.l_regressor1.predict(input_data)[0]
+                    data[0], data[1] = input_data[0]
+                    pred[0], pred[1], pred[2] = float(le_c[0]), float(le_c[1]), float(le_c[2])
+            if self.r_regressor1 is not None:
+                re = self.reye.get_processed_data()
+                if re is not None:
+                    input_data = re[:2].reshape(1,-1)
+                    re_c = self.r_regressor1.predict(input_data)[0]
+                    data[2], data[3] = input_data[0]
+                    pred[3], pred[4], pred[5] = float(re_c[0]), float(re_c[1]), float(re_c[2])
+
+        elif self.curr_f == "f2":
+            if self.l_regressor2 is not None:
+                le = self.leye.get_processed_data()
+                if le is not None:
+                    input_data = le[:2].reshape(1,-1)
+                    le_c = self.l_regressor2.predict(input_data)[0]
+                    data[0], data[1] = input_data[0]
+                    pred[0], pred[1], pred[2] = float(le_c[0]), float(le_c[1]), float(le_c[2])
+            if self.r_regressor2 is not None:
+                re = self.reye.get_processed_data()
+                if re is not None:
+                    input_data = re[:2].reshape(1,-1)
+                    re_c = self.r_regressor2.predict(input_data)[0]
+                    data[2], data[3] = input_data[0]
+                    pred[3], pred[4], pred[5] = float(re_c[0]), float(re_c[1]), float(re_c[2])
+
+        if self.z_regressor is not None: #and self.l_regressor is not None:
+            dist = self.__get_dist(pred)
+            input_data = np.array([dist]).reshape(1,-1)
+            z = self.z_regressor.predict(input_data)[0]
+            pred[2], pred[5] = float(z[0]), float(z[0])
+            if z[0] > 0.8:
+                #print("--- F1")
+                self.curr_f = "f1"
+            elif z[0] < 0.5:
+                self.curr_f = "f2"
+                #print("<<< F2")
         if self.storage:
             l_gz, r_gz   = pred[:3], pred[3:]
             l_raw, r_raw = data[:2], data[2:]
