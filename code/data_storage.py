@@ -25,8 +25,8 @@ class Storer():
         self.targets = {i:np.empty((0,3), dtype='float32') for i in range(ntargets)}
         if self.hmd:
             self.targets = {i:np.empty((0,4), dtype='float32') for i in range(ntargets)}
-        self.l_centers = {i:np.empty((0,4), dtype='float32') for i in range(ntargets)}
-        self.r_centers = {i:np.empty((0,4), dtype='float32') for i in range(ntargets)}
+        self.l_centers = {i:np.empty((0,6), dtype='float32') for i in range(ntargets)}
+        self.r_centers = {i:np.empty((0,6), dtype='float32') for i in range(ntargets)}
         self.t_imgs = {i:[] for i in range(ntargets)}
         self.l_imgs = {i:[] for i in range(ntargets)}
         self.r_imgs = {i:[] for i in range(ntargets)}
@@ -68,10 +68,10 @@ class Storer():
             scd = np.array([sc[0], sc[1], sc[2]], dtype='float32')
         self.targets[idx] = np.vstack((self.targets[idx], scd))
         if self.leye.is_cam_active():
-            led = np.array([le[0],le[1],le[2],le[3]])#,le[3],le[4],le[5]])
+            led = np.array([le[0],le[1],le[2],le[3],le[4],le[5]])
             self.l_centers[idx] = np.vstack((self.l_centers[idx], led))
         if self.reye.is_cam_active():
-            red = np.array([re[0],re[1],re[2],re[3]])#,le[3],le[4],le[5]])
+            red = np.array([re[0],re[1],re[2],re[3],re[4],re[5]])
             self.r_centers[idx] = np.vstack((self.r_centers[idx], red))
 
     def __add_imgs(self, sc, le, re, idx):
@@ -99,7 +99,7 @@ class Storer():
         sc_t, le_t, re_t = sc[2], le[2], re[2]
         if mode3D:
             #le_t, re_t = le[6], re[6]
-            le_t, re_t = le[3], re[3]
+            le_t, re_t = le[5], re[5]
         if sc.any(): #check for zeros since Windows compat update
             if le.any() and re.any():
                 if abs(sc_t - le_t) < thresh:
@@ -132,14 +132,14 @@ class Storer():
 
     def get_l_centers_list(self, mode_3D):
         data = self.__dict_to_list(self.l_centers)
-        data = np.array(data[:,:3])
+        data = np.array(data[:,:5])
         if not mode_3D:
             data = np.array(data[:,:2])
         return data
 
     def get_r_centers_list(self, mode_3D):
         data = self.__dict_to_list(self.r_centers)
-        data = np.array(data[:,:3])
+        data = np.array(data[:,:5])
         if not mode_3D:
             data = np.array(data[:,:2])
         return data
@@ -176,7 +176,7 @@ class Storer():
             perc = int(k/len(self.targets.keys()) * 100)
             print(">>> {}%...".format(perc), end="\r", flush=True)
             c1, c2 = self.target_list[k]
-            prefix = str(c1) + "_" + str(c2) + "_"
+            prefix = "{:.3f}".format(c1) + "_" + "{:.3f}".format(c2) + "_"
             np.savez_compressed(path+prefix+ "imgscn", self.t_imgs[k])
             np.savez_compressed(path+prefix+ "imgle", self.l_imgs[k])
             np.savez_compressed(path+prefix+ "imgre", self.r_imgs[k])

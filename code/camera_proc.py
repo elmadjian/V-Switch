@@ -51,7 +51,7 @@ class Camera(QQuickImageProvider, QObject):
                     self.__image = qimage
                     self.update_image.emit()
             except Exception as e:
-                print(e)
+                print("Error in Camera obbject, thread_loop():", e)
 
     def __get_shared_np_array(self):
         nparray = np.frombuffer(self.shared_array, dtype=ctypes.c_uint8)

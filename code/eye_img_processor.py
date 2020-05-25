@@ -41,13 +41,13 @@ class EyeImageProcessor(imp.ImageProcessor):
                     self.bbox = self.__get_bbox(c, size, img)
                     if self.__is_consistent(axes, width, 0.050):
                         self.__draw_tracking_info(c, img)
+                        xpup, ypup = c[0]/width, c[1]/height
                         if mode_3D:
                             self.fitter.unproject_ellipse([c,axes,rad],img)
                             self.fitter.draw_vectors([c,axes,rad], img)
                             ppos = self.fitter.curr_state['gaze_pos'].flatten()
-                            return img, np.hstack((ppos,time.monotonic()))
-                        return img, np.array([c[0]/width, c[1]/height,
-                                time.monotonic(),0], dtype='float32')
+                            return img, np.hstack((xpup,ypup,ppos,time.monotonic()))
+                        return img, np.array([xpup,ypup,time.monotonic(),0,0,0])
                 else:
                     self.buffer = []
                     self.lost_tracking += 1
@@ -55,7 +55,7 @@ class EyeImageProcessor(imp.ImageProcessor):
                         self.tracking = False
                         self.lost_tracking = 0
             except Exception as e:
-                print('Error:', e)
+                print('Error in EyeImgProcessor object, process():', e)
         return img, None
 
     

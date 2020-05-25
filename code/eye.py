@@ -39,10 +39,10 @@ class EyeCamera(camera.Camera):
             self.pipe.send("mode_3D")
 
     def join_process(self):
-        self.cam_process.join(10)
+        self.cam_process.join(3)
 
     def join_vid_process(self):
-        self.vid_process.join(3)
+        self.vid_process.join(2)
 
     def toggle_3D(self):
         self.mode_3D = not self.mode_3D
@@ -54,7 +54,10 @@ class EyeCamera(camera.Camera):
         return Array(ctypes.c_uint8, h*w*3, lock=False)
 
     def create_shared_pos(self):
-        return Array(ctypes.c_float, 4, lock=False)
+        '''
+        Number of values collected from eye image processing
+        '''
+        return Array(ctypes.c_float, 6, lock=False)
 
     def check_mode_availability(self, source, mode):
         dev_list = uvc.device_list()

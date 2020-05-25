@@ -53,15 +53,19 @@ class SceneImageProcessor(imp.ImageProcessor):
             peri = cv2.arcLength(c, True)
             approx = cv2.approxPolyDP(c, 0.1 * peri, True)
             hull = cv2.convexHull(c, returnPoints=False)
-            defects = cv2.convexityDefects(c, hull)
-            if defects is not None:
-                if peri > 55 and peri < 95 and len(approx) == 4 and\
-                len(defects) == 4 and np.std(defects[:,:,-1]) < 300:
-                    cv2.drawContours(img, [c], -1, (0,255,0), 2)
-                    M = cv2.moments(c)
-                    cX = int(M["m10"] / M["m00"])
-                    cY = int(M["m01"] / M["m00"])
-                    target_pos = (cX,cY)
+            try:
+                defects = cv2.convexityDefects(c, hull)
+                if defects is not None:
+                    if peri > 55 and peri < 95 and len(approx) == 4 and\
+                    len(defects) == 4 and np.std(defects[:,:,-1]) < 300:
+                        cv2.drawContours(img, [c], -1, (0,255,0), 2)
+                        M = cv2.moments(c)
+                        cX = int(M["m10"] / M["m00"])
+                        cY = int(M["m01"] / M["m00"])
+                        target_pos = (cX,cY)
+            except Exception as e:
+                #print("Error in SceneImgProcessor, __find_marker():", e)
+                pass
         return target_pos
     
 

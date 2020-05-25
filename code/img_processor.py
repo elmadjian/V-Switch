@@ -117,7 +117,7 @@ class ImageProcessor(Process):
                     if pos is not None:
                         np.copyto(shared_pos, pos)
             except Exception as e:
-                print("error:", e)
+                print("Error in ImgProcessor, run():", e)
                 cap = self.__reset_mode(cap)
                 attempt += 1           
             if self.pipe.poll():
